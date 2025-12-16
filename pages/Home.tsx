@@ -21,10 +21,10 @@ const Home: React.FC = () => {
                     {parts.length > 1 ? (
                         <>
                             <strong className="text-primary font-semibold md:w-32 flex-shrink-0">{parts[0]}</strong>
-                            <span>{parts.slice(1).join(' - ')}</span>
+                            <span dangerouslySetInnerHTML={{ __html: parts.slice(1).join(' - ') }} />
                         </>
                     ) : (
-                        <span>{item}</span>
+                        <span dangerouslySetInnerHTML={{ __html: item }} />
                     )}
                  </li>
                );
@@ -53,7 +53,12 @@ const Home: React.FC = () => {
         );
       case 'text':
       default:
-        return <p className="text-gray-700 leading-relaxed text-justify">{section.content}</p>;
+        return (
+          <div 
+            className="text-gray-700 leading-relaxed text-justify"
+            dangerouslySetInnerHTML={{ __html: section.content }}
+          />
+        );
     }
   };
 

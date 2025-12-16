@@ -5,7 +5,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Contact from './pages/Contact';
 import GenericPage from './pages/GenericPage';
-import { PAGE_CONTENT } from './services/cms';
+import { PAGE_CONTENT, ACTIVITIES_SECTIONS, RESULTS_SECTIONS, GALLERY_SECTIONS, MEDIA_SECTIONS } from './services/cms';
 
 const App: React.FC = () => {
   return (
@@ -17,10 +17,10 @@ const App: React.FC = () => {
         <div className="flex-grow mt-[70px]">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/activities" element={<GenericPage data={PAGE_CONTENT.activities} />} />
-            <Route path="/results" element={<GenericPage data={PAGE_CONTENT.results} />} />
-            <Route path="/gallery" element={<GenericPage data={PAGE_CONTENT.gallery} />} />
-            <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} />} />
+            <Route path="/activities" element={<GenericPage data={PAGE_CONTENT.activities} sections={ACTIVITIES_SECTIONS} />} />
+            <Route path="/results" element={<GenericPage data={PAGE_CONTENT.results} sections={RESULTS_SECTIONS} />} />
+            <Route path="/gallery" element={<GenericPage data={PAGE_CONTENT.gallery} sections={GALLERY_SECTIONS} />} />
+            <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />
             {/* <Route path="/about" element={<GenericPage data={PAGE_CONTENT.about} />} /> */}
             <Route path="/contact" element={<Contact />} />
           </Routes>
