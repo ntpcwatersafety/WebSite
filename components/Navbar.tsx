@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
       {/* Logo - Centered on Mobile, Left on Desktop */}
       <Link to="/" className="text-2xl font-bold text-primary flex items-center gap-2 mx-auto md:mx-0 z-[52]">
         <Waves className="w-8 h-8" />
-        <span>新北市水上救生協會</span>
+        <span>新北市水上安全協會</span>
       </Link>
 
       {/* Desktop Menu */}
