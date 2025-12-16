@@ -5,6 +5,7 @@ import { NAV_ITEMS } from '../services/cms';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const location = useLocation();
 
   // Close menu when route changes
@@ -24,11 +25,16 @@ const Navbar: React.FC = () => {
 
       {/* Logo - Centered on Mobile, Left on Desktop */}
       <Link to="/" className="text-2xl font-bold text-primary flex items-center gap-2 mx-auto md:mx-0 z-[52]">
-        <img 
-          src="/WebSite/images/logo.png" 
-          alt="新北市水上安全協會 Logo" 
-          className="w-10 h-10 object-contain"
-        />
+        {!logoError ? (
+          <img 
+            src="/WebSite/images/logo.png" 
+            alt="新北市水上安全協會 Logo" 
+            className="w-10 h-10 object-contain"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <Waves className="w-8 h-8" />
+        )}
         <span>新北市水上安全協會</span>
       </Link>
 

@@ -4,8 +4,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    
+    // 使用自訂網址時改成 '/'，使用 GitHub Pages 子路徑時用 '/WebSite/'
+    const base = '/';  // ← 如果有自訂網址，用這個
+    // const base = '/WebSite/';  // ← 如果用 GitHub Pages 預設網址，用這個
+    
     return {
-      base: '/WebSite/',
+      base: base,
       publicDir: 'public',
       server: {
         port: 3000,
