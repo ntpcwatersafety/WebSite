@@ -18,11 +18,11 @@ const EMAILJS_CONFIG = {
 // 1. 導覽列設定
 export const NAV_ITEMS: NavItem[] = [
   { label: '首頁', path: '/' },
-  { label: '活動與課程', path: '/activities' },
+  { label: '訓練與活動', path: '/activities' },
   { label: '訓練成果', path: '/results' },
   { label: '活動剪影', path: '/gallery' },
   { label: '媒體報導', path: '/media' },
-  { label: '關於我們', path: '/about' },
+  // { label: '關於我們', path: '/about' },
   { label: '聯絡我們', path: '/contact' },
 ];
 
@@ -36,7 +36,7 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
   },
   activities: {
     id: 'activities',
-    title: '活動與課程',
+    title: '訓練與活動',
     subtitle: '專業救生訓練 • 水上安全推廣 • 自救求生技能',
     imageUrl: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
   },

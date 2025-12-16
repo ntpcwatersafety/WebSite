@@ -21,7 +21,7 @@ const App: React.FC = () => {
             <Route path="/results" element={<GenericPage data={PAGE_CONTENT.results} />} />
             <Route path="/gallery" element={<GenericPage data={PAGE_CONTENT.gallery} />} />
             <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} />} />
-            <Route path="/about" element={<GenericPage data={PAGE_CONTENT.about} />} />
+            {/* <Route path="/about" element={<GenericPage data={PAGE_CONTENT.about} />} /> */}
             <Route path="/contact" element={<Contact />} />
           </Routes>
         </div>
