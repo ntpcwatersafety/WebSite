@@ -1,13 +1,17 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     
-    // 使用自訂網址時改成 '/'，使用 GitHub Pages 子路徑時用 '/WebSite/'
-    const base = '/';  // ← 如果有自訂網址，用這個
-    // const base = '/WebSite/';  // ← 如果用 GitHub Pages 預設網址，用這個
+    // 自動判斷：如果有 CNAME 檔案（自訂網域）用 '/'，否則用 '/WebSite/'
+    const hasCNAME = fs.existsSync('public/CNAME');
+    const base = hasCNAME ? '/' : '/WebSite/';
+    
+    console.log(`🌐 部署模式：${hasCNAME ? '自訂網域（根目錄）' : 'GitHub Pages 子目錄'}`);
+    console.log(`📁 Base Path: ${base}`);
     
     return {
       base: base,
