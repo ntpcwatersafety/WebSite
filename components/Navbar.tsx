@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
       <Link to="/" className="text-2xl font-bold text-primary flex items-center gap-2 mx-auto md:mx-0 z-[52]">
         {!logoError ? (
           <img 
-            src="/images/logo.png" 
+            src={`${import.meta.env.BASE_URL}images/logo.png`}
             alt="新北市水上安全協會 Logo" 
             className="w-10 h-10 object-contain"
             onError={() => setLogoError(true)}
