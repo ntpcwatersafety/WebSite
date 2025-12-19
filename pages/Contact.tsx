@@ -49,7 +49,7 @@ const Contact: React.FC = () => {
             <h2 className="text-3xl font-bold text-primary mb-4">聯絡我們</h2>
             <p className="text-gray-600">
               有任何疑問或合作需求？歡迎填寫下方表單，我們將儘速回覆您。<br/>
-              (預設寄送至: 123@gmail.com)
+              (預設寄送至: ntpcwatersafety@gmail.com)
             </p>
           </div>
 
