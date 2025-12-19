@@ -17,7 +17,7 @@ const EMAILJS_CONFIG = {
 
 // 1. 導覽列設定
 export const NAV_ITEMS: NavItem[] = [
-  { label: '首頁', path: '/' },
+  { label: '首頁 1', path: '/' },
   { label: '訓練與活動', path: '/activities' },
   { label: '訓練成果', path: '/results' },
   { label: '活動剪影', path: '/gallery' },
