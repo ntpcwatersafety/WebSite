@@ -1,10 +1,21 @@
-import { SectionContent, NavItem, PageConfig } from '../types';
+import { SectionContent, NavItem, PageConfig, NewsItem, GalleryItem, MediaItem, AwardItem, CourseItem, TestimonialItem } from '../types';
 import emailjs from '@emailjs/browser';
 
 /**
  * =================================================================
  *  【簡易後台資料庫】
- *  在此檔案中修改內容，網頁前台會自動更新。
+ *  
+ *  🎯 使用說明：
+ *  1. 在此檔案中修改內容，儲存後網頁前台會自動更新
+ *  2. 每個區塊都有清楚的註解說明如何編輯
+ *  3. 新增項目：複製現有項目，修改內容，記得加逗號
+ *  4. 刪除項目：整個物件（從 { 到 }）刪除即可
+ *  5. 修改項目：直接修改文字內容
+ *  
+ *  ⚠️ 注意事項：
+ *  - 字串用單引號 '' 或雙引號 "" 包起來
+ *  - 每個項目之間要有逗號 ,
+ *  - 日期格式統一用 'YYYY-MM-DD'
  * =================================================================
  */
 
@@ -84,12 +95,67 @@ export const HOME_SECTIONS: SectionContent[] = [
   {
     id: 'news',
     title: '最新消息',
-    type: 'list',
-    listItems: [
-      '2025-01-20 - 第 42 期救生員訓練班開放報名',
-      '2025-02-15 - 春季淨灘活動志工招募，歡迎全家大小一同參與',
-      '2025-03-01 - 年度會員大會將於台北分會舉行，請會員準時出席',
-      '2025-03-10 - 暑期兒童游泳營隊輔導員徵選開始'
+    type: 'news',  // 使用新的 'news' 類型
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * 📰 最新消息管理區
+     * ═══════════════════════════════════════════════════════════════
+     * 
+     * 📝 新增消息：
+     *    複製下方的項目範本，貼到陣列最前面（最新的放最上面）
+     * 
+     * 📝 修改消息：
+     *    直接修改對應項目的文字內容
+     * 
+     * 📝 刪除消息：
+     *    把整個 { ... }, 區塊刪除
+     * 
+     * ─────────────────────────────────────────────────────────────────
+     * 📋 項目範本（複製這個來新增）：
+     * 
+     *   {
+     *     id: 'news-XXX',        // 唯一編號，不要重複
+     *     date: 'YYYY-MM-DD',    // 日期
+     *     title: '消息標題',      // 標題
+     *     description: '詳細說明', // 選填：詳細說明
+     *     link: 'https://...',   // 選填：相關連結
+     *     isNew: true,           // 選填：顯示 NEW 標籤
+     *     isPinned: false,       // 選填：是否置頂
+     *   },
+     * ─────────────────────────────────────────────────────────────────
+     */
+    newsItems: [
+      // ↓↓↓ 最新消息放這裡（最新的放最上面）↓↓↓
+      
+      {
+        id: 'news-004',
+        date: '2025-03-10',
+        title: '暑期兒童游泳營隊輔導員徵選開始',
+        description: '歡迎有愛心、耐心的大專生報名參加',
+        isNew: true,
+      },
+      {
+        id: 'news-003',
+        date: '2025-03-01',
+        title: '年度會員大會將於台北分會舉行',
+        description: '請會員準時出席，共同參與協會重要決議',
+      },
+      {
+        id: 'news-002',
+        date: '2025-02-15',
+        title: '春季淨灘活動志工招募',
+        description: '歡迎全家大小一同參與，為海洋環境盡一份心力',
+        link: 'https://forms.example.com/beach-cleanup',
+      },
+      {
+        id: 'news-001',
+        date: '2025-01-20',
+        title: '第 42 期救生員訓練班開放報名',
+        description: '即日起開放報名，名額有限，額滿為止',
+        isPinned: true,
+      },
+      
+      // ↑↑↑ 最新消息放這裡 ↑↑↑
     ],
     isOpenDefault: false,
   },
@@ -197,31 +263,72 @@ export const RESULTS_SECTIONS: SectionContent[] = [
   {
     id: 'recent_graduates',
     title: '近期結訓學員',
-    type: 'list',
-    listItems: [
-      '2024-12-15 - 第 41 期救生員訓練班，共 28 名學員順利取得證照',
-      '2024-11-20 - 秋季游泳班結業，學員進步顯著',
-      '2024-10-05 - 企業員工救生訓練專班，40 人完訓',
-      '2024-09-12 - 暑期兒童游泳營，120 名學童參與',
+    type: 'news',
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * 📋 結訓紀錄管理區
+     * ═══════════════════════════════════════════════════════════════
+     * 新增方式同「最新消息」
+     */
+    newsItems: [
+      {
+        id: 'grad-001',
+        date: '2024-12-15',
+        title: '第 41 期救生員訓練班',
+        description: '共 28 名學員順利取得證照',
+      },
+      {
+        id: 'grad-002',
+        date: '2024-11-20',
+        title: '秋季游泳班結業',
+        description: '學員進步顯著',
+      },
+      {
+        id: 'grad-003',
+        date: '2024-10-05',
+        title: '企業員工救生訓練專班',
+        description: '40 人完訓',
+      },
+      {
+        id: 'grad-004',
+        date: '2024-09-12',
+        title: '暑期兒童游泳營',
+        description: '120 名學童參與',
+      },
     ],
     isOpenDefault: false,
   },
   {
     id: 'testimonials',
     title: '學員心得分享',
-    type: 'text',
-    content: `
-      <div class="space-y-4 text-left">
-        <blockquote class="border-l-4 border-primary bg-gray-50 p-4 italic">
-          "教練非常專業且有耐心，讓我從完全不會游泳到能夠自信下水！" <br>
-          <span class="text-sm text-gray-600">— 王小明，成人游泳班學員</span>
-        </blockquote>
-        <blockquote class="border-l-4 border-secondary bg-gray-50 p-4 italic">
-          "救生員訓練課程扎實，讓我具備專業救生技能，成功考取證照！" <br>
-          <span class="text-sm text-gray-600">— 李小華，救生員班學員</span>
-        </blockquote>
-      </div>
-    `,
+    type: 'testimonials',
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * 💬 學員心得管理區
+     * ═══════════════════════════════════════════════════════════════
+     * 
+     * 📋 項目範本：
+     *   {
+     *     id: 'test-XXX',
+     *     content: '心得內容...',
+     *     author: '姓名',
+     *     role: '身份說明（選填）',
+     *   },
+     */
+    testimonialItems: [
+      {
+        id: 'test-001',
+        content: '教練非常專業且有耐心，讓我從完全不會游泳到能夠自信下水！',
+        author: '王小明',
+        role: '成人游泳班學員',
+      },
+      {
+        id: 'test-002',
+        content: '救生員訓練課程扎實，讓我具備專業救生技能，成功考取證照！',
+        author: '李小華',
+        role: '救生員班學員',
+      },
+    ],
     isOpenDefault: false,
   },
 ];
@@ -272,37 +379,69 @@ export const MEDIA_SECTIONS: SectionContent[] = [
   {
     id: 'news_reports',
     title: '新聞報導',
-    type: 'list',
-    listItems: [
-       '2023-05-26 - <a href="https://www.youtube.com/watch?v=NnLH4gOvJdM" target="_blank" rel="noopener noreferrer">守護水域安全的逆行者(點我觀看影片)</a>',
-      // '2024-07-22 - 【自由時報】推廣水域安全，協會舉辦免費宣導活動',
-      // '2024-06-10 - 【聯合報】救生員培訓有成，守護北海岸水域安全',
-      // '2024-05-03 - 【蘋果日報】專業救生團隊，成功救援落海民眾',
+    type: 'media',
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * 📺 媒體報導管理區
+     * ═══════════════════════════════════════════════════════════════
+     * 
+     * 📋 項目範本：
+     *   {
+     *     id: 'media-XXX',
+     *     date: 'YYYY-MM-DD',
+     *     title: '報導標題',
+     *     source: '媒體來源（選填）',
+     *     link: '報導連結（選填）',
+     *     type: 'news' | 'video' | 'article',  // 類型
+     *   },
+     */
+    mediaItems: [
+      {
+        id: 'media-001',
+        date: '2023-05-26',
+        title: '守護水域安全的逆行者',
+        source: 'YouTube',
+        link: 'https://www.youtube.com/watch?v=NnLH4gOvJdM',
+        type: 'video',
+      },
+      // 可以繼續新增更多報導...
     ],
     isOpenDefault: true,
   },
   {
     id: 'awards',
     title: '獲獎紀錄',
-    type: 'text',
-    content: `
-      <div class="space-y-3 text-left">
-        <div class="flex items-start gap-3 bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
-          <span class="text-2xl">🏆</span>
-          <div>
-            <p class="font-bold text-yellow-800">2024 新北市優良志工團體獎</p>
-            <p class="text-sm text-yellow-700">表揚協會長期投入水域安全宣導工作</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-          <span class="text-2xl">🏅</span>
-          <div>
-            <p class="font-bold text-blue-800">2023 水上救生績優單位</p>
-            <p class="text-sm text-blue-700">體育署頒發，肯定救生培訓成果</p>
-          </div>
-        </div>
-      </div>
-    `,
+    type: 'awards',
+    /**
+     * ═══════════════════════════════════════════════════════════════
+     * 🏆 獲獎紀錄管理區
+     * ═══════════════════════════════════════════════════════════════
+     * 
+     * 📋 項目範本：
+     *   {
+     *     id: 'award-XXX',
+     *     year: '2024',
+     *     title: '獎項名稱',
+     *     description: '說明（選填）',
+     *     icon: '🏆',  // 圖示 emoji（選填）
+     *   },
+     */
+    awardItems: [
+      {
+        id: 'award-001',
+        year: '2024',
+        title: '新北市優良志工團體獎',
+        description: '表揚協會長期投入水域安全宣導工作',
+        icon: '🏆',
+      },
+      {
+        id: 'award-002',
+        year: '2023',
+        title: '水上救生績優單位',
+        description: '體育署頒發，肯定救生培訓成果',
+        icon: '🏅',
+      },
+    ],
     isOpenDefault: false,
   },
 ];

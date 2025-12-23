@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Hero from '../components/Hero';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { Construction } from 'lucide-react';
 import { PageConfig, SectionContent } from '../types';
+import { renderSectionContent } from '../services/contentRenderer';
+import { loadCmsData } from '../services/cmsLoader';
 
 interface GenericPageProps {
   data: PageConfig;
@@ -10,30 +12,56 @@ interface GenericPageProps {
 }
 
 const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
-  // Helper function to render content based on type
-  const renderContent = (section: SectionContent) => {
-    switch (section.type) {
-      case 'list':
-        return (
-          <ul className="space-y-2 text-gray-700">
-            {section.listItems?.map((item, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-primary mt-1">▸</span>
-                <span dangerouslySetInnerHTML={{ __html: item }} />
-              </li>
-            ))}
-          </ul>
-        );
-      case 'text':
-      default:
-        return (
-          <div 
-            className="text-gray-700 leading-relaxed text-justify"
-            dangerouslySetInnerHTML={{ __html: section.content || '' }}
-          />
-        );
-    }
-  };
+  const [dynamicSections, setDynamicSections] = useState<SectionContent[]>(sections || []);
+
+  useEffect(() => {
+    const loadDynamicData = async () => {
+      if (!sections) return;
+      
+      try {
+        const cmsData = await loadCmsData();
+        if (cmsData) {
+          // 用動態資料替換靜態資料
+          const updatedSections = sections.map(section => {
+            // 訓練成果頁面 - 近期結訓學員
+            if (section.id === 'recent_graduates' && cmsData.trainingRecords) {
+              return {
+                ...section,
+                newsItems: cmsData.trainingRecords
+              };
+            }
+            // 訓練成果頁面 - 學員心得
+            if (section.id === 'testimonials' && cmsData.testimonials) {
+              return {
+                ...section,
+                testimonialItems: cmsData.testimonials
+              };
+            }
+            // 媒體報導頁面 - 新聞報導
+            if (section.id === 'news_reports' && cmsData.mediaReports) {
+              return {
+                ...section,
+                mediaItems: cmsData.mediaReports
+              };
+            }
+            // 媒體報導頁面 - 獲獎紀錄
+            if (section.id === 'awards' && cmsData.awards) {
+              return {
+                ...section,
+                awardItems: cmsData.awards
+              };
+            }
+            return section;
+          });
+          setDynamicSections(updatedSections);
+        }
+      } catch (error) {
+        console.error('載入動態資料失敗:', error);
+      }
+    };
+
+    loadDynamicData();
+  }, [sections]);
 
   return (
     <>
@@ -43,15 +71,15 @@ const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
         imageUrl={data.imageUrl}
       />
       <main className="container max-w-[1000px] mx-auto my-12 px-5">
-        {sections && sections.length > 0 ? (
+        {dynamicSections && dynamicSections.length > 0 ? (
           <div className="space-y-4">
-            {sections.map((section) => (
+            {dynamicSections.map((section) => (
               <CollapsibleCard
                 key={section.id}
                 title={section.title}
                 isOpenDefault={section.isOpenDefault}
               >
-                {renderContent(section)}
+                {renderSectionContent(section)}
               </CollapsibleCard>
             ))}
           </div>

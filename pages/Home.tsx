@@ -1,66 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Hero from '../components/Hero';
 import CollapsibleCard from '../components/CollapsibleCard';
 import { HOME_SECTIONS, PAGE_CONTENT } from '../services/cms';
-import { Phone, MapPin, Mail } from 'lucide-react';
+import { renderSectionContent } from '../services/contentRenderer';
+import { loadCmsData, CmsData } from '../services/cmsLoader';
+import { SectionContent } from '../types';
 
 const Home: React.FC = () => {
   const pageData = PAGE_CONTENT.home;
+  const [dynamicSections, setDynamicSections] = useState<SectionContent[]>(HOME_SECTIONS);
+  const [loading, setLoading] = useState(true);
 
-  // Helper function to render content based on type
-  const renderContent = (section: any) => {
-    switch (section.type) {
-      case 'list':
-        return (
-          <ul className="space-y-3">
-            {section.listItems?.map((item: string, index: number) => {
-               // Simple split for date highlighting
-               const parts = item.split(' - ');
-               return (
-                 <li key={index} className="flex flex-col md:flex-row md:items-center text-gray-700 border-b border-gray-100 pb-2 last:border-0">
-                    {parts.length > 1 ? (
-                        <>
-                            <strong className="text-primary font-semibold md:w-32 flex-shrink-0">{parts[0]}</strong>
-                            <span dangerouslySetInnerHTML={{ __html: parts.slice(1).join(' - ') }} />
-                        </>
-                    ) : (
-                        <span dangerouslySetInnerHTML={{ __html: item }} />
-                    )}
-                 </li>
-               );
-            })}
-          </ul>
-        );
-      case 'contact_info':
-        const contactData = JSON.parse(section.content || '{}');
-        return (
-          <div className="space-y-4 text-gray-700">
-            <div className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-secondary" />
-              <span>{contactData.phone}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-secondary" />
-              <span>{contactData.address}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-secondary" />
-              <a href={`mailto:${contactData.email}`} className="hover:text-primary underline">
-                {contactData.email}
-              </a>
-            </div>
-          </div>
-        );
-      case 'text':
-      default:
-        return (
-          <div 
-            className="text-gray-700 leading-relaxed text-justify"
-            dangerouslySetInnerHTML={{ __html: section.content }}
-          />
-        );
-    }
-  };
+  useEffect(() => {
+    const loadDynamicData = async () => {
+      try {
+        const cmsData = await loadCmsData();
+        if (cmsData) {
+          // 用動態資料替換靜態資料
+          const updatedSections = HOME_SECTIONS.map(section => {
+            if (section.id === 'news' && cmsData.homeNews) {
+              return {
+                ...section,
+                newsItems: cmsData.homeNews
+              };
+            }
+            return section;
+          });
+          setDynamicSections(updatedSections);
+        }
+      } catch (error) {
+        console.error('載入動態資料失敗:', error);
+      }
+      setLoading(false);
+    };
+
+    loadDynamicData();
+  }, []);
 
   return (
     <>
@@ -70,13 +45,13 @@ const Home: React.FC = () => {
         imageUrl={pageData.imageUrl}
       />
       <main className="container max-w-[1000px] mx-auto my-8 px-5">
-        {HOME_SECTIONS.map((section) => (
+        {dynamicSections.map((section) => (
           <CollapsibleCard 
             key={section.id} 
             title={section.title} 
             isOpenDefault={section.isOpenDefault}
           >
-            {renderContent(section)}
+            {renderSectionContent(section)}
           </CollapsibleCard>
         ))}
       </main>
