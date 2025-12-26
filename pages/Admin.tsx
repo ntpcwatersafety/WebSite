@@ -1,3 +1,65 @@
+// 媒體報導編輯器
+interface MediaItemEditorProps {
+  item: any; // 或 MediaItem，如果你有定義型別
+  onUpdate: (field: string, value: any) => void;
+}
+
+const MediaItemEditor: React.FC<MediaItemEditorProps> = ({ item, onUpdate }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">日期</label>
+        <input
+          type="date"
+          value={item.date || ''}
+          onChange={e => onUpdate('date', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">標題</label>
+        <input
+          type="text"
+          value={item.title || ''}
+          onChange={e => onUpdate('title', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">來源</label>
+        <input
+          type="text"
+          value={item.source || ''}
+          onChange={e => onUpdate('source', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">連結</label>
+        <input
+          type="url"
+          value={item.link || ''}
+          onChange={e => onUpdate('link', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          placeholder="https://..."
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">類型</label>
+        <select
+          value={item.type || ''}
+          onChange={e => onUpdate('type', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        >
+          <option value="">請選擇</option>
+          <option value="video">影片</option>
+          <option value="article">文章</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+    </div>
+  );
+};
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import { useNavigate } from 'react-router-dom';
@@ -562,7 +624,29 @@ const Admin: React.FC = () => {
                 />
               )}
             />
+            {/* 媒體報導管理 */}
+            <SectionEditor
+              title="媒體報導"
+              icon={<Newspaper className="w-5 h-5" />}
+              items={cmsData.mediaReports || []}
+              sectionKey="mediaReports"
+              expanded={expandedSection === 'mediaReports'}
+              onToggle={() => setExpandedSection(expandedSection === 'mediaReports' ? '' : 'mediaReports')}
+              onAdd={() => addItem('mediaReports')}
+              onDelete={(index) => deleteItem('mediaReports', index)}
+              onUpdate={(index, field, value) => updateItemField('mediaReports', index, field, value)}
+              renderItem={(item, index) => (
+                <MediaItemEditor
+                  item={item}
+                  onUpdate={(field, value) => updateItemField('mediaReports', index, field, value)}
+                />
+              )}
+            />
             {/* 首頁最新消息 */}
+
+
+
+
             <SectionEditor
               title="首頁最新消息"
               icon={<Newspaper className="w-5 h-5" />}
