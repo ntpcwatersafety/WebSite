@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
 import { useNavigate } from 'react-router-dom';
 import { 
   LogIn, LogOut, Save, Plus, Trash2, Edit3, 
@@ -16,7 +17,7 @@ import {
   updateCmsData,
   validateToken
 } from '../services/githubApi';
-import { NewsItem, AwardItem, TestimonialItem } from '../types';
+import { NewsItem, AwardItem, TestimonialItem, GalleryItem } from '../types';
 
 // CMS 資料結構
 interface CmsData {
@@ -26,7 +27,69 @@ interface CmsData {
   awards: AwardItem[];
   testimonials: TestimonialItem[];
   trainingRecords: NewsItem[];
+  galleryItems: GalleryItem[];
 }
+// 圖片上傳工具
+const handleImageUpload = (file: File, callback: (url: string) => void) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    if (e.target && typeof e.target.result === 'string') {
+      callback(e.target.result);
+    }
+  };
+  reader.readAsDataURL(file);
+};
+// 活動剪影編輯器
+interface GalleryItemEditorProps {
+  item: GalleryItem;
+  onUpdate: (field: string, value: any) => void;
+}
+
+const GalleryItemEditor: React.FC<GalleryItemEditorProps> = ({ item, onUpdate }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">圖片</label>
+        {item.imageUrl && (
+          <img src={item.imageUrl} alt="預覽" className="w-32 h-24 object-cover rounded mb-2 border" />
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={e => {
+            if (e.target.files && e.target.files[0]) {
+              handleImageUpload(e.target.files[0], (url) => onUpdate('imageUrl', url));
+            }
+          }}
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <label className="block text-xs text-gray-500 mb-1">標題（非必填）</label>
+        <input
+          type="text"
+          value={item.title || ''}
+          onChange={e => onUpdate('title', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        />
+        <label className="block text-xs text-gray-500 mb-1 mt-2">內容描述（非必填）</label>
+        <textarea
+          value={item.description || ''}
+          onChange={e => onUpdate('description', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          rows={2}
+        />
+        <label className="block text-xs text-gray-500 mb-1 mt-2">上架</label>
+        <input
+          type="checkbox"
+          checked={item.isActive !== false}
+          onChange={e => onUpdate('isActive', e.target.checked)}
+        />
+        <span className="text-xs text-gray-400">（未勾選則為下架，前台不顯示）</span>
+      </div>
+    </div>
+  );
+};
+
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -79,7 +142,11 @@ const Admin: React.FC = () => {
       if (hasGitHubToken()) {
         const result = await getFileContent();
         if (result) {
-          setCmsData(result.content);
+          // galleryItems 預設為空陣列
+          setCmsData({
+            ...result.content,
+            galleryItems: Array.isArray(result.content.galleryItems) ? result.content.galleryItems : []
+          });
           setLoading(false);
           return;
         }
@@ -89,7 +156,10 @@ const Admin: React.FC = () => {
       const response = await fetch(`${import.meta.env.BASE_URL}cms-data.json`);
       if (response.ok) {
         const data = await response.json();
-        setCmsData(data);
+        setCmsData({
+          ...data,
+          galleryItems: Array.isArray(data.galleryItems) ? data.galleryItems : []
+        });
       }
     } catch (error) {
       console.error('載入資料失敗:', error);
@@ -177,10 +247,8 @@ const Admin: React.FC = () => {
   // 新增項目
   const addItem = (section: keyof CmsData) => {
     if (!cmsData) return;
-    
     const newId = `${section}-${Date.now()}`;
     let newItem: any;
-    
     switch (section) {
       case 'homeNews':
       case 'trainingRecords':
@@ -209,10 +277,18 @@ const Admin: React.FC = () => {
           role: '學員身份'
         };
         break;
+      case 'galleryItems':
+        newItem = {
+          id: newId,
+          imageUrl: '',
+          title: '',
+          description: '',
+          isActive: true
+        };
+        break;
       default:
         return;
     }
-    
     setCmsData({
       ...cmsData,
       [section]: [newItem, ...(cmsData[section] as any[])]
@@ -468,6 +544,24 @@ const Admin: React.FC = () => {
           </div>
         ) : cmsData ? (
           <div className="space-y-4">
+            {/* 活動剪影管理 */}
+            <SectionEditor
+              title="活動剪影"
+              icon={<Eye className="w-5 h-5" />}
+              items={cmsData.galleryItems || []}
+              sectionKey="galleryItems"
+              expanded={expandedSection === 'galleryItems'}
+              onToggle={() => setExpandedSection(expandedSection === 'galleryItems' ? '' : 'galleryItems')}
+              onAdd={() => addItem('galleryItems')}
+              onDelete={(index) => deleteItem('galleryItems', index)}
+              onUpdate={(index, field, value) => updateItemField('galleryItems', index, field, value)}
+              renderItem={(item, index) => (
+                <GalleryItemEditor
+                  item={item}
+                  onUpdate={(field, value) => updateItemField('galleryItems', index, field, value)}
+                />
+              )}
+            />
             {/* 首頁最新消息 */}
             <SectionEditor
               title="首頁最新消息"
@@ -673,11 +767,25 @@ const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate }) => {
       </div>
       <div className="md:col-span-2">
         <label className="block text-xs text-gray-500 mb-1">說明（選填）</label>
-        <textarea
+        <Editor
+          apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
           value={item.description || ''}
-          onChange={(e) => onUpdate('description', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          rows={2}
+          init={{
+            height: 240,
+            menubar: true,
+            plugins: [
+              'advlist autolink lists link charmap preview anchor',
+              'searchreplace visualblocks code',
+              'insertdatetime table paste help wordcount',
+              'code',
+              'textcolor',
+              'colorpicker'
+            ],
+            toolbar:
+              'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
+          }}
+          onEditorChange={(content) => onUpdate('description', content)}
         />
       </div>
       <div className="md:col-span-2">
@@ -733,11 +841,25 @@ const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate }) => 
       </div>
       <div className="md:col-span-3">
         <label className="block text-xs text-gray-500 mb-1">說明</label>
-        <textarea
+        <Editor
+          apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
           value={item.description || ''}
-          onChange={(e) => onUpdate('description', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          rows={2}
+          init={{
+            height: 240,
+            menubar: true,
+            plugins: [
+              'advlist autolink lists link charmap preview anchor',
+              'searchreplace visualblocks code',
+              'insertdatetime table paste help wordcount',
+              'code',
+              'textcolor',
+              'colorpicker'
+            ],
+            toolbar:
+              'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
+          }}
+          onEditorChange={(content) => onUpdate('description', content)}
         />
       </div>
     </div>

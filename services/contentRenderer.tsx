@@ -43,7 +43,7 @@ export const renderNewsItems = (items: NewsItem[]) => {
           <div className="flex-1">
             <span className="font-medium">{item.title}</span>
             {item.description && (
-              <p className="text-sm text-gray-500 mt-1">{item.description}</p>
+              <p className="text-sm text-gray-500 mt-1" dangerouslySetInnerHTML={{ __html: item.description }} />
             )}
             {item.link && (
               <a 
@@ -132,7 +132,7 @@ export const renderAwardItems = (items: AwardItem[]) => {
                 {item.year} {item.title}
               </p>
               {item.description && (
-                <p className={`text-sm ${color.desc}`}>{item.description}</p>
+                <p className={`text-sm ${color.desc}`} dangerouslySetInnerHTML={{ __html: item.description }} />
               )}
             </div>
           </div>

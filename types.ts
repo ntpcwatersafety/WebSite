@@ -21,11 +21,23 @@ export interface NewsItem {
  * 🖼️ 圖片項目
  * 用於活動剪影、相簿等
  */
-export interface GalleryItem {
   id: string;           // 唯一識別碼
   imageUrl: string;     // 圖片網址
   title: string;        // 圖片標題
   description?: string; // 圖片說明（選填）
+  date?: string;        // 拍攝日期（選填）
+  category?: string;    // 分類（選填）
+}
+/**
+ * 🖼️ 圖片項目（活動剪影/相簿）
+ * 新增 isActive 欄位（上下架），title/description 可選填
+ */
+export interface GalleryItem {
+  id: string;           // 唯一識別碼
+  imageUrl: string;     // 圖片網址或 base64
+  title?: string;       // 圖片標題（非必填）
+  description?: string; // 圖片說明（非必填）
+  isActive?: boolean;   // 是否上架（預設 true）
   date?: string;        // 拍攝日期（選填）
   category?: string;    // 分類（選填）
 }

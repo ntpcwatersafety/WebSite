@@ -1,4 +1,4 @@
-import { NewsItem, AwardItem, TestimonialItem, MediaItem } from '../types';
+import { NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '../types';
 
 /**
  * =================================================================
@@ -6,7 +6,7 @@ import { NewsItem, AwardItem, TestimonialItem, MediaItem } from '../types';
  *  從 cms-data.json 載入動態內容
  * =================================================================
  */
-
+// CMS 資料主結構
 export interface CmsData {
   lastUpdated: string;
   homeNews: NewsItem[];
@@ -14,7 +14,16 @@ export interface CmsData {
   awards: AwardItem[];
   testimonials: TestimonialItem[];
   trainingRecords: NewsItem[];
+  galleryItems: GalleryItem[];
 }
+/**
+ * 取得活動剪影（相簿）
+ */
+
+export const getGalleryItems = async (): Promise<GalleryItem[]> => {
+  const data = await loadCmsData();
+  return data?.galleryItems || [];
+};
 
 let cachedData: CmsData | null = null;
 let cacheTime: number = 0;
