@@ -1,13 +1,6 @@
 {
-  "lastUpdated": "2025-12-26T06:37:53.854Z",
+  "lastUpdated": "2025-12-26T07:30:59.334Z",
   "homeNews": [
-    {
-      "id": "homeNews-1766719076975",
-      "date": "2025-12-26",
-      "title": "新消息標題",
-      "description": "<p>請輸入說明文字</p>",
-      "isNew": true
-    },
     {
       "id": "news-004",
       "date": "2025-03-10",
@@ -25,7 +18,7 @@
       "id": "news-002",
       "date": "2025-02-15",
       "title": "春季淨灘活動志工招募",
-      "description": "歡迎全家大小一同參與，為海洋環境盡一份心力",
+      "description": "<p>歡迎全家大小一同參與，為海洋環境盡一份心力</p>",
       "link": "https://forms.example.com/beach-cleanup"
     },
     {
