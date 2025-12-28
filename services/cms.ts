@@ -20,6 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: '活動剪影', path: '/gallery' },
   { label: '媒體報導', path: '/media' },
   // { label: '關於我們', path: '/about' },
+  { label: '感恩有您', path: '/thankyou' },
   { label: '聯絡我們', path: '/contact' },
 ];
 
