@@ -58,6 +58,12 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
     subtitle: '社會肯定 • 公益服務 • 安全宣導',
     imageUrl: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
   },
+  thankyou: {
+    id: 'thankyou',
+    title: '感恩有您',
+    subtitle: '感謝每一位支持協會的夥伴',
+    imageUrl: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
+  },
   about: {
     id: 'about',
     title: '關於我們',

@@ -51,10 +51,10 @@ const MediaItemEditor: React.FC<MediaItemEditorProps> = ({ item, onUpdate }) => 
           onChange={e => onUpdate('type', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
         >
-          <option value="">請選擇</option>
-          <option value="video">影片</option>
-          <option value="article">文章</option>
-          <option value="other">其他</option>
+            <option value="">請選擇</option>
+            <option value="news">新聞</option>
+            <option value="video">影片</option>
+            <option value="article">文章</option>
         </select>
       </div>
     </div>
@@ -82,6 +82,12 @@ import {
 import { NewsItem, AwardItem, TestimonialItem, GalleryItem } from '../types';
 
 // CMS 資料結構
+interface ThankYouItem {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 interface CmsData {
   lastUpdated: string;
   homeNews: NewsItem[];
@@ -90,7 +96,58 @@ interface CmsData {
   testimonials: TestimonialItem[];
   trainingRecords: NewsItem[];
   galleryItems: GalleryItem[];
+  introContent?: string; // 協會簡介內容
+  thankYouItems?: ThankYouItem[];
 }
+// 感恩有您編輯器
+const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: string, value: any) => void }> = ({ item, onUpdate }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">姓名/單位</label>
+      <input
+        type="text"
+        value={item.name}
+        onChange={e => onUpdate('name', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">感謝內容（選填）</label>
+      <input
+        type="text"
+        value={item.description || ''}
+        onChange={e => onUpdate('description', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
+  </div>
+);
+// 協會簡介編輯器
+const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+  <div className="mb-8">
+    <label className="block text-lg font-bold text-primary mb-2">首頁協會簡介</label>
+    <Editor
+      apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+      value={value}
+      init={{
+        height: 260,
+        menubar: true,
+        plugins: [
+          'advlist autolink lists link charmap preview anchor',
+          'searchreplace visualblocks code',
+          'insertdatetime table paste help wordcount',
+          'code',
+          'textcolor',
+          'colorpicker'
+        ],
+        toolbar:
+          'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
+      }}
+      onEditorChange={onChange}
+    />
+  </div>
+);
 // 圖片上傳工具
 const handleImageUpload = (file: File, callback: (url: string) => void) => {
   const reader = new FileReader();
@@ -320,6 +377,16 @@ const Admin: React.FC = () => {
           title: '新消息標題',
           description: '請輸入說明文字',
           isNew: true
+        };
+        break;
+      case 'mediaReports':
+        newItem = {
+          id: newId,
+          date: new Date().toISOString().split('T')[0],
+          title: '新媒體報導標題',
+          source: '',
+          link: '',
+          type: 'article'
         };
         break;
       case 'awards':
@@ -606,6 +673,31 @@ const Admin: React.FC = () => {
           </div>
         ) : cmsData ? (
           <div className="space-y-4">
+            {/* 首頁協會簡介管理 */}
+            <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+              <IntroEditor
+                value={cmsData.introContent || ''}
+                onChange={v => setCmsData({ ...cmsData, introContent: v })}
+              />
+            </div>
+            {/* 感恩有您管理 */}
+            <SectionEditor
+              title="感恩有您"
+              icon={<CheckCircle className="w-5 h-5" />}
+              items={cmsData.thankYouItems || []}
+              sectionKey="thankYouItems"
+              expanded={expandedSection === 'thankYouItems'}
+              onToggle={() => setExpandedSection(expandedSection === 'thankYouItems' ? '' : 'thankYouItems')}
+              onAdd={() => addItem('thankYouItems')}
+              onDelete={(index) => deleteItem('thankYouItems', index)}
+              onUpdate={(index, field, value) => updateItemField('thankYouItems', index, field, value)}
+              renderItem={(item, index) => (
+                <ThankYouItemEditor
+                  item={item}
+                  onUpdate={(field, value) => updateItemField('thankYouItems', index, field, value)}
+                />
+              )}
+            />
             {/* 活動剪影管理 */}
             <SectionEditor
               title="活動剪影"

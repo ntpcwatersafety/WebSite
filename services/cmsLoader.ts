@@ -7,6 +7,12 @@ import { NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '..
  * =================================================================
  */
 // CMS 資料主結構
+export interface ThankYouItem {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface CmsData {
   lastUpdated: string;
   homeNews: NewsItem[];
@@ -15,7 +21,24 @@ export interface CmsData {
   testimonials: TestimonialItem[];
   trainingRecords: NewsItem[];
   galleryItems: GalleryItem[];
+  introContent?: string;
+  thankYouItems?: ThankYouItem[];
 }
+/**
+ * 取得感恩有您
+ */
+export const getThankYouItems = async (): Promise<ThankYouItem[]> => {
+  const data = await loadCmsData();
+  return data?.thankYouItems || [];
+};
+
+/**
+ * 取得協會簡介內容
+ */
+export const getIntroContent = async (): Promise<string> => {
+  const data = await loadCmsData();
+  return data?.introContent || '';
+};
 /**
  * 取得活動剪影（相簿）
  */
