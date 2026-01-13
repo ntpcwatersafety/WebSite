@@ -1,11 +1,20 @@
-﻿{
-  "lastUpdated": "2025-12-26T07:30:48.422Z",
+{
+  "lastUpdated": "2026-01-13T02:03:12.162Z",
   "homeNews": [],
-  "mediaReports": [],
+  "mediaReports": [
+    {
+      "id": "mediaReports-1768269651984",
+      "date": "2024-01-01",
+      "title": "逆行者",
+      "source": "",
+      "link": "youtube.com/watch?v=NnLH4gOvJdM&feature=youtu.be",
+      "type": "video"
+    }
+  ],
   "awards": [],
   "testimonials": [],
   "trainingRecords": [],
   "galleryItems": [],
-  "thankYouItems": []    
-  
+  "thankYouItems": [],
+  "introContent": "<p><strong>【新北市水上安全協會、新北市板橋游泳會及紅十字會救難大隊】</strong>致力推廣水上安全救生、游泳及防溺自救，期許實現全民<span class=\"text-red-500\">\"<span style=\"color: #e03e2d;\">人人會游泳，個個會救生</span>\"</span>，歡迎有志一同的你加入我們這個大家庭。</p>"
 }
