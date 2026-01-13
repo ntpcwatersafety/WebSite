@@ -1,6 +1,15 @@
 {
-  "lastUpdated": "2026-01-13T02:04:36.857Z",
-  "homeNews": [],
+  "lastUpdated": "2026-01-13T02:20:01.295Z",
+  "homeNews": [
+    {
+      "id": "homeNews-1768270575228",
+      "date": "2026-03-07",
+      "title": "新春團拜",
+      "description": "<p>值此新春佳節，齊聚一堂，彼此祝賀。感謝會員一年來的 <span style=\"color: #000000;\"><strong>投入訓練</strong></span>與<strong>相互扶持</strong>，讓泳技與凝聚力持續成長。 新的一年，期許大家<span style=\"color: #e03e2d;\"><strong>健康精進</strong>、<strong>安全下水</strong></span>，泳運長青。</p>",
+      "isNew": true,
+      "isPinned": true
+    }
+  ],
   "mediaReports": [
     {
       "id": "mediaReports-1768269651984",
