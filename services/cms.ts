@@ -1,4 +1,4 @@
-import { SectionContent, NavItem, PageConfig, NewsItem, GalleryItem, MediaItem, AwardItem, CourseItem, TestimonialItem } from '../types';
+import { SectionContent, NavItem, PageConfig } from '../types';
 import emailjs from '@emailjs/browser';
 
 // ===============================
@@ -136,19 +136,7 @@ export const MEDIA_SECTIONS: SectionContent[] = [
 ];
 
 // ===============================
-// 9. 靜態範例（僅供本地測試）
-// ===============================
-export const GALLERY_SECTIONS: SectionContent[] = [];
-
-// 感恩有您 thankYouItems 取得
-import type { ThankYouItem } from './cmsLoader';
-export const getThankYouItemsFromGithub = async (): Promise<ThankYouItem[]> => {
-  const cmsData = await loadCmsData();
-  return cmsData?.thankYouItems || [];
-};
-
-// ===============================
-// 10. 聯絡表單發送
+// 9. 聯絡表單發送
 // ===============================
 export const sendContactEmail = async (data: { name: string; email: string; subject: string; message: string }): Promise<boolean> => {
   if (EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID') {

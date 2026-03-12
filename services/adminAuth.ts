@@ -1,23 +1,18 @@
 /**
  * =================================================================
- *  【管理員認證服務】
- *  處理後台登入驗證
+ *  【管理員認證服務】 (前端)
+ *  處理後台登入驗證（與後端 /api/login 配合）
  * =================================================================
  */
 
-// ⚠️ 管理員帳號設定 - 請修改為你自己的帳號密碼
-const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'ntpcwater2025'  // 請修改為安全的密碼
-};
-
-// Session 金鑰 (用於 localStorage)
+// 移除前端硬編碼的帳密，全部由後端驗證
 const SESSION_KEY = 'ntpc_admin_session';
 const SESSION_EXPIRY_KEY = 'ntpc_admin_expiry';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 小時
 
 /**
  * 驗證登入（呼叫後端）
+ * 仍回傳 boolean 以維持現有使用方式
  */
 export const login = async (username: string, password: string): Promise<boolean> => {
   try {
@@ -26,11 +21,20 @@ export const login = async (username: string, password: string): Promise<boolean
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     });
-    if (!resp.ok) return false;
+
+    if (resp.status === 401) {
+      return false;
+    }
+    if (!resp.ok) {
+      console.error('login server error', resp.status);
+      return false;
+    }
+
     const data = await resp.json();
     if (data && data.token) {
+      const expiry = data.expiry || (Date.now() + SESSION_DURATION);
       localStorage.setItem(SESSION_KEY, data.token);
-      localStorage.setItem(SESSION_EXPIRY_KEY, (data.expiry || (Date.now() + SESSION_DURATION)).toString());
+      localStorage.setItem(SESSION_EXPIRY_KEY, expiry.toString());
       return true;
     }
     return false;
@@ -41,7 +45,8 @@ export const login = async (username: string, password: string): Promise<boolean
 };
 
 /**
- * 檢查是否已登入
+ * 檢查是否已登入（本地判斷）
+ * 保持同步函式以不影響現有呼叫（例如 useEffect 內直接呼叫）
  */
 export const isAuthenticated = (): boolean => {
   const token = localStorage.getItem(SESSION_KEY);
@@ -55,6 +60,13 @@ export const isAuthenticated = (): boolean => {
   }
 
   return true;
+};
+
+/**
+ * 取得儲存在 localStorage 的 token
+ */
+export const getToken = (): string | null => {
+  return localStorage.getItem(SESSION_KEY);
 };
 
 /**
