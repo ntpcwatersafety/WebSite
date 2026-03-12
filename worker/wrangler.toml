@@ -1,0 +1,14 @@
+name = "ntpcwsa-cms-api"
+main = "index.js"
+compatibility_date = "2026-03-12"
+
+[vars]
+OWNER = "ntpcwatersafety"
+REPO = "WebSite"
+BRANCH = "main"
+DATA_PATH = "public/cms-data.json"
+JWT_EXPIRES_IN = "8h"
+
+routes = [
+  { pattern = "ntpcwsa.org/api/*", zone_name = "ntpcwsa.org" }
+]
