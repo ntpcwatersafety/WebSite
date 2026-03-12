@@ -1,4 +1,5 @@
 import { NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '../types';
+import { getFileContent, validateToken } from './githubApi';
 
 /**
  * =================================================================
@@ -60,16 +61,31 @@ export const loadCmsData = async (): Promise<CmsData | null> => {
   if (cachedData && Date.now() - cacheTime < CACHE_DURATION) {
     return cachedData;
   }
-
+  // 以 GitHub 為主要資料來源：若伺服器端有設定 Token 且驗證成功，嘗試從 GitHub 取得 cms-data.json
   try {
+    try {
+      const valid = await validateToken();
+      if (valid) {
+        const result = await getFileContent();
+        if (result && result.content) {
+          cachedData = result.content as CmsData;
+          cacheTime = Date.now();
+          return cachedData;
+        }
+      }
+    } catch (ghCheckErr) {
+      console.warn('從後端 GitHub 代理載入失敗，將回退至本地：', ghCheckErr);
+    }
+
+    // 回退：從本地 public/cms-data.json 載入
     const response = await fetch(`${import.meta.env.BASE_URL}cms-data.json?t=${Date.now()}`);
     if (!response.ok) {
-      throw new Error('Failed to load CMS data');
+      throw new Error('Failed to load CMS data (local)');
     }
-    
+
     cachedData = await response.json();
     cacheTime = Date.now();
-    
+
     return cachedData;
   } catch (error) {
     console.error('載入 CMS 資料失敗:', error);

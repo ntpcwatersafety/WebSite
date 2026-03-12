@@ -70,15 +70,7 @@ import {
   Key, RefreshCw, Download, Eye
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
-import { 
-  saveGitHubToken, 
-  getGitHubToken, 
-  hasGitHubToken, 
-  removeGitHubToken,
-  getFileContent,
-  updateCmsData,
-  validateToken
-} from '../services/githubApi';
+import { getFileContent, updateCmsData, validateToken } from '../services/githubApi';
 import { NewsItem, AwardItem, TestimonialItem, GalleryItem } from '../types';
 
 // CMS 資料結構
@@ -99,6 +91,8 @@ interface CmsData {
   introContent?: string; // 協會簡介內容
   thankYouItems?: ThankYouItem[];
 }
+
+const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 // 感恩有您編輯器
 const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: string, value: any) => void }> = ({ item, onUpdate }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -219,13 +213,13 @@ const Admin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   
-  // GitHub Token
+  // GitHub / server token status
   const [showTokenSetup, setShowTokenSetup] = useState(false);
-  const [githubToken, setGithubToken] = useState('');
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
   
   // 資料狀態
   const [cmsData, setCmsData] = useState<CmsData | null>(null);
+  const [cmsSha, setCmsSha] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -241,12 +235,14 @@ const Admin: React.FC = () => {
     setAuthenticated(isAuthenticated());
   }, []);
 
-  // 載入資料
+  // 載入資料：先檢查伺服器端是否有設定 GitHub Token，然後載入資料（若 GitHub 不可用則回退本地）
   useEffect(() => {
-    if (authenticated && hasGitHubToken()) {
-      loadData();
-      checkToken();
-    }
+    if (!authenticated) return;
+    (async () => {
+      const valid = await validateToken();
+      setTokenValid(valid);
+      await loadData();
+    })();
   }, [authenticated]);
 
   const checkToken = async () => {
@@ -257,21 +253,23 @@ const Admin: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // 嘗試從 GitHub 載入
-      if (hasGitHubToken()) {
+      // 嘗試透過伺服器代理從 GitHub 取得 cms-data.json
+      try {
         const result = await getFileContent();
-        if (result) {
-          // galleryItems 預設為空陣列
+        if (result && result.content) {
           setCmsData({
             ...result.content,
             galleryItems: Array.isArray(result.content.galleryItems) ? result.content.galleryItems : []
           });
+          setCmsSha(result.sha || null);
           setLoading(false);
           return;
         }
+      } catch (ghErr) {
+        console.warn('從後端 GitHub 代理載入失敗，回退至本地 cms-data.json', ghErr);
       }
-      
-      // 否則從本地載入
+
+      // 回退：從本地載入
       const response = await fetch(`${import.meta.env.BASE_URL}cms-data.json`);
       if (response.ok) {
         const data = await response.json();
@@ -279,6 +277,7 @@ const Admin: React.FC = () => {
           ...data,
           galleryItems: Array.isArray(data.galleryItems) ? data.galleryItems : []
         });
+        setCmsSha(null);
       }
     } catch (error) {
       console.error('載入資料失敗:', error);
@@ -287,9 +286,10 @@ const Admin: React.FC = () => {
     setLoading(false);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(username, password)) {
+    const ok = await login(username, password);
+    if (ok) {
       setAuthenticated(true);
       setLoginError('');
     } else {
@@ -301,24 +301,10 @@ const Admin: React.FC = () => {
     logout();
     setAuthenticated(false);
     setCmsData(null);
+    setCmsSha(null);
   };
 
-  const handleSaveToken = () => {
-    if (githubToken.trim()) {
-      saveGitHubToken(githubToken.trim());
-      setGithubToken('');
-      setShowTokenSetup(false);
-      showMessage('success', 'GitHub Token 已儲存');
-      loadData();
-      checkToken();
-    }
-  };
-
-  const handleRemoveToken = () => {
-    removeGitHubToken();
-    setTokenValid(null);
-    showMessage('success', 'GitHub Token 已移除');
-  };
+  // GitHub token 存放改為伺服器端，前端僅顯示狀態並提供檢查功能
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -327,13 +313,23 @@ const Admin: React.FC = () => {
 
   const handleSave = async () => {
     if (!cmsData) return;
+    if (!cmsSha) {
+      showMessage('error', '目前不是最新的 GitHub 版本，請先重新載入資料後再儲存。');
+      return;
+    }
     
     setSaving(true);
     try {
-      await updateCmsData(cmsData, `📝 管理員更新網站內容 - ${new Date().toLocaleString('zh-TW')}`);
+      await updateCmsData(cmsData, `📝 管理員更新網站內容 - ${new Date().toLocaleString('zh-TW')}`, cmsSha);
+      await loadData();
       showMessage('success', '儲存成功！網站將在 1-2 分鐘內更新');
     } catch (error: any) {
-      showMessage('error', error.message || '儲存失敗');
+      const errorMessage = error?.message || '儲存失敗';
+      if (/changed on GitHub|409/.test(errorMessage)) {
+        showMessage('error', CONFLICT_ERROR_MESSAGE);
+      } else {
+        showMessage('error', errorMessage);
+      }
     }
     setSaving(false);
   };
@@ -525,11 +521,11 @@ const Admin: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Token 狀態 */}
-            {hasGitHubToken() && (
+            {/* Token 狀態（伺服器端） */}
+            {tokenValid !== null && (
               <span className={`flex items-center gap-1 text-sm ${tokenValid ? 'text-green-600' : 'text-yellow-600'}`}>
                 <Key className="w-4 h-4" />
-                {tokenValid ? 'Token 有效' : '檢查中...'}
+                {tokenValid ? 'GitHub 已設定（由伺服器管理）' : 'GitHub 未設定 / 驗證失敗'}
               </span>
             )}
 
@@ -543,11 +539,21 @@ const Admin: React.FC = () => {
               <Download className="w-4 h-4" />
               本地預覽
             </button>
+
+            <button
+              onClick={loadData}
+              disabled={loading || saving}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="重新載入 GitHub 最新內容"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              重新載入
+            </button>
             
             {/* 儲存按鈕 */}
             <button
               onClick={handleSave}
-              disabled={saving || !hasGitHubToken()}
+              disabled={saving || loading || !tokenValid || !cmsSha}
               className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -591,49 +597,24 @@ const Admin: React.FC = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Key className="w-5 h-5" />
-              GitHub Token 設定
+              GitHub 設定說明（伺服器）
             </h2>
-            
+
             <div className="space-y-4">
               <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-                <p className="font-medium mb-2">如何取得 GitHub Token：</p>
-                <ol className="list-decimal pl-4 space-y-1">
-                  <li>前往 GitHub → Settings → Developer settings</li>
-                  <li>選擇 Personal access tokens → Tokens (classic)</li>
-                  <li>點擊 Generate new token</li>
-                  <li>勾選 <code className="bg-blue-100 px-1">repo</code> 權限</li>
-                  <li>複製產生的 Token 貼到下方</li>
-                </ol>
+                <p className="font-medium mb-2">說明：</p>
+                <p>為了安全，GitHub Personal Access Token 應設定在伺服器端環境變數 <strong>GITHUB_TOKEN</strong>，由後端負責與 GitHub 互動。</p>
+                <p className="mt-2">伺服器上的環境變數設定範例（PowerShell）：</p>
+                <pre className="bg-white p-2 rounded text-xs">$env:GITHUB_TOKEN = 'ghp_xxx...'</pre>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  GitHub Personal Access Token
-                </label>
-                <input
-                  type="password"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="ghp_xxxxxxxxxxxx"
-                />
-              </div>
-              
+
               <div className="flex gap-3">
                 <button
-                  onClick={handleSaveToken}
+                  onClick={async () => { await checkToken(); showMessage('success', '已重新檢查 GitHub 狀態'); }}
                   className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                 >
-                  儲存 Token
+                  重新檢查狀態
                 </button>
-                {hasGitHubToken() && (
-                  <button
-                    onClick={handleRemoveToken}
-                    className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-                  >
-                    移除
-                  </button>
-                )}
                 <button
                   onClick={() => setShowTokenSetup(false)}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -648,20 +629,30 @@ const Admin: React.FC = () => {
 
       {/* 主內容 */}
       <main className="max-w-5xl mx-auto p-4 py-8">
-        {!hasGitHubToken() && (
+        {tokenValid !== true && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-yellow-800">請先設定 GitHub Token</p>
+              <p className="font-medium text-yellow-800">伺服器尚未設定 GitHub Token</p>
               <p className="text-sm text-yellow-700 mt-1">
-                需要設定 Token 才能將修改發布到網站。
+                請在伺服器環境變數中設定 <strong>GITHUB_TOKEN</strong>，或按下「重新檢查狀態」。
                 <button 
                   onClick={() => setShowTokenSetup(true)}
                   className="underline ml-1"
                 >
-                  點此設定
+                  說明
                 </button>
               </p>
+            </div>
+          </div>
+        )}
+
+        {tokenValid === true && !cmsSha && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800">目前未載入到 GitHub 最新版本</p>
+              <p className="text-sm text-amber-700 mt-1">請先按「重新載入」取得最新內容後再發布更新，避免覆蓋他人先前修改。</p>
             </div>
           </div>
         )}

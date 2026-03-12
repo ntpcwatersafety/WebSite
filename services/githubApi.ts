@@ -5,90 +5,31 @@
  * =================================================================
  */
 
-// GitHub 儲存庫設定
-const GITHUB_CONFIG = {
-  owner: 'ntpcwatersafety',
-  repo: 'WebSite',
-  branch: 'main',
-  dataPath: 'public/cms-data.json'
-};
+// 現在透過後端 proxy 來存取 GitHub（避免將 GitHub Token 存放於前端）
+// 後端提供：
+// GET  /api/github/status -> { hasToken: boolean }
+// GET  /api/cms            -> { content, sha }
+// PUT  /api/cms            -> 更新 cms-data.json（需 Authorization: Bearer <admin-jwt>）
 
-// Token 儲存金鑰
-const TOKEN_KEY = 'ntpc_github_token';
-
-/**
- * 儲存 GitHub Token (加密儲存)
- */
-export const saveGitHubToken = (token: string): void => {
-  // 簡單編碼（實際應用建議更安全的方式）
-  const encoded = btoa(token);
-  localStorage.setItem(TOKEN_KEY, encoded);
-};
-
-/**
- * 取得 GitHub Token
- */
-export const getGitHubToken = (): string | null => {
-  const encoded = localStorage.getItem(TOKEN_KEY);
-  if (!encoded) return null;
-  return atob(encoded);
-};
-
-/**
- * 移除 GitHub Token
- */
-export const removeGitHubToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
-};
-
-/**
- * 檢查是否有設定 Token
- */
-export const hasGitHubToken = (): boolean => {
-  return !!localStorage.getItem(TOKEN_KEY);
+const GITHUB_PROXY = {
+  statusUrl: '/api/github/status',
+  cmsUrl: '/api/cms'
 };
 
 /**
  * 取得檔案目前內容和 SHA
  */
 export const getFileContent = async (): Promise<{ content: any; sha: string } | null> => {
-  const token = getGitHubToken();
-  if (!token) {
-    throw new Error('請先設定 GitHub Token');
-  }
-
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dataPath}?ref=${GITHUB_CONFIG.branch}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      }
-    );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null; // 檔案不存在
-      }
-      throw new Error(`GitHub API 錯誤: ${response.status}`);
+    const resp = await fetch(GITHUB_PROXY.cmsUrl);
+    if (!resp.ok) {
+      if (resp.status === 404) return null;
+      throw new Error(`伺服器回應錯誤: ${resp.status}`);
     }
-
-    const data = await response.json();
-    // 正確處理 UTF-8 中文字元
-    const base64Content = data.content.replace(/\n/g, '');
-    const binaryString = atob(base64Content);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const decodedContent = new TextDecoder('utf-8').decode(bytes);
-    const content = JSON.parse(decodedContent);
-    
-    return { content, sha: data.sha };
+    const data = await resp.json();
+    return { content: data.content, sha: data.sha };
   } catch (error) {
-    console.error('取得檔案失敗:', error);
+    console.error('getFileContent error', error);
     throw error;
   }
 };
@@ -97,52 +38,29 @@ export const getFileContent = async (): Promise<{ content: any; sha: string } | 
  * 更新 CMS 資料檔案
  */
 export const updateCmsData = async (
-  newData: any, 
-  commitMessage: string = '📝 更新網站內容'
+  newData: any,
+  commitMessage: string = '📝 更新網站內容',
+  sha?: string | null
 ): Promise<boolean> => {
-  const token = getGitHubToken();
-  if (!token) {
-    throw new Error('請先設定 GitHub Token');
-  }
-
   try {
-    // 1. 取得目前檔案的 SHA
-    const currentFile = await getFileContent();
-    const sha = currentFile?.sha;
+    // 後端會更新 lastUpdated
+    const token = localStorage.getItem('ntpc_admin_session');
+    const resp = await fetch(GITHUB_PROXY.cmsUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ newData, commitMessage, sha: sha || undefined })
+    });
 
-    // 2. 更新 lastUpdated
-    newData.lastUpdated = new Date().toISOString();
-
-    // 3. 準備新內容
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
-
-    // 4. 發送更新請求
-    const response = await fetch(
-      `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.dataPath}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: commitMessage,
-          content: content,
-          sha: sha,
-          branch: GITHUB_CONFIG.branch
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `GitHub API 錯誤: ${response.status}`);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || `更新失敗: ${resp.status}`);
     }
-
     return true;
   } catch (error) {
-    console.error('更新檔案失敗:', error);
+    console.error('updateCmsData error', error);
     throw error;
   }
 };
@@ -151,19 +69,13 @@ export const updateCmsData = async (
  * 驗證 Token 是否有效
  */
 export const validateToken = async (): Promise<boolean> => {
-  const token = getGitHubToken();
-  if (!token) return false;
-
   try {
-    const response = await fetch('https://api.github.com/user', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-
-    return response.ok;
-  } catch {
+    const resp = await fetch(GITHUB_PROXY.statusUrl);
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    return !!data.hasToken;
+  } catch (error) {
+    console.error('validateToken error', error);
     return false;
   }
 };

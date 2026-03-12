@@ -17,20 +17,27 @@ const SESSION_EXPIRY_KEY = 'ntpc_admin_expiry';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 小時
 
 /**
- * 驗證登入
+ * 驗證登入（呼叫後端）
  */
-export const login = (username: string, password: string): boolean => {
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-    // 產生簡單的 session token
-    const token = btoa(`${username}:${Date.now()}`);
-    const expiry = Date.now() + SESSION_DURATION;
-    
-    localStorage.setItem(SESSION_KEY, token);
-    localStorage.setItem(SESSION_EXPIRY_KEY, expiry.toString());
-    
-    return true;
+export const login = async (username: string, password: string): Promise<boolean> => {
+  try {
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    if (data && data.token) {
+      localStorage.setItem(SESSION_KEY, data.token);
+      localStorage.setItem(SESSION_EXPIRY_KEY, (data.expiry || (Date.now() + SESSION_DURATION)).toString());
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('login error', error);
+    return false;
   }
-  return false;
 };
 
 /**
@@ -39,17 +46,14 @@ export const login = (username: string, password: string): boolean => {
 export const isAuthenticated = (): boolean => {
   const token = localStorage.getItem(SESSION_KEY);
   const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
-  
-  if (!token || !expiry) {
-    return false;
-  }
-  
-  // 檢查是否過期
+
+  if (!token || !expiry) return false;
+
   if (Date.now() > parseInt(expiry)) {
     logout();
     return false;
   }
-  
+
   return true;
 };
 

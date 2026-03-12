@@ -29,21 +29,21 @@ export const renderNewsItems = (items: NewsItem[]) => {
             item.isPinned ? 'bg-yellow-50 -mx-2 px-2 py-2 rounded-lg border-l-4 border-yellow-400' : ''
           }`}
         >
-          <div className="flex items-center gap-2 md:w-36 flex-shrink-0">
-            <span className="text-primary font-semibold">{item.date}</span>
+          <div className="flex items-center gap-2 md:w-36 flex-shrink-0 whitespace-nowrap mb-2 md:mb-0">
+            <span className="text-primary font-semibold text-base md:text-lg tracking-wide bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200">{item.date}</span>
             {item.isNew && (
-              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse">
+              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse ml-1">
                 NEW
               </span>
             )}
             {item.isPinned && (
-              <span className="text-yellow-600 text-xs">📌</span>
+              <span className="text-yellow-600 text-xs ml-1">📌</span>
             )}
           </div>
-          <div className="flex-1">
-            <span className="font-medium">{item.title}</span>
+          <div className="flex-1 min-w-0 md:pl-4">
+            <div className="font-medium break-words text-base md:text-lg leading-snug">{item.title}</div>
             {item.description && (
-              <p className="text-sm text-gray-500 mt-1" dangerouslySetInnerHTML={{ __html: item.description }} />
+              <div className="text-sm text-gray-500 mt-1 break-words" dangerouslySetInnerHTML={{ __html: item.description }} />
             )}
             {item.link && (
               <a 

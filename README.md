@@ -1,458 +1,229 @@
-# 新北市水上安全協會官網
+# 新北市水上安全協會網站
 
-> 致力推廣水上安全救生、游泳及防溺自救，期許實現全民「人人會游泳，個個會救生」
+這個專案是 React + Vite 的靜態網站，部署方式是 GitHub Pages。前台內容主要來自 public/cms-data.json；管理後台則是前端介面。若要在正式站使用後台登入與發布，建議搭配 Cloudflare Worker 提供 /api。
 
----
+README 以下內容只描述目前 repo 內程式碼可以直接確認的行為，不額外假設站外基礎設施。
 
-## 📊 系統設計文件 (SDT)
+## 架構摘要
 
-### 1. 系統概述
+- 前台是靜態網站，路由使用 HashRouter
+- 前台內容主要讀取 public/cms-data.json
+- 後台入口是 /#/admin
+- server/index.js 是本機或 Node 環境下的管理 API 版本
+- worker/index.js 是 Cloudflare Worker 版本，適合正式站免費部署 /api
+- GitHub Actions 會在 push 到 main 後 build 並部署 dist
 
-| 項目 | 說明 |
-|------|------|
-| **專案名稱** | 新北市水上安全協會官方網站 |
-| **版本** | 1.2.0 |
-| **後台網址** | https://ntpcwatersafety.github.io/WebSite/#/admin |
-| **網站網址** | https://ntpcwatersafety.github.io/WebSite/ |
-| **GitHub** | https://github.com/ntpcwatersafety/WebSite |
-| **最後更新** | 2025年12月23日 |
+## 資料來源
 
----
+前台資料載入邏輯在 services/cmsLoader.ts，流程如下：
 
-### 2. 系統架構
+1. 先呼叫 /api/github/status 檢查是否有可用的後端代理與 GitHub Token
+2. 如果可用，透過 /api/cms 讀取 GitHub Repository 內的 cms-data.json
+3. 如果不可用，回退讀取 public/cms-data.json
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        使用者瀏覽器                          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTPS
-┌─────────────────────────▼───────────────────────────────────┐
-│                    GitHub Pages (CDN)                        │
-│                   靜態網站託管服務                            │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                     前端應用程式                             │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │  React   │  │ React    │  │ Tailwind │  │  Vite    │    │
-│  │    19    │  │ Router 7 │  │   CSS    │  │  6.x     │    │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
-└─────────────────────────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                      外部服務                                │
-│  ┌──────────────────┐  ┌────────────────────────────────┐  │
-│  │     EmailJS      │  │         Unsplash Images        │  │
-│  │   (郵件發送)      │  │          (圖片資源)             │  │
-│  └──────────────────┘  └────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
+因此這個專案的實際模式是：
 
----
+- 沒有後端時，前台仍可用，直接讀本地 JSON
+- 有後端且已設定 GitHub Token 時，後台可以編輯並同步 GitHub 上的 JSON
 
-### 3. 技術規格
+## 路由
 
-#### 3.1 前端技術棧
+- /#/ : 首頁
+- /#/activities : 訓練與活動
+- /#/results : 訓練成果
+- /#/gallery : 活動剪影
+- /#/media : 媒體報導
+- /#/thankyou : 感恩有您
+- /#/contact : 聯絡我們
+- /#/admin : 管理後台
 
-| 技術 | 版本 | 用途 |
-|------|------|------|
-| React | 19.x | UI 框架 |
-| TypeScript | 5.8.x | 型別安全 |
-| Vite | 6.x | 建置工具 |
-| React Router | 7.x | 路由管理 |
-| Tailwind CSS | CDN | 樣式框架 |
-| Lucide React | 0.561.x | 圖示庫 |
-| EmailJS | 4.1.0 | 郵件服務 |
+## 本機開發
 
-#### 3.2 開發環境需求
-
-| 項目 | 最低版本 |
-|------|----------|
-| Node.js | 20.x |
-| npm | 10.x |
-| 作業系統 | Windows / macOS / Linux |
-
----
-
-### 4. 目錄結構
-
-```
-WebSite/
-│
-├── 📁 components/           # UI 元件
-│   ├── Navbar.tsx          # 導覽列元件
-│   ├── Hero.tsx            # Banner 橫幅元件
-│   ├── Footer.tsx          # 頁尾元件
-│   └── CollapsibleCard.tsx # 可折疊卡片元件
-│
-├── 📁 pages/                # 頁面元件
-│   ├── Home.tsx            # 首頁
-│   ├── GenericPage.tsx     # 通用頁面模板
-│   ├── Contact.tsx         # 聯絡我們頁面
-│   └── Admin.tsx           # ⭐ 後台管理介面
-│
-├── 📁 services/
-│   ├── cms.ts              # 內容管理系統 (CMS)
-│   ├── contentRenderer.tsx # 內容渲染服務
-│   ├── cmsLoader.ts        # CMS 資料載入服務
-│   ├── adminAuth.ts        # 後台登入驗證
-│   └── githubApi.ts        # GitHub API 整合
-│
-├── 📁 public/
-│   ├── cms-data.json       # ⭐ CMS 動態資料檔案
-│   └── images/             # 靜態圖片資源
-│       └── logo.png        # 網站 Logo
-│
-├── 📁 .github/workflows/
-│   └── deploy.yml          # GitHub Actions 自動部署
-│
-├── App.tsx                  # 主應用程式
-├── index.tsx                # 進入點
-├── index.html               # HTML 模板
-├── types.ts                 # TypeScript 型別定義
-├── vite.config.ts           # Vite 配置（自動判斷部署路徑）
-├── vite-env.d.ts            # Vite 環境型別
-├── tsconfig.json            # TypeScript 配置
-└── package.json             # 專案依賴
-```
-
----
-
-### 5. 核心模組說明
-
-#### 5.1 CMS 內容管理系統 (`services/cms.ts`)
-
-**功能描述**：集中管理所有網站內容，無需修改元件程式碼
-
-| 變數名稱 | 用途 | 資料類型 |
-|----------|------|----------|
-| `EMAILJS_CONFIG` | 郵件服務設定 | Object |
-| `NAV_ITEMS` | 導覽列選單 | NavItem[] |
-| `PAGE_CONTENT` | 頁面 Banner 設定 | Record<string, PageConfig> |
-| `HOME_SECTIONS` | 首頁區塊內容 | SectionContent[] |
-| `ACTIVITIES_SECTIONS` | 訓練與活動頁面 | SectionContent[] |
-| `RESULTS_SECTIONS` | 訓練成果頁面 | SectionContent[] |
-| `GALLERY_SECTIONS` | 活動剪影頁面 | SectionContent[] |
-| `MEDIA_SECTIONS` | 媒體報導頁面 | SectionContent[] |
-| `sendContactEmail()` | 發送聯絡表單郵件 | async Function |
-
-#### 5.2 結構化資料類型 (`types.ts`)
-
-**CMS 支援的資料類型**：
-
-| 類型 | 用途 | 特殊功能 |
-|------|------|----------|
-| `NewsItem` | 最新消息 | NEW 標籤、置頂 📌、連結 |
-| `MediaItem` | 媒體報導 | 影片/文章圖示、來源標籤 |
-| `AwardItem` | 獲獎紀錄 | 自訂 emoji 圖示 |
-| `TestimonialItem` | 學員心得 | 作者、身份說明 |
-| `GalleryItem` | 活動剪影 | 圖片 hover 效果 |
-| `CourseItem` | 課程資訊 | 招生中標籤 |
-
-#### 5.3 內容渲染服務 (`services/contentRenderer.tsx`)
-
-**功能描述**：將 CMS 資料自動轉換為美觀的前台顯示
-
-| 函數 | 用途 |
-|------|------|
-| `renderNewsItems()` | 渲染最新消息列表 |
-| `renderMediaItems()` | 渲染媒體報導列表 |
-| `renderAwardItems()` | 渲染獲獎紀錄 |
-| `renderTestimonialItems()` | 渲染學員心得 |
-| `renderGalleryItems()` | 渲染圖片庫 |
-| `renderSectionContent()` | 主渲染函數（自動判斷類型） |
-
-#### 5.4 自動路徑判斷 (`vite.config.ts`)
-
-**功能描述**：根據 CNAME 檔案自動切換部署模式
-
-```typescript
-const hasCNAME = fs.existsSync('public/CNAME');
-const base = hasCNAME ? '/' : '/WebSite/';
-```
-
-| 條件 | base 值 | 適用情境 |
-|------|---------|----------|
-| 有 CNAME | `/` | 自訂網域 (例：fidogood.com) |
-| 無 CNAME | `/WebSite/` | GitHub Pages 預設網址 |
-
----
-
-### 6. 資料流程
-
-#### 6.1 頁面渲染流程
-
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│   index.tsx  │───▶│   App.tsx    │───▶│  React Router│
-│   (進入點)    │    │  (主應用)     │    │   (路由)     │
-└──────────────┘    └──────────────┘    └──────┬───────┘
-                                               │
-         ┌─────────────────────────────────────┼─────────┐
-         │                                     │         │
-         ▼                                     ▼         ▼
-┌──────────────┐                      ┌──────────────┐  ┌────────┐
-│   Home.tsx   │                      │GenericPage   │  │Contact │
-│   (首頁)     │                      │(通用頁面)     │  │(聯絡)  │
-└──────┬───────┘                      └──────┬───────┘  └────────┘
-       │                                     │
-       ▼                                     ▼
-┌──────────────┐                      ┌──────────────┐
-│ HOME_SECTIONS│                      │ *_SECTIONS   │
-│  (cms.ts)    │                      │  (cms.ts)    │
-└──────────────┘                      └──────────────┘
-```
-
-#### 6.2 聯絡表單流程
-
-```
-┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
-│  使用者    │───▶│  Contact   │───▶│sendContact │───▶│  EmailJS   │
-│  填寫表單  │    │  .tsx      │    │  Email()   │    │   API      │
-└────────────┘    └────────────┘    └────────────┘    └─────┬──────┘
-                                                            │
-                                                            ▼
-                                                     ┌────────────┐
-                                                     │  收件信箱  │
-                                                     └────────────┘
-```
-
----
-
-### 7. 部署流程
-
-#### 7.1 GitHub Actions 自動部署
-
-```
-┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
-│  git push  │───▶│  GitHub    │───▶│   Build    │───▶│  Deploy    │
-│  (本地)    │    │  Actions   │    │ npm build  │    │  to Pages  │
-└────────────┘    └────────────┘    └────────────┘    └────────────┘
-```
-
-#### 7.2 部署設定檔 (`.github/workflows/deploy.yml`)
-
-| 步驟 | 動作 |
-|------|------|
-| 1. Checkout | 取得原始碼 |
-| 2. Setup Node | 安裝 Node.js 20 |
-| 3. Install | 執行 `npm install` |
-| 4. Build | 執行 `npm run build` |
-| 5. Upload | 上傳 `dist/` 資料夾 |
-| 6. Deploy | 部署到 GitHub Pages |
-
----
-
-### 8. 操作指南
-
-#### 8.1 本地開發
+### 安裝
 
 ```bash
-# 1. 安裝依賴
 npm install
+```
 
-# 2. 啟動開發伺服器
+### 只跑前台
+
+```bash
 npm run dev
-
-# 3. 開啟瀏覽器
-http://localhost:3000
 ```
 
-#### 8.2 內容更新
+Vite 設定在 3000 port，因此本機通常是：
 
-**步驟**：編輯 `services/cms.ts` → 儲存 → 推送
+- http://localhost:3000/
+- http://127.0.0.1:3000/
+
+這個模式下：
+
+- 前台頁面可正常瀏覽
+- 內容會讀取 public/cms-data.json
+- /api 相關功能不保證可用
+
+### 跑前台加管理代理
+
+先啟動後端：
 
 ```bash
-git add .
-git commit -m "更新內容"
-git push
+npm run start:server
 ```
 
-**自動部署**：約 1-2 分鐘後網站自動更新
+再啟動前端：
 
-#### 8.3 新增頁面內容
-
-**區塊類型**：
-
-| type | 說明 | 必填欄位 |
-|------|------|----------|
-| `text` | 文字內容 (HTML) | id, title, type, content |
-| `list` | 列表項目 (舊格式) | id, title, type, listItems |
-| `news` | 最新消息 ⭐ | id, title, type, newsItems |
-| `media` | 媒體報導 | id, title, type, mediaItems |
-| `awards` | 獲獎紀錄 | id, title, type, awardItems |
-| `testimonials` | 學員心得 | id, title, type, testimonialItems |
-| `gallery` | 圖片庫 | id, title, type, galleryItems |
-
-**範例 - 最新消息（推薦格式）**：
-
-```typescript
-{
-  id: 'news',
-  title: '最新消息',
-  type: 'news',
-  newsItems: [
-    {
-      id: 'news-001',
-      date: '2025-01-20',
-      title: '第 42 期救生員訓練班開放報名',
-      description: '即日起開放報名，名額有限',  // 選填
-      link: 'https://example.com',             // 選填：連結
-      isNew: true,                              // 選填：顯示 NEW 標籤
-      isPinned: true,                           // 選填：置頂顯示
-    },
-  ],
-  isOpenDefault: true
-}
-```
-
-**範例 - 學員心得**：
-
-```typescript
-{
-  id: 'testimonials',
-  title: '學員心得分享',
-  type: 'testimonials',
-  testimonialItems: [
-    {
-      id: 'test-001',
-      content: '教練非常專業且有耐心！',
-      author: '王小明',
-      role: '成人游泳班學員',  // 選填
-    },
-  ],
-  isOpenDefault: false
-}
-```
-
-**範例 - 獲獎紀錄**：
-
-```typescript
-{
-  id: 'awards',
-  title: '獲獎紀錄',
-  type: 'awards',
-  awardItems: [
-    {
-      id: 'award-001',
-      year: '2024',
-      title: '新北市優良志工團體獎',
-      description: '表揚協會長期投入水域安全宣導工作',  // 選填
-      icon: '🏆',  // 選填：自訂 emoji
-    },
-  ],
-  isOpenDefault: false
-}
-```
-
-#### 8.4 切換部署模式
-
-**使用自訂網域**：
 ```bash
-echo "your-domain.com" > public/CNAME
-git push
+npm run dev
 ```
 
-**使用 GitHub Pages 預設**：
+前端在開發模式下會把 /api proxy 到 http://localhost:3001。
+
+這個模式下可以測試：
+
+- /api/login
+- /api/verify-token
+- /api/github/status
+- /api/cms
+
+## 後端環境變數
+
+server/index.js 會使用以下環境變數：
+
+- ADMIN_USER
+- ADMIN_PASS
+- JWT_SECRET
+- JWT_EXPIRES_IN
+- GITHUB_TOKEN
+- OWNER 或 GITHUB_OWNER
+- REPO 或 GITHUB_REPO
+- BRANCH 或 GITHUB_BRANCH
+- DATA_PATH 或 GITHUB_DATA_PATH
+
+其中 ADMIN_USER、ADMIN_PASS、JWT_SECRET 為登入必要設定，未提供時後端會拒絕 /api/login、/api/verify-token、/api/cms 相關請求。
+
+本機 PowerShell 設定範例：
+
+```powershell
+$env:ADMIN_USER = 'your-admin-user'
+$env:ADMIN_PASS = 'your-admin-password'
+$env:JWT_SECRET = 'replace-with-a-long-random-secret'
+$env:GITHUB_TOKEN = 'ghp_xxx'
+$env:OWNER = 'ntpcwatersafety'
+$env:REPO = 'WebSite'
+$env:BRANCH = 'main'
+$env:DATA_PATH = 'public/cms-data.json'
+npm run start:server
+```
+
+/api/github/status 會回傳：
+
+- hasToken：是否已設定 GITHUB_TOKEN
+- authConfigured：是否已完整設定 ADMIN_USER、ADMIN_PASS、JWT_SECRET
+- missingAuthEnvVars：缺少哪些登入相關環境變數
+
+## 內容更新方式
+
+### 方式一：直接改 JSON
+
+直接修改 public/cms-data.json，然後重新部署。
+
+適合：
+
+- 單純更新內容
+- 不需要登入後台
+- 不需要透過 GitHub API 寫回
+
+### 方式二：使用管理後台
+
+管理後台在 /#/admin。
+
+實際行為如下：
+
+1. 先透過 /api/login 登入
+2. 後台載入資料時，優先嘗試從 /api/cms 讀 GitHub 版本
+3. 如果 GitHub 代理不可用，會回退讀取本地 cms-data.json
+4. 按下儲存時，會呼叫 /api/cms 將內容寫回 GitHub
+
+所以後台的「讀取」有 fallback，但「儲存」需要可用的後端代理與 GitHub Token。
+
+為避免輪流編輯時用舊頁面覆蓋較新的 GitHub 內容，後台發布更新時會帶上 GitHub 檔案版本 sha；如果版本已變更，系統會要求先重新載入最新內容再儲存。
+
+## GitHub Pages 部署
+
+GitHub Actions 設定在 .github/workflows/deploy.yml。
+
+目前 workflow 會在 push 到 main 時：
+
+1. 安裝相依套件
+2. 執行 npm run build
+3. 上傳 dist
+4. 部署到 GitHub Pages
+
+專案存在 public/CNAME，內容是 ntpcwsa.org，因此 Vite build 時會使用根路徑 /。
+
+## Cloudflare Worker 正式後台方案
+
+如果不打算自行維護 Node 主機，正式站建議使用：
+
+1. GitHub Pages 部署前台
+2. Cloudflare Worker 提供 /api/login、/api/verify-token、/api/github/status、/api/cms
+3. GitHub Repository 儲存 cms-data.json
+
+專案已提供：
+
+- worker/index.js：Cloudflare Worker 版 API
+- worker/wrangler.toml.example：Wrangler 設定範例
+
+建議部署方式：
+
+1. 將 worker/index.js 部署為 Cloudflare Worker
+2. 在 Cloudflare 將 ntpcwsa.org/api/* 路由指向該 Worker
+3. 設定下列 secrets / vars：
+	- ADMIN_USER
+	- ADMIN_PASS
+	- JWT_SECRET
+	- GITHUB_TOKEN
+	- OWNER
+	- REPO
+	- BRANCH
+	- DATA_PATH
+	- JWT_EXPIRES_IN
+
+Wrangler 常用指令範例：
+
 ```bash
-rm public/CNAME
-git push
+cd worker
+wrangler secret put ADMIN_USER
+wrangler secret put ADMIN_PASS
+wrangler secret put JWT_SECRET
+wrangler secret put GITHUB_TOKEN
+wrangler deploy
 ```
 
----
+這種架構下：
 
-### 9. 後台管理系統
+- 網站畫面仍由 GitHub Pages 提供
+- 後台登入與發佈由 Cloudflare Worker 執行
+- 維護人員仍可從正式網址的 /#/admin 進行操作
 
-#### 9.1 後台網址
+## 本次檢查結果
 
+依目前本機檢查結果：
+
+- npm run build 可成功完成
+- 前端開發站可正常啟動
+- 後端 server/index.js 可正常啟動
+- /api/login 可正常回應
+- /api/github/status 目前顯示沒有 GitHub Token，且若未提供登入必要環境變數，會一併回報缺少的欄位
+
+這表示目前 repo 狀態正常，但若要讓管理後台把內容寫回 GitHub，仍需要額外配置 GITHUB_TOKEN 與對應的 Repository 設定。
+
+## 常用指令
+
+```bash
+npm install
+npm run dev
+npm run start:server
+npm run build
+npm run preview
 ```
-https://ntpcwatersafety.github.io/WebSite/#/admin
-```
-
-#### 9.2 登入資訊
-
-| 項目 | 預設值 | 說明 |
-|------|--------|------|
-| 帳號 | `admin` | 可在 `services/adminAuth.ts` 修改 |
-| 密碼 | `ntpcwater2025` | ⚠️ 請修改為安全密碼 |
-
-#### 9.3 使用流程
-
-```
-1. 登入後台 → 輸入帳號密碼
-2. 設定 GitHub Token（首次使用）
-   - GitHub → Settings → Developer settings
-   - Personal access tokens → Tokens (classic)
-   - Generate new token → 勾選 repo 權限
-3. 編輯內容 → 新增/修改/刪除項目
-4. 本地預覽 → 下載 JSON 測試
-5. 發布更新 → 推送到 GitHub（1-2 分鐘生效）
-```
-
-#### 9.4 功能說明
-
-| 功能 | 說明 |
-|------|------|
-| 首頁最新消息 | 支援 NEW 標籤、置頂、連結 |
-| 獲獎紀錄 | 自訂年份、圖示 emoji |
-| 學員心得 | 姓名、身份、心得內容 |
-| 訓練紀錄 | 結訓班別、人數記錄 |
-| 本地預覽 | 下載 JSON 檔案測試 |
-| 發布更新 | 透過 GitHub API 發布 |
-
----
-
-### 10. 安全性設定
-
-#### 10.1 EmailJS 安全配置
-
-| 設定項目 | 建議值 | 說明 |
-|----------|--------|------|
-| Allowed Origins | `https://ntpcwatersafety.github.io` | 限制來源網域 |
-| Daily Limit | 20-50 封/天 | 防止濫用 |
-| reCAPTCHA | 建議啟用 | 防止機器人 |
-
-#### 10.2 敏感資料處理
-
-| 檔案 | 處理方式 |
-|------|----------|
-| `.env.local` | 已加入 .gitignore，不會上傳 |
-| EmailJS Keys | 設定網域限制保護 |
-| GitHub Token | 儲存在瀏覽器 localStorage |
-
----
-
-### 11. 常見問題 (FAQ)
-
-| 問題 | 解決方案 |
-|------|----------|
-| Logo 不顯示 | 使用 `import.meta.env.BASE_URL` 動態路徑 |
-| 部署後 404 | 檢查 `vite.config.ts` 的 base 設定 |
-| 郵件發送失敗 | 確認 EmailJS 設定和 Allowed Origins |
-| 本地正常線上壞 | 確認 `public/` 資料夾有被正確複製 |
-
----
-
-### 12. 版本歷史
-
-| 版本 | 日期 | 變更內容 |
-|------|------|----------|
-| 1.2.0 | 2025-12-23 | 新增後台管理系統：網頁編輯介面、GitHub API 整合、本地預覽功能 |
-| 1.1.0 | 2025-12-23 | CMS 人性化改造：結構化資料格式、新增 NewsItem/MediaItem 等類型 |
-| 1.0.0 | 2025-12-17 | 初始版本發布 |
-
----
-
-### 13. 聯絡資訊
-
-| 項目 | 內容 |
-|------|------|
-| 組織 | 新北市水上安全協會 |
-| GitHub | https://github.com/ntpcwatersafety |
-| 網站 | https://ntpcwatersafety.github.io/WebSite/ |
-
----
-
-## 📄 授權
-
-本專案僅供新北市水上安全協會使用。

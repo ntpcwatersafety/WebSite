@@ -19,6 +19,15 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          // 代理 /api 到本機後端（啟動 server/index.js 預設監聽 3001）
+          '/api': {
+            target: 'http://localhost:3001',
+            changeOrigin: true,
+            secure: false,
+            rewrite: (path) => path.replace(/^\/api/, '/api')
+          }
+        }
       },
       plugins: [react()],
       define: {

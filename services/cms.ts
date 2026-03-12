@@ -19,7 +19,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: '訓練成果', path: '/results' },
   { label: '活動剪影', path: '/gallery' },
   { label: '媒體報導', path: '/media' },
-  // { label: '關於我們', path: '/about' },
   { label: '感恩有您', path: '/thankyou' },
   { label: '聯絡我們', path: '/contact' },
 ];
@@ -82,15 +81,35 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
 // 4. 首頁區塊內容
 // ===============================
 // 最新消息區塊已由後台管理系統維護，資料來源為 public/cms-data.json，請勿直接於此編輯。
-export const HOME_SECTIONS: SectionContent[] = [
-  {
-    id: 'intro',
-    title: '協會簡介',
-    type: 'text',
-    content: '<strong>【新北市水上安全協會、新北市板橋游泳會及紅十字會救難大隊】</strong>致力推廣水上安全救生、游泳及防溺自救，期許實現全民<span class="text-red-500">"人人會游泳，個個會救生"</span>，歡迎有志一同的你加入我們這個大家庭。',
-    isOpenDefault: true,
-  },
-];
+import { loadCmsData } from './cmsLoader';
+
+// 動態取得首頁區塊內容，合併 github/cms-data.json 的 introContent
+export const getHomeSections = async (): Promise<SectionContent[]> => {
+  const cmsData = await loadCmsData();
+  return [
+    {
+      id: 'intro',
+      title: '協會簡介',
+      type: 'text',
+      content: cmsData?.introContent || '',
+      isOpenDefault: true,
+    },
+    {
+      id: 'news',
+      title: '最新消息',
+      type: 'news',
+      newsItems: cmsData?.homeNews || [],
+      isOpenDefault: true,
+    },
+    {
+      id: 'thankyou',
+      title: '感恩有您',
+      type: 'list',
+      listItems: (cmsData?.thankYouItems || []).map(item => item.name + (item.description ? ' - ' + item.description : '')),
+      isOpenDefault: false,
+    },
+  ];
+};
 
 // ===============================
 // 5. 訓練與活動頁面內容
@@ -120,6 +139,13 @@ export const MEDIA_SECTIONS: SectionContent[] = [
 // 9. 靜態範例（僅供本地測試）
 // ===============================
 export const GALLERY_SECTIONS: SectionContent[] = [];
+
+// 感恩有您 thankYouItems 取得
+import type { ThankYouItem } from './cmsLoader';
+export const getThankYouItemsFromGithub = async (): Promise<ThankYouItem[]> => {
+  const cmsData = await loadCmsData();
+  return cmsData?.thankYouItems || [];
+};
 
 // ===============================
 // 10. 聯絡表單發送
