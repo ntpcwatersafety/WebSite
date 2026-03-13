@@ -76,7 +76,8 @@ import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
-const TINYMCE_LANGUAGE = 'zh_TW';
+const TINYMCE_LANGUAGE = 'zh-Hant';
+const TINYMCE_LANGUAGE_URL = 'https://cdn.jsdelivr.net/npm/tinymce-i18n@26.2.16/langs6/zh-Hant.js';
 
 const openImagePicker = (callback: (file: File) => void) => {
   const input = document.createElement('input');
@@ -97,6 +98,7 @@ const buildRichTextEditorInit = (height: number) => {
 
   return {
     language: TINYMCE_LANGUAGE,
+    language_url: TINYMCE_LANGUAGE_URL,
     menubar: true,
     branding: false,
     promotion: false,
