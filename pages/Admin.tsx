@@ -729,11 +729,12 @@ const Admin: React.FC = () => {
     if (!selectedEditorImages.length) return;
     if (!confirm(`確定要刪除 ${selectedEditorImages.length} 張圖片嗎？`)) return;
 
+    const targetUrls = [...selectedEditorImages];
     setDeletingEditorImages(true);
     try {
-      await cleanupEditorImages(selectedEditorImages);
-      setEditorImages((previous) => previous.filter((image) => !selectedEditorImages.includes(image.url)));
+      await cleanupEditorImages(targetUrls);
       setSelectedEditorImages([]);
+      await loadEditorImageLibrary();
       showMessage('success', '已刪除選取的圖片。');
     } catch (error) {
       console.error('刪除圖片失敗:', error);
@@ -748,8 +749,8 @@ const Admin: React.FC = () => {
     setDeletingEditorImages(true);
     try {
       await cleanupEditorImages([url]);
-      setEditorImages((previous) => previous.filter((image) => image.url !== url));
       setSelectedEditorImages((previous) => previous.filter((item) => item !== url));
+      await loadEditorImageLibrary();
       showMessage('success', '已刪除圖片。');
     } catch (error) {
       console.error('刪除圖片失敗:', error);
