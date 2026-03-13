@@ -70,11 +70,107 @@ import {
   Key, RefreshCw, Download, Eye
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
-import { getFileContent, updateCmsData, validateToken } from '../services/githubApi';
+import { getFileContent, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { CmsCollectionKey, CmsData, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
 import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
+const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
+
+const openImagePicker = (callback: (file: File) => void) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+
+  input.onchange = () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    callback(file);
+  };
+
+  input.click();
+};
+
+const buildRichTextEditorInit = (height: number) => ({
+  height,
+  menubar: true,
+  branding: false,
+  promotion: false,
+  plugins: [
+    'advlist autolink lists link image charmap preview anchor template',
+    'searchreplace visualblocks visualchars code fullscreen',
+    'insertdatetime media table paste help wordcount',
+    'directionality emoticons hr nonbreaking',
+    'code'
+  ],
+  toolbar:
+    'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | styles template | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table hr blockquote | subscript superscript | removeformat | code fullscreen preview | emoticons help',
+  toolbar_mode: 'sliding',
+  block_formats: '段落=p; 標題 1=h1; 標題 2=h2; 標題 3=h3; 標題 4=h4; 引言=blockquote',
+  font_family_formats: 'Helvetica=helvetica,arial,sans-serif; 微軟正黑體=Microsoft JhengHei,sans-serif; 新細明體=PMingLiU,serif; Arial=arial,helvetica,sans-serif; Georgia=georgia,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
+  font_size_formats: '12px 14px 16px 18px 20px 24px 28px 36px 48px',
+  content_style: 'body { font-family: Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; } img { max-width: 100%; height: auto; } .notice-box { border-left: 4px solid #0f766e; background: #f0fdfa; padding: 12px 14px; border-radius: 8px; } .warning-box { border-left: 4px solid #dc2626; background: #fef2f2; padding: 12px 14px; border-radius: 8px; } .highlight-text { color: #b91c1c; font-weight: 700; }',
+  paste_data_images: false,
+  image_title: true,
+  image_caption: true,
+  automatic_uploads: true,
+  file_picker_types: 'image',
+  style_formats: [
+    { title: '公告框', block: 'div', classes: 'notice-box', wrapper: true },
+    { title: '警示框', block: 'div', classes: 'warning-box', wrapper: true },
+    { title: '紅字重點', inline: 'span', classes: 'highlight-text' },
+    { title: '細字說明', inline: 'small' }
+  ],
+  templates: [
+    {
+      title: '公告區塊',
+      description: '插入一般公告框樣板',
+      content: '<div class="notice-box"><p><strong>公告標題</strong></p><p>請在這裡輸入公告內容。</p></div>'
+    },
+    {
+      title: '重要提醒',
+      description: '插入警示提醒樣板',
+      content: '<div class="warning-box"><p><strong>重要提醒</strong></p><p>請在這裡輸入提醒內容。</p></div>'
+    },
+    {
+      title: '圖文段落',
+      description: '插入標題加說明的段落樣板',
+      content: '<h3>段落標題</h3><p>請在這裡輸入內文，可搭配上方圖片按鈕插入照片。</p>'
+    }
+  ],
+  images_upload_handler: async (blobInfo: { blob: () => Blob; filename: () => string }) => {
+    const file = new File([blobInfo.blob()], blobInfo.filename(), {
+      type: blobInfo.blob().type || 'image/png'
+    });
+    return uploadEditorImage(file);
+  },
+  file_picker_callback: (callback: (url: string, meta?: { alt?: string; title?: string }) => void, _value: string, meta: { filetype?: string }) => {
+    if (meta.filetype === 'image') {
+      openImagePicker(async (file) => {
+        const url = await uploadEditorImage(file);
+        callback(url, { alt: file.name, title: file.name });
+      });
+    }
+  }
+});
+
+const RichTextEditor: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  height?: number;
+}> = ({ value, onChange, height = 240 }) => (
+  <>
+    <Editor
+      apiKey={TINYMCE_API_KEY}
+      value={value}
+      init={buildRichTextEditorInit(height)}
+      onEditorChange={onChange}
+    />
+    <p className="mt-2 text-xs text-gray-500">
+      可直接插入照片，圖片會上傳到網站檔案並以網址寫入內容；若單張照片太大，建議先壓縮後再上傳。
+    </p>
+  </>
+);
 // 感恩有您編輯器
 const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: string, value: any) => void }> = ({ item, onUpdate }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,25 +198,10 @@ const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: strin
 const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
   <div className="mb-8">
     <label className="block text-lg font-bold text-primary mb-2">首頁協會簡介</label>
-    <Editor
-      apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+    <RichTextEditor
       value={value}
-      init={{
-        height: 260,
-        menubar: true,
-        plugins: [
-          'advlist autolink lists link charmap preview anchor',
-          'searchreplace visualblocks code',
-          'insertdatetime table paste help wordcount',
-          'code',
-          'textcolor',
-          'colorpicker'
-        ],
-        toolbar:
-          'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
-      }}
-      onEditorChange={onChange}
+      height={260}
+      onChange={onChange}
     />
   </div>
 );
@@ -913,25 +994,9 @@ const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate }) => {
       </div>
       <div className="md:col-span-2">
         <label className="block text-xs text-gray-500 mb-1">說明（選填）</label>
-        <Editor
-          apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+        <RichTextEditor
           value={item.description || ''}
-          init={{
-            height: 240,
-            menubar: true,
-            plugins: [
-              'advlist autolink lists link charmap preview anchor',
-              'searchreplace visualblocks code',
-              'insertdatetime table paste help wordcount',
-              'code',
-              'textcolor',
-              'colorpicker'
-            ],
-            toolbar:
-              'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
-          }}
-          onEditorChange={(content) => onUpdate('description', content)}
+          onChange={(content) => onUpdate('description', content)}
         />
       </div>
       <div className="md:col-span-2">
@@ -987,25 +1052,9 @@ const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate }) => 
       </div>
       <div className="md:col-span-3">
         <label className="block text-xs text-gray-500 mb-1">說明</label>
-        <Editor
-          apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+        <RichTextEditor
           value={item.description || ''}
-          init={{
-            height: 240,
-            menubar: true,
-            plugins: [
-              'advlist autolink lists link charmap preview anchor',
-              'searchreplace visualblocks code',
-              'insertdatetime table paste help wordcount',
-              'code',
-              'textcolor',
-              'colorpicker'
-            ],
-            toolbar:
-              'undo redo | formatselect | fontselect fontsizeselect | bold italic underline forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | code | removeformat | help',
-            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:15px }'
-          }}
-          onEditorChange={(content) => onUpdate('description', content)}
+          onChange={(content) => onUpdate('description', content)}
         />
       </div>
     </div>

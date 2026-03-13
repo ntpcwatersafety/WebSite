@@ -16,7 +16,8 @@ import { CmsFileShas } from './cmsData';
 
 const GITHUB_PROXY = {
   statusUrl: '/api/github/status',
-  cmsUrl: '/api/cms'
+  cmsUrl: '/api/cms',
+  uploadImageUrl: '/api/upload-image'
 };
 
 /**
@@ -80,5 +81,34 @@ export const validateToken = async (): Promise<boolean> => {
   } catch (error) {
     console.error('validateToken error', error);
     return false;
+  }
+};
+
+export const uploadEditorImage = async (file: File): Promise<string> => {
+  try {
+    const token = localStorage.getItem('ntpc_admin_session');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const resp = await fetch(GITHUB_PROXY.uploadImageUrl, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || `圖片上傳失敗: ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    if (!data?.url) {
+      throw new Error('圖片上傳成功，但未取得圖片網址');
+    }
+
+    return data.url as string;
+  } catch (error) {
+    console.error('uploadEditorImage error', error);
+    throw error;
   }
 };

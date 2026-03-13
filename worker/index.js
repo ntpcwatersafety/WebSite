@@ -17,6 +17,7 @@ const CMS_SECTION_FILE_NAMES = {
 };
 
 const DEFAULT_CMS_DATA_ROOT = 'public/cms';
+const DEFAULT_EDITOR_IMAGE_ROOT = 'public/images/editor';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -143,7 +144,8 @@ const getConfig = (env) => {
     githubOwner: env.OWNER || env.GITHUB_OWNER || 'ntpcwatersafety',
     githubRepo: env.REPO || env.GITHUB_REPO || 'WebSite',
     githubBranch: env.BRANCH || env.GITHUB_BRANCH || 'main',
-    githubDataRoot: inferCmsDataRoot(env.DATA_ROOT || env.GITHUB_DATA_ROOT || legacyDataPath)
+    githubDataRoot: inferCmsDataRoot(env.DATA_ROOT || env.GITHUB_DATA_ROOT || legacyDataPath),
+    githubImageRoot: (env.IMAGE_UPLOAD_ROOT || DEFAULT_EDITOR_IMAGE_ROOT).replace(/\\/g, '/').replace(/\/$/, '')
   };
 };
 
@@ -330,11 +332,11 @@ const getCommit = async (config, commitSha) => {
   return response.json();
 };
 
-const createBlob = async (config, content) => {
+const createBlob = async (config, content, encoding = 'utf-8') => {
   const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/blobs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content, encoding: 'utf-8' })
+    body: JSON.stringify({ content, encoding })
   });
   if (!response.ok) throw new Error(await response.text());
   return response.json();
@@ -373,6 +375,71 @@ const updateBranchRef = async (config, commitSha) => {
   }
   return response.json();
 };
+
+const verifyBearerAuth = async (request, config) => {
+  if (!hasAdminAuthConfig(config)) {
+    return { ok: false, response: jsonResponse({ message: 'Admin auth is not configured on worker' }, 503) };
+  }
+
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ')) {
+    return { ok: false, response: jsonResponse({ message: 'Missing auth token' }, 401) };
+  }
+
+  try {
+    await verifyToken(auth.slice('Bearer '.length), config.jwtSecret);
+    return { ok: true };
+  } catch {
+    return { ok: false, response: jsonResponse({ message: 'Invalid auth token' }, 401) };
+  }
+};
+
+const commitTreeEntries = async (config, treeEntries, message) => {
+  const branchRef = await getBranchRef(config);
+  const parentCommitSha = branchRef.object.sha;
+  const parentCommit = await getCommit(config, parentCommitSha);
+  const nextTree = await createTree(config, parentCommit.tree.sha, treeEntries);
+  const nextCommit = await createCommit(config, message, nextTree.sha, parentCommitSha);
+  await updateBranchRef(config, nextCommit.sha);
+  return nextCommit;
+};
+
+const slugifyFileStem = (value) => {
+  const normalized = String(value || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9-_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
+  return normalized || 'image';
+};
+
+const inferExtension = (file) => {
+  const name = typeof file?.name === 'string' ? file.name : '';
+  const extMatch = name.match(/\.([a-zA-Z0-9]+)$/);
+  if (extMatch) return extMatch[1].toLowerCase();
+
+  const mime = typeof file?.type === 'string' ? file.type.toLowerCase() : '';
+  if (mime === 'image/jpeg') return 'jpg';
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/gif') return 'gif';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/svg+xml') return 'svg';
+  return 'png';
+};
+
+const buildEditorImageRepoPath = (config, file) => {
+  const now = new Date();
+  const year = String(now.getUTCFullYear());
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const extension = inferExtension(file);
+  const stem = slugifyFileStem(file?.name || 'image');
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${config.githubImageRoot}/${year}/${month}/${stem}-${uniqueSuffix}.${extension}`;
+};
+
+const toPublicAssetUrl = (repoPath) => `/${String(repoPath).replace(/^public\//, '')}`;
 
 const handleLogin = async (request, config) => {
   if (!hasAdminAuthConfig(config)) {
@@ -446,17 +513,9 @@ const handleGetCms = async (config) => {
 };
 
 const handlePutCms = async (request, config) => {
-  if (!hasAdminAuthConfig(config)) {
-    return jsonResponse({ message: 'Admin auth is not configured on worker' }, 503);
-  }
-
-  const auth = request.headers.get('Authorization') || '';
-  if (!auth.startsWith('Bearer ')) return jsonResponse({ message: 'Missing auth token' }, 401);
-
-  try {
-    await verifyToken(auth.slice('Bearer '.length), config.jwtSecret);
-  } catch {
-    return jsonResponse({ message: 'Invalid auth token' }, 401);
+  const authResult = await verifyBearerAuth(request, config);
+  if (!authResult.ok) {
+    return authResult.response;
   }
 
   if (!config.githubToken) {
@@ -484,10 +543,6 @@ const handlePutCms = async (request, config) => {
   }
 
   try {
-    const branchRef = await getBranchRef(config);
-    const parentCommitSha = branchRef.object.sha;
-    const parentCommit = await getCommit(config, parentCommitSha);
-
     const tree = [];
     for (const fileKey of fileKeys) {
       const blob = await createBlob(config, JSON.stringify(splitData[fileKey], null, 2));
@@ -499,15 +554,7 @@ const handlePutCms = async (request, config) => {
       });
     }
 
-    const nextTree = await createTree(config, parentCommit.tree.sha, tree);
-    const nextCommit = await createCommit(
-      config,
-      body.commitMessage || 'Update CMS content',
-      nextTree.sha,
-      parentCommitSha
-    );
-
-    await updateBranchRef(config, nextCommit.sha);
+    const nextCommit = await commitTreeEntries(config, tree, body.commitMessage || 'Update CMS content');
 
     return jsonResponse({ ok: true, commitSha: nextCommit.sha });
   } catch (error) {
@@ -515,6 +562,55 @@ const handlePutCms = async (request, config) => {
       return jsonResponse({ message: 'CMS data has changed on GitHub. Please reload and try again.' }, 409);
     }
     return jsonResponse({ message: error instanceof Error ? error.message : 'Failed to update CMS on GitHub' }, 500);
+  }
+};
+
+const handleUploadImage = async (request, config) => {
+  const authResult = await verifyBearerAuth(request, config);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  if (!config.githubToken) {
+    return jsonResponse({ message: 'GitHub token not configured on worker' }, 503);
+  }
+
+  const formData = await request.formData();
+  const file = formData.get('file');
+  if (!(file instanceof File)) {
+    return jsonResponse({ message: 'Missing image file' }, 400);
+  }
+
+  if (!String(file.type || '').startsWith('image/')) {
+    return jsonResponse({ message: 'Only image uploads are allowed' }, 400);
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    return jsonResponse({ message: 'Image is too large. Please keep it under 8 MB.' }, 400);
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const repoPath = buildEditorImageRepoPath(config, file);
+    const blob = await createBlob(config, bytesToBase64(new Uint8Array(arrayBuffer)), 'base64');
+    const nextCommit = await commitTreeEntries(config, [{
+      path: repoPath,
+      mode: '100644',
+      type: 'blob',
+      sha: blob.sha
+    }], `Upload editor image: ${file.name || 'image'}`);
+
+    return jsonResponse({
+      ok: true,
+      url: toPublicAssetUrl(repoPath),
+      path: repoPath,
+      commitSha: nextCommit.sha
+    });
+  } catch (error) {
+    if (error?.status === 409 || error?.status === 422) {
+      return jsonResponse({ message: 'Repository changed while uploading image. Please try again.' }, 409);
+    }
+    return jsonResponse({ message: error instanceof Error ? error.message : 'Failed to upload image' }, 500);
   }
 };
 
@@ -544,6 +640,10 @@ const handleRequest = async (request, env) => {
 
   if (url.pathname === '/api/cms' && request.method === 'PUT') {
     return handlePutCms(request, config);
+  }
+
+  if (url.pathname === '/api/upload-image' && request.method === 'POST') {
+    return handleUploadImage(request, config);
   }
 
   return jsonResponse({ message: 'Not found' }, 404);

@@ -15,6 +15,7 @@
 - 後台頁面：正式站 /#/admin
 - 後台 API：Cloudflare Worker
 - CMS 儲存：GitHub repo 的 public/cms/*.json
+- 編輯器圖片：GitHub repo 的 public/images/editor/*
 
 目前使用的是 split CMS 架構，檔案如下：
 
@@ -38,6 +39,13 @@
 
 如果只是大量內容整理或要做版本比對，也可以直接修改 public/cms/*.json 後再 push。
 
+補充：
+
+- 文字編輯器可直接上傳圖片
+- 圖片上傳後會寫到 public/images/editor/*
+- 文章內只保存圖片網址，不再把圖片 base64 直接塞進 JSON
+- 若圖片已上傳但文章最後沒儲存，可能會留下未使用圖片檔
+
 ## 正式站驗證清單
 
 每次調整後，建議至少確認以下網址：
@@ -45,13 +53,15 @@
 1. /api/github/status
 2. /api/cms
 3. /#/admin
-4. 前台實際頁面
+4. 後台插入圖片是否成功
+5. 前台實際頁面
 
 預期結果：
 
 - /api/github/status 會回 JSON
 - /api/cms 會回 content 與 shas
 - /#/admin 可登入、可載入、可儲存
+- 編輯器插入圖片後，內容中應出現 /images/editor/... 路徑
 - 前台能讀到更新後內容
 
 ## Cloudflare 需要保留的關鍵設定
@@ -82,6 +92,7 @@ Vars：
 - REPO = WebSite
 - BRANCH = main
 - DATA_ROOT = public/cms
+- IMAGE_UPLOAD_ROOT = public/images/editor
 - JWT_EXPIRES_IN = 8h
 
 ## 常見問題先查哪裡
@@ -109,7 +120,16 @@ Vars：
 - /api/cms 是否回傳 shas
 - 使用者是否拿舊頁面操作，碰到版本衝突
 
-### 4. 前台沒更新
+### 4. 圖片上傳失敗
+
+先查：
+
+- 是否已登入後台
+- /api/upload-image 是否回 200
+- GITHUB_TOKEN 是否仍可寫入 repo
+- 單張圖片是否過大
+
+### 5. 前台沒更新
 
 先查：
 
