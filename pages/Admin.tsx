@@ -293,6 +293,39 @@ const Admin: React.FC = () => {
   // 編輯中的項目
   const [editingItem, setEditingItem] = useState<{ section: string; index: number } | null>(null);
 
+  const pageMappings = [
+    {
+      page: '首頁',
+      route: '/#/',
+      sections: '協會簡介、最新消息',
+      note: '首頁下方感恩名單同步使用「感恩有您」資料'
+    },
+    {
+      page: '訓練成果',
+      route: '/#/results',
+      sections: '訓練紀錄、學員心得',
+      note: '同一頁面由兩個後台區塊共同組成'
+    },
+    {
+      page: '媒體報導',
+      route: '/#/media',
+      sections: '媒體報導、獲獎紀錄',
+      note: '兩個區塊都會顯示在媒體報導頁'
+    },
+    {
+      page: '活動剪影',
+      route: '/#/gallery',
+      sections: '活動剪影相簿',
+      note: '控制輪播與圖片清單'
+    },
+    {
+      page: '感恩有您',
+      route: '/#/thankyou',
+      sections: '感恩名單',
+      note: '同時同步到首頁下方名單'
+    }
+  ];
+
   // 檢查登入狀態
   useEffect(() => {
     setAuthenticated(isAuthenticated());
@@ -724,146 +757,217 @@ const Admin: React.FC = () => {
           </div>
         ) : cmsData ? (
           <div className="space-y-4">
-            {/* 首頁協會簡介管理 */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
-              <IntroEditor
-                value={cmsData.introContent || ''}
-                onChange={v => setCmsData({ ...cmsData, introContent: v })}
+            <section className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-bold text-slate-900">前後台對照總表</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
+                  先找前台頁面，再編輯對應區塊
+                </span>
+              </div>
+              <p className="text-sm text-slate-600 mt-2">
+                這裡先標出每個前台頁面對應的後台資料區塊，避免只看到資料名稱卻不知道會顯示在哪一頁。
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {pageMappings.map((mapping) => (
+                  <div key={mapping.route} className="bg-white border border-slate-200 rounded-xl p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-slate-800">{mapping.page}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        {mapping.route}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-700 mt-3">後台區塊：{mapping.sections}</p>
+                    <p className="text-xs text-slate-500 mt-2">{mapping.note}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <PageGroup
+              title="首頁"
+              route="/#/"
+              description="這一組會顯示在前台首頁，包含首頁的協會簡介與最新消息。"
+            >
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+                <div className="mb-4 pb-4 border-b border-gray-100">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-bold text-gray-800">首頁 / 協會簡介</h3>
+                    <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                      前台：首頁 / 協會簡介
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-2">對應前台首頁第一個展開區塊「協會簡介」。</p>
+                </div>
+                <IntroEditor
+                  value={cmsData.introContent || ''}
+                  onChange={v => setCmsData({ ...cmsData, introContent: v })}
+                />
+              </div>
+
+              <SectionEditor
+                title="首頁 / 最新消息"
+                pageLabel="首頁 / 最新消息"
+                description="對應前台首頁第二個展開區塊「最新消息」。"
+                icon={<Newspaper className="w-5 h-5" />}
+                items={cmsData.homeNews}
+                sectionKey="homeNews"
+                expanded={expandedSection === 'homeNews'}
+                onToggle={() => setExpandedSection(expandedSection === 'homeNews' ? '' : 'homeNews')}
+                onAdd={() => addItem('homeNews')}
+                onDelete={(index) => deleteItem('homeNews', index)}
+                onUpdate={(index, field, value) => updateItemField('homeNews', index, field, value)}
+                renderItem={(item, index) => (
+                  <NewsItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('homeNews', index, field, value)}
+                  />
+                )}
               />
-            </div>
-            {/* 感恩有您管理 */}
-            <SectionEditor
-              title="感恩有您"
-              icon={<CheckCircle className="w-5 h-5" />}
-              items={cmsData.thankYouItems || []}
-              sectionKey="thankYouItems"
-              expanded={expandedSection === 'thankYouItems'}
-              onToggle={() => setExpandedSection(expandedSection === 'thankYouItems' ? '' : 'thankYouItems')}
-              onAdd={() => addItem('thankYouItems')}
-              onDelete={(index) => deleteItem('thankYouItems', index)}
-              onUpdate={(index, field, value) => updateItemField('thankYouItems', index, field, value)}
-              renderItem={(item, index) => (
-                <ThankYouItemEditor
-                  item={item}
-                  onUpdate={(field, value) => updateItemField('thankYouItems', index, field, value)}
-                />
-              )}
-            />
-            {/* 活動剪影管理 */}
-            <SectionEditor
-              title="活動剪影"
-              icon={<Eye className="w-5 h-5" />}
-              items={cmsData.galleryItems || []}
-              sectionKey="galleryItems"
-              expanded={expandedSection === 'galleryItems'}
-              onToggle={() => setExpandedSection(expandedSection === 'galleryItems' ? '' : 'galleryItems')}
-              onAdd={() => addItem('galleryItems')}
-              onDelete={(index) => deleteItem('galleryItems', index)}
-              onUpdate={(index, field, value) => updateItemField('galleryItems', index, field, value)}
-              renderItem={(item, index) => (
-                <GalleryItemEditor
-                  item={item}
-                  onUpdate={(field, value) => updateItemField('galleryItems', index, field, value)}
-                />
-              )}
-            />
-            {/* 媒體報導管理 */}
-            <SectionEditor
+            </PageGroup>
+
+            <PageGroup
+              title="訓練成果"
+              route="/#/results"
+              description="前台訓練成果頁目前由兩個後台區塊組成：訓練紀錄與學員心得。"
+            >
+              <SectionEditor
+                title="訓練成果 / 訓練紀錄"
+                pageLabel="訓練成果 / 訓練紀錄"
+                description="對應前台訓練成果頁中的訓練紀錄列表。"
+                icon={<Newspaper className="w-5 h-5" />}
+                items={cmsData.trainingRecords}
+                sectionKey="trainingRecords"
+                expanded={expandedSection === 'trainingRecords'}
+                onToggle={() => setExpandedSection(expandedSection === 'trainingRecords' ? '' : 'trainingRecords')}
+                onAdd={() => addItem('trainingRecords')}
+                onDelete={(index) => deleteItem('trainingRecords', index)}
+                onUpdate={(index, field, value) => updateItemField('trainingRecords', index, field, value)}
+                renderItem={(item, index) => (
+                  <NewsItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('trainingRecords', index, field, value)}
+                  />
+                )}
+              />
+
+              <SectionEditor
+                title="訓練成果 / 學員心得"
+                pageLabel="訓練成果 / 學員心得"
+                description="對應前台訓練成果頁中的學員心得區塊。"
+                icon={<MessageSquare className="w-5 h-5" />}
+                items={cmsData.testimonials}
+                sectionKey="testimonials"
+                expanded={expandedSection === 'testimonials'}
+                onToggle={() => setExpandedSection(expandedSection === 'testimonials' ? '' : 'testimonials')}
+                onAdd={() => addItem('testimonials')}
+                onDelete={(index) => deleteItem('testimonials', index)}
+                onUpdate={(index, field, value) => updateItemField('testimonials', index, field, value)}
+                renderItem={(item, index) => (
+                  <TestimonialItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('testimonials', index, field, value)}
+                  />
+                )}
+              />
+            </PageGroup>
+
+            <PageGroup
               title="媒體報導"
-              icon={<Newspaper className="w-5 h-5" />}
-              items={cmsData.mediaReports || []}
-              sectionKey="mediaReports"
-              expanded={expandedSection === 'mediaReports'}
-              onToggle={() => setExpandedSection(expandedSection === 'mediaReports' ? '' : 'mediaReports')}
-              onAdd={() => addItem('mediaReports')}
-              onDelete={(index) => deleteItem('mediaReports', index)}
-              onUpdate={(index, field, value) => updateItemField('mediaReports', index, field, value)}
-              renderItem={(item, index) => (
-                <MediaItemEditor
-                  item={item}
-                  onUpdate={(field, value) => updateItemField('mediaReports', index, field, value)}
-                />
-              )}
-            />
-            {/* 首頁最新消息 */}
+              route="/#/media"
+              description="前台媒體報導頁目前由媒體報導與獲獎紀錄兩個資料區塊組成。"
+            >
+              <SectionEditor
+                title="媒體報導 / 媒體報導列表"
+                pageLabel="媒體報導 / 媒體報導"
+                description="對應前台媒體報導頁中的媒體報導列表。"
+                icon={<Newspaper className="w-5 h-5" />}
+                items={cmsData.mediaReports || []}
+                sectionKey="mediaReports"
+                expanded={expandedSection === 'mediaReports'}
+                onToggle={() => setExpandedSection(expandedSection === 'mediaReports' ? '' : 'mediaReports')}
+                onAdd={() => addItem('mediaReports')}
+                onDelete={(index) => deleteItem('mediaReports', index)}
+                onUpdate={(index, field, value) => updateItemField('mediaReports', index, field, value)}
+                renderItem={(item, index) => (
+                  <MediaItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('mediaReports', index, field, value)}
+                  />
+                )}
+              />
 
+              <SectionEditor
+                title="媒體報導 / 獲獎紀錄"
+                pageLabel="媒體報導 / 獲獎紀錄"
+                description="對應前台媒體報導頁中的獲獎紀錄區塊。"
+                icon={<Award className="w-5 h-5" />}
+                items={cmsData.awards}
+                sectionKey="awards"
+                expanded={expandedSection === 'awards'}
+                onToggle={() => setExpandedSection(expandedSection === 'awards' ? '' : 'awards')}
+                onAdd={() => addItem('awards')}
+                onDelete={(index) => deleteItem('awards', index)}
+                onUpdate={(index, field, value) => updateItemField('awards', index, field, value)}
+                renderItem={(item, index) => (
+                  <AwardItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('awards', index, field, value)}
+                  />
+                )}
+              />
+            </PageGroup>
 
+            <PageGroup
+              title="活動剪影"
+              route="/#/gallery"
+              description="這一組對應前台活動剪影頁的相簿與輪播內容。"
+            >
+              <SectionEditor
+                title="活動剪影 / 相簿內容"
+                pageLabel="活動剪影 / 相簿"
+                description="對應前台活動剪影頁的圖片輪播與相簿內容。"
+                icon={<Eye className="w-5 h-5" />}
+                items={cmsData.galleryItems || []}
+                sectionKey="galleryItems"
+                expanded={expandedSection === 'galleryItems'}
+                onToggle={() => setExpandedSection(expandedSection === 'galleryItems' ? '' : 'galleryItems')}
+                onAdd={() => addItem('galleryItems')}
+                onDelete={(index) => deleteItem('galleryItems', index)}
+                onUpdate={(index, field, value) => updateItemField('galleryItems', index, field, value)}
+                renderItem={(item, index) => (
+                  <GalleryItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('galleryItems', index, field, value)}
+                  />
+                )}
+              />
+            </PageGroup>
 
-
-            <SectionEditor
-              title="首頁最新消息"
-              icon={<Newspaper className="w-5 h-5" />}
-              items={cmsData.homeNews}
-              sectionKey="homeNews"
-              expanded={expandedSection === 'homeNews'}
-              onToggle={() => setExpandedSection(expandedSection === 'homeNews' ? '' : 'homeNews')}
-              onAdd={() => addItem('homeNews')}
-              onDelete={(index) => deleteItem('homeNews', index)}
-              onUpdate={(index, field, value) => updateItemField('homeNews', index, field, value)}
-              renderItem={(item, index) => (
-                <NewsItemEditor 
-                  item={item} 
-                  onUpdate={(field, value) => updateItemField('homeNews', index, field, value)}
-                />
-              )}
-            />
-
-            {/* 獲獎紀錄 */}
-            <SectionEditor
-              title="獲獎紀錄"
-              icon={<Award className="w-5 h-5" />}
-              items={cmsData.awards}
-              sectionKey="awards"
-              expanded={expandedSection === 'awards'}
-              onToggle={() => setExpandedSection(expandedSection === 'awards' ? '' : 'awards')}
-              onAdd={() => addItem('awards')}
-              onDelete={(index) => deleteItem('awards', index)}
-              onUpdate={(index, field, value) => updateItemField('awards', index, field, value)}
-              renderItem={(item, index) => (
-                <AwardItemEditor 
-                  item={item} 
-                  onUpdate={(field, value) => updateItemField('awards', index, field, value)}
-                />
-              )}
-            />
-
-            {/* 學員心得 */}
-            <SectionEditor
-              title="學員心得"
-              icon={<MessageSquare className="w-5 h-5" />}
-              items={cmsData.testimonials}
-              sectionKey="testimonials"
-              expanded={expandedSection === 'testimonials'}
-              onToggle={() => setExpandedSection(expandedSection === 'testimonials' ? '' : 'testimonials')}
-              onAdd={() => addItem('testimonials')}
-              onDelete={(index) => deleteItem('testimonials', index)}
-              onUpdate={(index, field, value) => updateItemField('testimonials', index, field, value)}
-              renderItem={(item, index) => (
-                <TestimonialItemEditor 
-                  item={item} 
-                  onUpdate={(field, value) => updateItemField('testimonials', index, field, value)}
-                />
-              )}
-            />
-
-            {/* 訓練紀錄 */}
-            <SectionEditor
-              title="訓練紀錄"
-              icon={<Newspaper className="w-5 h-5" />}
-              items={cmsData.trainingRecords}
-              sectionKey="trainingRecords"
-              expanded={expandedSection === 'trainingRecords'}
-              onToggle={() => setExpandedSection(expandedSection === 'trainingRecords' ? '' : 'trainingRecords')}
-              onAdd={() => addItem('trainingRecords')}
-              onDelete={(index) => deleteItem('trainingRecords', index)}
-              onUpdate={(index, field, value) => updateItemField('trainingRecords', index, field, value)}
-              renderItem={(item, index) => (
-                <NewsItemEditor 
-                  item={item} 
-                  onUpdate={(field, value) => updateItemField('trainingRecords', index, field, value)}
-                />
-              )}
-            />
+            <PageGroup
+              title="感恩有您"
+              route="/#/thankyou"
+              description="這一組主要對應前台感恩有您頁；目前首頁下方也會同步顯示這份名單。"
+            >
+              <SectionEditor
+                title="感恩有您 / 名單內容"
+                pageLabel="感恩有您頁 / 首頁下方名單"
+                description="對應前台感恩有您頁，並同步顯示於首頁下方感恩名單。"
+                icon={<CheckCircle className="w-5 h-5" />}
+                items={cmsData.thankYouItems || []}
+                sectionKey="thankYouItems"
+                expanded={expandedSection === 'thankYouItems'}
+                onToggle={() => setExpandedSection(expandedSection === 'thankYouItems' ? '' : 'thankYouItems')}
+                onAdd={() => addItem('thankYouItems')}
+                onDelete={(index) => deleteItem('thankYouItems', index)}
+                onUpdate={(index, field, value) => updateItemField('thankYouItems', index, field, value)}
+                renderItem={(item, index) => (
+                  <ThankYouItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('thankYouItems', index, field, value)}
+                  />
+                )}
+              />
+            </PageGroup>
           </div>
         ) : (
           <div className="text-center py-12 text-gray-500">
@@ -878,6 +982,8 @@ const Admin: React.FC = () => {
 // 區塊編輯器元件
 interface SectionEditorProps {
   title: string;
+  pageLabel?: string;
+  description?: string;
   icon: React.ReactNode;
   items: any[];
   sectionKey: string;
@@ -891,6 +997,8 @@ interface SectionEditorProps {
 
 const SectionEditor: React.FC<SectionEditorProps> = ({
   title,
+  pageLabel,
+  description,
   icon,
   items,
   expanded,
@@ -905,12 +1013,24 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
         onClick={onToggle}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-blue-600">{icon}</span>
-          <span className="font-bold text-gray-800">{title}</span>
-          <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
-            {items.length} 項
-          </span>
+        <div className="flex items-center gap-3 text-left">
+          <span className="text-blue-600 self-start mt-0.5">{icon}</span>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-gray-800">{title}</span>
+              {pageLabel && (
+                <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                  前台：{pageLabel}
+                </span>
+              )}
+              <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
+                {items.length} 項
+              </span>
+            </div>
+            {description && (
+              <p className="text-sm text-gray-500 mt-1">{description}</p>
+            )}
+          </div>
         </div>
         {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
       </button>
@@ -944,6 +1064,28 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
     </div>
   );
 };
+
+interface PageGroupProps {
+  title: string;
+  route: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+const PageGroup: React.FC<PageGroupProps> = ({ title, route, description, children }) => (
+  <section className="space-y-4">
+    <div className="bg-slate-800 text-white rounded-xl px-6 py-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-lg font-bold">前台頁面：{title}</h2>
+        <span className="bg-white/10 border border-white/10 text-xs px-2 py-0.5 rounded-full">
+          {route}
+        </span>
+      </div>
+      <p className="text-sm text-slate-200 mt-2">{description}</p>
+    </div>
+    {children}
+  </section>
+);
 
 // 消息項目編輯器
 interface NewsItemEditorProps {
