@@ -100,21 +100,22 @@ const buildRichTextEditorInit = (height: number) => ({
   promotion: false,
   plugins: [
     'advlist autolink lists link image charmap preview anchor template',
-    'searchreplace visualblocks visualchars code fullscreen',
+    'searchreplace visualblocks visualchars code fullscreen autoresize',
     'insertdatetime media table paste help wordcount quickbars',
     'directionality emoticons hr nonbreaking',
     'code'
   ],
   toolbar: [
-    'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | removeformat',
-    'fontfamily fontsize | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent',
-    'link image media table blockquote hr anchor charmap emoticons | ltr rtl | subscript superscript',
-    'styles template | searchreplace visualblocks code fullscreen preview | help'
+    'undo redo | blocks | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | removeformat',
+    'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table blockquote hr | styles template | searchreplace code preview fullscreen | help'
   ],
   toolbar_mode: 'wrap',
   toolbar_sticky: true,
   statusbar: true,
   elementpath: true,
+  min_height: height,
+  autoresize_bottom_margin: 20,
+  autoresize_overflow_padding: 16,
   quickbars_selection_toolbar: 'bold italic underline | forecolor backcolor | link blockquote',
   quickbars_insert_toolbar: 'quickimage quicktable hr',
   block_formats: '段落=p; 標題 1=h1; 標題 2=h2; 標題 3=h3; 標題 4=h4; 引言=blockquote',
