@@ -4,6 +4,13 @@
 
 README 以下內容只描述目前 repo 內程式碼可以直接確認的行為，不額外假設站外基礎設施。
 
+## 目前狀態
+
+- 2026-03-13 已完成正式站驗證
+- 正式站前台、後台登入、Cloudflare Worker API、CMS 讀取與 CMS 儲存皆可正常運作
+- 正式站 /api/cms 已採用 split CMS 格式，回傳 content + shas
+- 後續維運建議先閱讀 docs/MAINTENANCE.md
+
 ## 架構摘要
 
 - 前台是靜態網站，路由使用 HashRouter
@@ -268,6 +275,20 @@ Secrets：
 - ntpcwsa.org/api/github/status 可正常回傳 Cloudflare Worker JSON
 - ntpcwsa.org/api/cms 可正常讀取 GitHub 上的 public/cms/*.json
 - 正式架構已可採用「GitHub Pages 提供前台 + Cloudflare Worker 提供 /api + GitHub 儲存 CMS JSON」的模式運作
+- 正式後台登入與實際儲存已完成人工驗證
+- 未授權請求會被 /api/login 與 /api/cms 正確拒絕
+
+## Repo 現況整理
+
+截至 2026-03-13，本地 repo 與目前正式架構一致，檢查結果如下：
+
+- git worktree 乾淨，沒有未提交變更
+- 主要 CMS 來源已固定為 public/cms/*.json
+- 本機 Node 管理代理已移除，唯一維護中的後台 API 為 worker/index.js
+- 掃描 repo 後，沒有發現仍在使用的舊版 cms-data.json、server/index.js 或 wrangler.toml.example 參照
+- worker/index.js 仍保留 DATA_PATH 舊參數相容邏輯，這是刻意保留的 fallback，不是殘留垃圾碼
+
+若要交接給下一位維護者，建議搭配 docs/MAINTENANCE.md 一起閱讀。
 
 ## 常用指令
 
