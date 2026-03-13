@@ -463,7 +463,10 @@ const buildEditorImageRepoPath = (config, file) => {
   return `${config.githubImageRoot}/${year}/${month}/${stem}-${uniqueSuffix}.${extension}`;
 };
 
-const toPublicAssetUrl = (repoPath) => `/${String(repoPath).replace(/^public\//, '')}`;
+const toPublicAssetUrl = (config, repoPath) => {
+  const normalizedPath = String(repoPath || '').replace(/^\/+/, '');
+  return `https://raw.githubusercontent.com/${config.githubOwner}/${config.githubRepo}/${config.githubBranch}/${normalizedPath}`;
+};
 
 const inferUploadedAtFromPath = (repoPath) => {
   const match = String(repoPath || '').match(/-(\d{13})-[a-z0-9]{6}\.[^.]+$/i);
@@ -475,11 +478,21 @@ const inferUploadedAtFromPath = (repoPath) => {
 };
 
 const toRepoAssetPath = (assetUrl) => {
+  const rawValue = String(assetUrl || '');
+  if (rawValue.startsWith('public/images/editor/')) {
+    return rawValue;
+  }
+
   try {
-    const pathname = new URL(String(assetUrl), 'https://ntpcwsa.local').pathname;
-    return `public${pathname}`;
+    const pathname = new URL(rawValue, 'https://ntpcwsa.local').pathname;
+    const publicIndex = pathname.indexOf('/public/images/editor/');
+    if (publicIndex >= 0) {
+      return pathname.slice(publicIndex + 1);
+    }
+
+    return pathname.startsWith('/images/editor/') ? `public${pathname}` : null;
   } catch {
-    return null;
+    return rawValue.startsWith('/images/editor/') ? `public${rawValue}` : null;
   }
 };
 
@@ -650,7 +663,7 @@ const handleUploadImage = async (request, config) => {
 
     return jsonResponse({
       ok: true,
-      url: toPublicAssetUrl(repoPath),
+      url: toPublicAssetUrl(config, repoPath),
       path: repoPath,
       commitSha: nextCommit.sha
     });
@@ -696,7 +709,7 @@ const handleCleanupImages = async (request, config) => {
       return jsonResponse({
         ok: true,
         deleted: [],
-        skipped: repoPaths.map(toPublicAssetUrl)
+        skipped: repoPaths.map((path) => toPublicAssetUrl(config, path))
       });
     }
 
@@ -713,8 +726,8 @@ const handleCleanupImages = async (request, config) => {
 
     return jsonResponse({
       ok: true,
-      deleted: deletablePaths.map(toPublicAssetUrl),
-      skipped: repoPaths.filter((path) => !existingPaths.has(String(path || '').replace(/\\/g, '/'))).map(toPublicAssetUrl),
+      deleted: deletablePaths.map((path) => toPublicAssetUrl(config, path)),
+      skipped: repoPaths.filter((path) => !existingPaths.has(String(path || '').replace(/\\/g, '/'))).map((path) => toPublicAssetUrl(config, path)),
       commitSha: nextCommit.sha
     });
   } catch (error) {
@@ -745,7 +758,7 @@ const handleGetEditorImages = async (request, config) => {
       ? recursiveTree.tree
           .filter((entry) => entry?.type === 'blob' && String(entry.path || '').startsWith(rootPrefix))
           .map((entry) => ({
-            url: toPublicAssetUrl(entry.path),
+            url: toPublicAssetUrl(config, entry.path),
             path: entry.path,
             name: String(entry.path).split('/').at(-1) || 'image',
             size: Number(entry.size || 0),

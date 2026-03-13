@@ -87,16 +87,28 @@ const EDITOR_IMAGE_ALLOWED_TYPES = new Set([
   'image/webp',
   'image/gif'
 ]);
-const EDITOR_IMAGE_PATH_PATTERN = /(?:https?:\/\/[^"'\s)<>]+)?(\/images\/editor\/[^"'\s)<>]+)/g;
+const EDITOR_IMAGE_PATH_PATTERN = /(https?:\/\/[^"'\s)<>]*?(?:\/public)?\/images\/editor\/[^"'\s)<>]+|(?:public\/|\/)images\/editor\/[^"'\s)<>]+)/g;
 
 const formatFileSizeMb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
 
 const normalizeEditorImageUrl = (value: string) => {
+  if (value.startsWith('public/images/editor/')) {
+    return value;
+  }
+
   try {
     const pathname = new URL(value, 'https://ntpcwsa.local').pathname;
-    return pathname.startsWith('/images/editor/') ? pathname : null;
+    const publicIndex = pathname.indexOf('/public/images/editor/');
+    if (publicIndex >= 0) {
+      return pathname.slice(publicIndex + 1);
+    }
+
+    return pathname.startsWith('/images/editor/') ? `public${pathname}` : null;
   } catch {
-    return value.startsWith('/images/editor/') ? value : null;
+    if (value.startsWith('/images/editor/')) {
+      return `public${value}`;
+    }
+    return null;
   }
 };
 
@@ -637,7 +649,7 @@ const Admin: React.FC = () => {
 
   const referencedEditorImageUrls = extractCmsEditorImageUrls(cmsData);
   const filteredEditorImages = editorImages.filter((image) => {
-    if (showOnlyUnusedEditorImages && referencedEditorImageUrls.has(image.url)) {
+    if (showOnlyUnusedEditorImages && referencedEditorImageUrls.has(image.path)) {
       return false;
     }
 
@@ -719,7 +731,7 @@ const Admin: React.FC = () => {
 
   const selectAllDeletableEditorImages = () => {
     const deletableUrls = filteredEditorImages
-      .filter((image) => !referencedEditorImageUrls.has(image.url))
+      .filter((image) => !referencedEditorImageUrls.has(image.path))
       .map((image) => image.url);
 
     setSelectedEditorImages(deletableUrls);
@@ -1319,7 +1331,7 @@ const Admin: React.FC = () => {
                   <button
                     type="button"
                     onClick={selectAllDeletableEditorImages}
-                    disabled={loadingEditorImages || deletingEditorImages || !filteredEditorImages.some((image) => !referencedEditorImageUrls.has(image.url))}
+                    disabled={loadingEditorImages || deletingEditorImages || !filteredEditorImages.some((image) => !referencedEditorImageUrls.has(image.path))}
                     className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                   >
                     全選可刪圖片
@@ -1344,7 +1356,7 @@ const Admin: React.FC = () => {
                   placeholder="搜尋檔名或路徑"
                 />
                 <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600">
-                  共 {filteredEditorImages.length} 張，可刪 {filteredEditorImages.filter((image) => !referencedEditorImageUrls.has(image.url)).length} 張
+                  共 {filteredEditorImages.length} 張，可刪 {filteredEditorImages.filter((image) => !referencedEditorImageUrls.has(image.path)).length} 張
                 </div>
               </div>
 
@@ -1365,7 +1377,7 @@ const Admin: React.FC = () => {
                   <p className="text-sm text-slate-500">圖片清單載入中...</p>
                 ) : filteredEditorImages.length ? (
                   filteredEditorImages.map((image) => {
-                    const referenced = referencedEditorImageUrls.has(image.url);
+                    const referenced = referencedEditorImageUrls.has(image.path);
                     const selected = selectedEditorImages.includes(image.url);
 
                     return (
