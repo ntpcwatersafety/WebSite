@@ -326,6 +326,65 @@ const Admin: React.FC = () => {
     }
   ];
 
+  const jumpToSection = (sectionId: string, expandedKey?: string) => {
+    if (expandedKey) {
+      setExpandedSection(expandedKey);
+    }
+
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, expandedKey ? 120 : 0);
+  };
+
+  const quickActions: Array<{
+    id: string;
+    title: string;
+    description: string;
+    sectionId: string;
+    expandedKey?: string;
+    icon: React.ComponentType<{ className?: string }>;
+    tone: string;
+  }> = [
+    {
+      id: 'quick-intro',
+      title: '修改首頁協會簡介',
+      description: '更新首頁第一個展開區塊的文字與圖片。',
+      sectionId: 'intro-content-editor',
+      icon: Home,
+      tone: 'bg-blue-50 text-blue-700 border-blue-100'
+    },
+    {
+      id: 'quick-home-news',
+      title: '更新首頁最新消息',
+      description: '新增或調整首頁最新消息列表。',
+      sectionId: 'section-homeNews',
+      expandedKey: 'homeNews',
+      icon: Newspaper,
+      tone: 'bg-cyan-50 text-cyan-700 border-cyan-100'
+    },
+    {
+      id: 'quick-results',
+      title: '編輯訓練成果',
+      description: '快速前往訓練紀錄與學員心得區塊。',
+      sectionId: 'section-trainingRecords',
+      expandedKey: 'trainingRecords',
+      icon: MessageSquare,
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    },
+    {
+      id: 'quick-gallery',
+      title: '管理活動剪影',
+      description: '上傳或調整活動照片與相簿內容。',
+      sectionId: 'section-galleryItems',
+      expandedKey: 'galleryItems',
+      icon: Eye,
+      tone: 'bg-amber-50 text-amber-700 border-amber-100'
+    }
+  ];
+
   // 檢查登入狀態
   useEffect(() => {
     setAuthenticated(isAuthenticated());
@@ -757,6 +816,74 @@ const Admin: React.FC = () => {
           </div>
         ) : cmsData ? (
           <div className="space-y-4">
+            <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-blue-700">常用入口</p>
+                  <h2 className="text-2xl font-bold text-slate-900 mt-1">後台工作台</h2>
+                  <p className="text-sm text-slate-600 mt-2">
+                    先從常用編輯項目進入，再視需要往下調整其他區塊；完成後請記得按右上角「發布更新」。
+                  </p>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 min-w-[220px]">
+                  <p className="text-xs font-medium text-slate-500">建議操作順序</p>
+                  <ol className="mt-2 space-y-1 text-sm text-slate-700 list-decimal list-inside">
+                    <li>先按重新載入</li>
+                    <li>編輯對應內容區塊</li>
+                    <li>確認後按發布更新</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => jumpToSection(action.sectionId, action.expandedKey)}
+                      className="text-left bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl p-4 transition"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className={`inline-flex items-center justify-center w-11 h-11 rounded-xl border ${action.tone}`}>
+                          <Icon className="w-5 h-5" />
+                        </span>
+                        <div>
+                          <div className="font-bold text-slate-800">{action.title}</div>
+                          <p className="text-sm text-slate-600 mt-1">{action.description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => jumpToSection('page-group-home')}
+                  className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+                >
+                  查看首頁相關全部區塊
+                </button>
+                <button
+                  type="button"
+                  onClick={() => jumpToSection('page-group-results')}
+                  className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+                >
+                  查看訓練成果全部區塊
+                </button>
+                <button
+                  type="button"
+                  onClick={() => jumpToSection('page-group-thankyou')}
+                  className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+                >
+                  查看感恩有您全部區塊
+                </button>
+              </div>
+            </section>
+
             <section className="bg-slate-50 border border-slate-200 rounded-xl p-6 shadow-sm">
               <div className="flex flex-wrap items-center gap-3">
                 <h2 className="text-lg font-bold text-slate-900">前後台對照總表</h2>
@@ -784,11 +911,12 @@ const Admin: React.FC = () => {
             </section>
 
             <PageGroup
+              sectionId="page-group-home"
               title="首頁"
               route="/#/"
               description="這一組會顯示在前台首頁，包含首頁的協會簡介與最新消息。"
             >
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-4">
+              <div id="intro-content-editor" className="bg-white rounded-xl shadow-sm p-6 mb-4 scroll-mt-24">
                 <div className="mb-4 pb-4 border-b border-gray-100">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-bold text-gray-800">首頁 / 協會簡介</h3>
@@ -805,6 +933,7 @@ const Admin: React.FC = () => {
               </div>
 
               <SectionEditor
+                sectionId="section-homeNews"
                 title="首頁 / 最新消息"
                 pageLabel="首頁 / 最新消息"
                 description="對應前台首頁第二個展開區塊「最新消息」。"
@@ -826,11 +955,13 @@ const Admin: React.FC = () => {
             </PageGroup>
 
             <PageGroup
+              sectionId="page-group-results"
               title="訓練成果"
               route="/#/results"
               description="前台訓練成果頁目前由兩個後台區塊組成：訓練紀錄與學員心得。"
             >
               <SectionEditor
+                sectionId="section-trainingRecords"
                 title="訓練成果 / 訓練紀錄"
                 pageLabel="訓練成果 / 訓練紀錄"
                 description="對應前台訓練成果頁中的訓練紀錄列表。"
@@ -851,6 +982,7 @@ const Admin: React.FC = () => {
               />
 
               <SectionEditor
+                sectionId="section-testimonials"
                 title="訓練成果 / 學員心得"
                 pageLabel="訓練成果 / 學員心得"
                 description="對應前台訓練成果頁中的學員心得區塊。"
@@ -872,11 +1004,13 @@ const Admin: React.FC = () => {
             </PageGroup>
 
             <PageGroup
+              sectionId="page-group-media"
               title="媒體報導"
               route="/#/media"
               description="前台媒體報導頁目前由媒體報導與獲獎紀錄兩個資料區塊組成。"
             >
               <SectionEditor
+                sectionId="section-mediaReports"
                 title="媒體報導 / 媒體報導列表"
                 pageLabel="媒體報導 / 媒體報導"
                 description="對應前台媒體報導頁中的媒體報導列表。"
@@ -897,6 +1031,7 @@ const Admin: React.FC = () => {
               />
 
               <SectionEditor
+                sectionId="section-awards"
                 title="媒體報導 / 獲獎紀錄"
                 pageLabel="媒體報導 / 獲獎紀錄"
                 description="對應前台媒體報導頁中的獲獎紀錄區塊。"
@@ -918,11 +1053,13 @@ const Admin: React.FC = () => {
             </PageGroup>
 
             <PageGroup
+              sectionId="page-group-gallery"
               title="活動剪影"
               route="/#/gallery"
               description="這一組對應前台活動剪影頁的相簿與輪播內容。"
             >
               <SectionEditor
+                sectionId="section-galleryItems"
                 title="活動剪影 / 相簿內容"
                 pageLabel="活動剪影 / 相簿"
                 description="對應前台活動剪影頁的圖片輪播與相簿內容。"
@@ -944,11 +1081,13 @@ const Admin: React.FC = () => {
             </PageGroup>
 
             <PageGroup
+              sectionId="page-group-thankyou"
               title="感恩有您"
               route="/#/thankyou"
               description="這一組主要對應前台感恩有您頁；目前首頁下方也會同步顯示這份名單。"
             >
               <SectionEditor
+                sectionId="section-thankYouItems"
                 title="感恩有您 / 名單內容"
                 pageLabel="感恩有您頁 / 首頁下方名單"
                 description="對應前台感恩有您頁，並同步顯示於首頁下方感恩名單。"
@@ -981,6 +1120,7 @@ const Admin: React.FC = () => {
 
 // 區塊編輯器元件
 interface SectionEditorProps {
+  sectionId?: string;
   title: string;
   pageLabel?: string;
   description?: string;
@@ -996,6 +1136,7 @@ interface SectionEditorProps {
 }
 
 const SectionEditor: React.FC<SectionEditorProps> = ({
+  sectionId,
   title,
   pageLabel,
   description,
@@ -1008,7 +1149,7 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   renderItem
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div id={sectionId} className="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24">
       <button
         onClick={onToggle}
         className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
@@ -1066,14 +1207,15 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
 };
 
 interface PageGroupProps {
+  sectionId?: string;
   title: string;
   route: string;
   description: string;
   children: React.ReactNode;
 }
 
-const PageGroup: React.FC<PageGroupProps> = ({ title, route, description, children }) => (
-  <section className="space-y-4">
+const PageGroup: React.FC<PageGroupProps> = ({ sectionId, title, route, description, children }) => (
+  <section id={sectionId} className="space-y-4 scroll-mt-24">
     <div className="bg-slate-800 text-white rounded-xl px-6 py-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-bold">前台頁面：{title}</h2>
