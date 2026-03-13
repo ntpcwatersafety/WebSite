@@ -60,7 +60,7 @@ const MediaItemEditor: React.FC<MediaItemEditorProps> = ({ item, onUpdate }) => 
     </div>
   );
 };
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -219,7 +219,7 @@ const buildRichTextEditorInit = (height: number) => {
       'code'
     ],
     toolbar: [
-      'undo redo | blocks | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | removeformat',
+      'undo redo | image media | blocks | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | removeformat',
       'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table blockquote hr | styles template | searchreplace code preview fullscreen | help'
     ],
     toolbar_mode: 'wrap',
@@ -287,19 +287,60 @@ const RichTextEditor: React.FC<{
   value: string;
   onChange: (value: string) => void;
   height?: number;
-}> = ({ value, onChange, height = 240 }) => (
-  <>
-    <Editor
-      apiKey={TINYMCE_API_KEY}
-      value={value}
-      init={buildRichTextEditorInit(height)}
-      onEditorChange={onChange}
-    />
-    <p className="mt-2 text-xs text-gray-500">
-      可直接插入、拖曳或貼上單張圖片，系統會自動上傳到網站圖庫並插入網址；目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB，較大的 JPG、PNG、WEBP 會先自動壓縮後再上傳。
-    </p>
-  </>
-);
+}> = ({ value, onChange, height = 240 }) => {
+  const editorRef = useRef<any>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageHint, setImageHint] = useState<string | null>(null);
+
+  const handleInsertImage = () => {
+    if (uploadingImage) return;
+
+    openImagePicker(async (file) => {
+      try {
+        setUploadingImage(true);
+        setImageHint('圖片上傳中...');
+        const url = await uploadValidatedEditorImage(file);
+        editorRef.current?.insertContent(`<img src="${url}" alt="${file.name}" />`);
+        setImageHint('圖片已插入內文。');
+      } catch (error) {
+        setImageHint(error instanceof Error ? error.message : '圖片上傳失敗，請稍後再試。');
+      } finally {
+        setUploadingImage(false);
+      }
+    });
+  };
+
+  return (
+    <>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleInsertImage}
+          disabled={uploadingImage}
+          className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {uploadingImage ? '圖片上傳中...' : '插入圖片'}
+        </button>
+        <span className="text-xs text-gray-500">可按這個按鈕，也可直接拖曳或貼上圖片。</span>
+      </div>
+      <Editor
+        apiKey={TINYMCE_API_KEY}
+        value={value}
+        init={buildRichTextEditorInit(height)}
+        onInit={(_evt, editor) => {
+          editorRef.current = editor;
+        }}
+        onEditorChange={onChange}
+      />
+      <p className="mt-2 text-xs text-gray-500">
+        可直接插入、拖曳或貼上單張圖片，系統會自動上傳到網站圖庫並插入網址；目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB，較大的 JPG、PNG、WEBP 會先自動壓縮後再上傳。
+      </p>
+      {imageHint && (
+        <p className="mt-1 text-xs text-blue-700">{imageHint}</p>
+      )}
+    </>
+  );
+};
 // 感恩有您編輯器
 const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: string, value: any) => void }> = ({ item, onUpdate }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
