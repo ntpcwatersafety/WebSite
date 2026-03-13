@@ -78,11 +78,119 @@ const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
 const TINYMCE_LANGUAGE = 'zh-Hant';
 const TINYMCE_LANGUAGE_URL = 'https://cdn.jsdelivr.net/npm/tinymce-i18n@26.2.16/langs6/zh-Hant.js';
+const EDITOR_IMAGE_MAX_SIZE = 8 * 1024 * 1024;
+const EDITOR_IMAGE_COMPRESSION_THRESHOLD = 2 * 1024 * 1024;
+const EDITOR_IMAGE_MAX_DIMENSION = 2400;
+const EDITOR_IMAGE_ALLOWED_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+]);
+
+const formatFileSizeMb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+
+const validateEditorImageFile = (file: File) => {
+  if (!EDITOR_IMAGE_ALLOWED_TYPES.has(file.type)) {
+    throw new Error('僅支援 JPG、PNG、WEBP、GIF 圖片格式。');
+  }
+
+  if (file.size > EDITOR_IMAGE_MAX_SIZE) {
+    throw new Error(`圖片過大，請控制在 ${formatFileSizeMb(EDITOR_IMAGE_MAX_SIZE)} 以內。`);
+  }
+};
+
+const loadImageElement = (file: File): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+
+  image.onload = () => {
+    URL.revokeObjectURL(objectUrl);
+    resolve(image);
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('無法讀取圖片內容，請換一張圖片再試一次。'));
+  };
+
+  image.src = objectUrl;
+});
+
+const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> => new Promise((resolve, reject) => {
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      reject(new Error('圖片壓縮失敗，請改用較小的圖片。'));
+      return;
+    }
+    resolve(blob);
+  }, type, quality);
+});
+
+const renameFileExtension = (name: string, nextExtension: string) => {
+  const sanitizedExtension = nextExtension.replace(/^\./, '');
+  if (!name) return `image.${sanitizedExtension}`;
+  return name.replace(/\.[a-zA-Z0-9]+$/, '') + `.${sanitizedExtension}`;
+};
+
+const compressEditorImage = async (file: File): Promise<File> => {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    return file;
+  }
+
+  if (file.size <= EDITOR_IMAGE_COMPRESSION_THRESHOLD) {
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const scale = Math.min(1, EDITOR_IMAGE_MAX_DIMENSION / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return file;
+  }
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const outputType = file.type === 'image/png' ? 'image/webp' : file.type;
+  const extension = outputType === 'image/webp' ? 'webp' : outputType === 'image/png' ? 'png' : 'jpg';
+  const qualityCandidates = outputType === 'image/png'
+    ? [undefined]
+    : [0.88, 0.8, 0.72, 0.64];
+
+  for (const quality of qualityCandidates) {
+    const blob = await canvasToBlob(canvas, outputType, quality);
+    if (blob.size < file.size || blob.size <= EDITOR_IMAGE_MAX_SIZE) {
+      return new File([blob], renameFileExtension(file.name, extension), {
+        type: outputType,
+        lastModified: Date.now()
+      });
+    }
+  }
+
+  const fallbackBlob = await canvasToBlob(canvas, outputType, qualityCandidates.at(-1));
+  return new File([fallbackBlob], renameFileExtension(file.name, extension), {
+    type: outputType,
+    lastModified: Date.now()
+  });
+};
+
+const uploadValidatedEditorImage = async (file: File) => {
+  validateEditorImageFile(file);
+  const nextFile = await compressEditorImage(file);
+  validateEditorImageFile(nextFile);
+  return uploadEditorImage(nextFile);
+};
 
 const openImagePicker = (callback: (file: File) => void) => {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = 'image/jpeg,image/png,image/webp,image/gif';
 
   input.onchange = () => {
     const file = input.files?.[0];
@@ -122,13 +230,15 @@ const buildRichTextEditorInit = (height: number) => {
     max_height: 2400,
     autoresize_bottom_margin: 0,
     autoresize_overflow_padding: 0,
+    paste_data_images: true,
+    block_unsupported_drop: true,
+    images_file_types: 'jpeg,jpg,png,webp,gif',
     quickbars_selection_toolbar: 'bold italic underline | forecolor backcolor | link blockquote',
     quickbars_insert_toolbar: 'quickimage quicktable hr',
     block_formats: '段落=p; 標題 1=h1; 標題 2=h2; 標題 3=h3; 標題 4=h4; 引言=blockquote',
     font_family_formats: 'Helvetica=helvetica,arial,sans-serif; 微軟正黑體=Microsoft JhengHei,sans-serif; 新細明體=PMingLiU,serif; Arial=arial,helvetica,sans-serif; Georgia=georgia,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
     font_size_formats: '12px 14px 16px 18px 20px 24px 28px 36px 48px',
     content_style: 'body { font-family: Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; overflow-y: hidden; } img { max-width: 100%; height: auto; } .notice-box { border-left: 4px solid #0f766e; background: #f0fdfa; padding: 12px 14px; border-radius: 8px; } .warning-box { border-left: 4px solid #dc2626; background: #fef2f2; padding: 12px 14px; border-radius: 8px; } .highlight-text { color: #b91c1c; font-weight: 700; }',
-    paste_data_images: false,
     image_title: true,
     image_caption: true,
     automatic_uploads: true,
@@ -160,12 +270,12 @@ const buildRichTextEditorInit = (height: number) => {
       const file = new File([blobInfo.blob()], blobInfo.filename(), {
         type: blobInfo.blob().type || 'image/png'
       });
-      return uploadEditorImage(file);
+      return uploadValidatedEditorImage(file);
     },
     file_picker_callback: (callback: (url: string, meta?: { alt?: string; title?: string }) => void, _value: string, meta: { filetype?: string }) => {
       if (meta.filetype === 'image') {
         openImagePicker(async (file) => {
-          const url = await uploadEditorImage(file);
+          const url = await uploadValidatedEditorImage(file);
           callback(url, { alt: file.name, title: file.name });
         });
       }
@@ -186,7 +296,7 @@ const RichTextEditor: React.FC<{
       onEditorChange={onChange}
     />
     <p className="mt-2 text-xs text-gray-500">
-      可直接插入照片，圖片會上傳到網站檔案並以網址寫入內容；若單張照片太大，建議先壓縮後再上傳。
+      可直接插入、拖曳或貼上單張圖片，系統會自動上傳到網站圖庫並插入網址；目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB，較大的 JPG、PNG、WEBP 會先自動壓縮後再上傳。
     </p>
   </>
 );

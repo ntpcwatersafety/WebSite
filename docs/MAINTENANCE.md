@@ -42,9 +42,11 @@
 補充：
 
 - 文字編輯器可直接上傳圖片
-- 圖片上傳後會寫到 public/images/editor/*
+- 圖片上傳後會寫到 public/images/editor/YYYY/MM/*
 - 文章內只保存圖片網址，不再把圖片 base64 直接塞進 JSON
 - 若圖片已上傳但文章最後沒儲存，可能會留下未使用圖片檔
+- 目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB
+- 大於約 2 MB 的 JPG、PNG、WEBP 會先在瀏覽器端自動壓縮後再上傳
 
 ## 正式站驗證清單
 

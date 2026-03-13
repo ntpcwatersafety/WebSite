@@ -18,6 +18,7 @@ const CMS_SECTION_FILE_NAMES = {
 
 const DEFAULT_CMS_DATA_ROOT = 'public/cms';
 const DEFAULT_EDITOR_IMAGE_ROOT = 'public/images/editor';
+const ALLOWED_EDITOR_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -581,8 +582,8 @@ const handleUploadImage = async (request, config) => {
     return jsonResponse({ message: 'Missing image file' }, 400);
   }
 
-  if (!String(file.type || '').startsWith('image/')) {
-    return jsonResponse({ message: 'Only image uploads are allowed' }, 400);
+  if (!ALLOWED_EDITOR_IMAGE_TYPES.has(String(file.type || '').toLowerCase())) {
+    return jsonResponse({ message: 'Only JPG, PNG, WEBP, and GIF uploads are allowed' }, 400);
   }
 
   if (file.size > 8 * 1024 * 1024) {
