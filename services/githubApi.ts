@@ -17,8 +17,18 @@ import { CmsFileShas } from './cmsData';
 const GITHUB_PROXY = {
   statusUrl: '/api/github/status',
   cmsUrl: '/api/cms',
-  uploadImageUrl: '/api/upload-image'
+  uploadImageUrl: '/api/upload-image',
+  editorImagesUrl: '/api/editor-images',
+  cleanupImagesUrl: '/api/cleanup-images'
 };
+
+export interface EditorImageAsset {
+  url: string;
+  path: string;
+  name: string;
+  size: number;
+  uploadedAt: string | null;
+}
 
 /**
  * 取得檔案目前內容和 SHA
@@ -109,6 +119,53 @@ export const uploadEditorImage = async (file: File): Promise<string> => {
     return data.url as string;
   } catch (error) {
     console.error('uploadEditorImage error', error);
+    throw error;
+  }
+};
+
+export const cleanupEditorImages = async (urls: string[], keepalive = false): Promise<boolean> => {
+  if (!urls.length) return true;
+
+  try {
+    const token = localStorage.getItem('ntpc_admin_session');
+    const resp = await fetch(GITHUB_PROXY.cleanupImagesUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ urls }),
+      keepalive
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || `圖片清理失敗: ${resp.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('cleanupEditorImages error', error);
+    throw error;
+  }
+};
+
+export const listEditorImages = async (): Promise<EditorImageAsset[]> => {
+  try {
+    const token = localStorage.getItem('ntpc_admin_session');
+    const resp = await fetch(GITHUB_PROXY.editorImagesUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || `讀取圖片清單失敗: ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    return Array.isArray(data?.images) ? data.images as EditorImageAsset[] : [];
+  } catch (error) {
+    console.error('listEditorImages error', error);
     throw error;
   }
 };

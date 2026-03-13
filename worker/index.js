@@ -333,6 +333,12 @@ const getCommit = async (config, commitSha) => {
   return response.json();
 };
 
+const getTreeRecursive = async (config, treeSha) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/trees/${treeSha}?recursive=1`);
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
 const createBlob = async (config, content, encoding = 'utf-8') => {
   const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/blobs`, {
     method: 'POST',
@@ -441,6 +447,30 @@ const buildEditorImageRepoPath = (config, file) => {
 };
 
 const toPublicAssetUrl = (repoPath) => `/${String(repoPath).replace(/^public\//, '')}`;
+
+const inferUploadedAtFromPath = (repoPath) => {
+  const match = String(repoPath || '').match(/-(\d{13})-[a-z0-9]{6}\.[^.]+$/i);
+  if (!match) return null;
+
+  const timestamp = Number(match[1]);
+  if (!Number.isFinite(timestamp)) return null;
+  return new Date(timestamp).toISOString();
+};
+
+const toRepoAssetPath = (assetUrl) => {
+  try {
+    const pathname = new URL(String(assetUrl), 'https://ntpcwsa.local').pathname;
+    return `public${pathname}`;
+  } catch {
+    return null;
+  }
+};
+
+const isManagedEditorImagePath = (config, repoPath) => {
+  const normalizedPath = String(repoPath || '').replace(/\\/g, '/');
+  const normalizedRoot = `${String(config.githubImageRoot || '').replace(/\\/g, '/').replace(/\/$/, '')}/`;
+  return normalizedPath.startsWith(normalizedRoot);
+};
 
 const handleLogin = async (request, config) => {
   if (!hasAdminAuthConfig(config)) {
@@ -615,6 +645,87 @@ const handleUploadImage = async (request, config) => {
   }
 };
 
+const handleCleanupImages = async (request, config) => {
+  const authResult = await verifyBearerAuth(request, config);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  if (!config.githubToken) {
+    return jsonResponse({ message: 'GitHub token not configured on worker' }, 503);
+  }
+
+  const body = await parseJson(request);
+  const urls = Array.isArray(body?.urls) ? body.urls : [];
+  if (!urls.length) {
+    return jsonResponse({ ok: true, deleted: [] });
+  }
+
+  const repoPaths = Array.from(new Set(
+    urls
+      .map(toRepoAssetPath)
+      .filter((path) => path && isManagedEditorImagePath(config, path))
+  ));
+
+  if (!repoPaths.length) {
+    return jsonResponse({ message: 'No valid editor image paths to delete' }, 400);
+  }
+
+  try {
+    const nextCommit = await commitTreeEntries(
+      config,
+      repoPaths.map((path) => ({ path, sha: null })),
+      `Cleanup unused editor images (${repoPaths.length})`
+    );
+
+    return jsonResponse({
+      ok: true,
+      deleted: repoPaths.map(toPublicAssetUrl),
+      commitSha: nextCommit.sha
+    });
+  } catch (error) {
+    if (error?.status === 409 || error?.status === 422) {
+      return jsonResponse({ message: 'Repository changed while cleaning images. Please try again.' }, 409);
+    }
+    return jsonResponse({ message: error instanceof Error ? error.message : 'Failed to cleanup editor images' }, 500);
+  }
+};
+
+const handleGetEditorImages = async (request, config) => {
+  const authResult = await verifyBearerAuth(request, config);
+  if (!authResult.ok) {
+    return authResult.response;
+  }
+
+  if (!config.githubToken) {
+    return jsonResponse({ message: 'GitHub token not configured on worker' }, 503);
+  }
+
+  try {
+    const branchRef = await getBranchRef(config);
+    const parentCommit = await getCommit(config, branchRef.object.sha);
+    const recursiveTree = await getTreeRecursive(config, parentCommit.tree.sha);
+    const rootPrefix = `${String(config.githubImageRoot || '').replace(/\\/g, '/').replace(/\/$/, '')}/`;
+
+    const images = Array.isArray(recursiveTree?.tree)
+      ? recursiveTree.tree
+          .filter((entry) => entry?.type === 'blob' && String(entry.path || '').startsWith(rootPrefix))
+          .map((entry) => ({
+            url: toPublicAssetUrl(entry.path),
+            path: entry.path,
+            name: String(entry.path).split('/').at(-1) || 'image',
+            size: Number(entry.size || 0),
+            uploadedAt: inferUploadedAtFromPath(entry.path)
+          }))
+          .sort((left, right) => String(right.uploadedAt || '').localeCompare(String(left.uploadedAt || '')))
+      : [];
+
+    return jsonResponse({ images });
+  } catch (error) {
+    return jsonResponse({ message: error instanceof Error ? error.message : 'Failed to list editor images' }, 500);
+  }
+};
+
 const handleRequest = async (request, env) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -645,6 +756,14 @@ const handleRequest = async (request, env) => {
 
   if (url.pathname === '/api/upload-image' && request.method === 'POST') {
     return handleUploadImage(request, config);
+  }
+
+  if (url.pathname === '/api/editor-images' && request.method === 'GET') {
+    return handleGetEditorImages(request, config);
+  }
+
+  if (url.pathname === '/api/cleanup-images' && request.method === 'POST') {
+    return handleCleanupImages(request, config);
   }
 
   return jsonResponse({ message: 'Not found' }, 404);

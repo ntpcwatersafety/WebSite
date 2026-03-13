@@ -70,7 +70,7 @@ import {
   Key, RefreshCw, Download, Eye
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
-import { getFileContent, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
+import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { CmsCollectionKey, CmsData, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
 import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
@@ -87,8 +87,51 @@ const EDITOR_IMAGE_ALLOWED_TYPES = new Set([
   'image/webp',
   'image/gif'
 ]);
+const EDITOR_IMAGE_PATH_PATTERN = /(?:https?:\/\/[^"'\s)<>]+)?(\/images\/editor\/[^"'\s)<>]+)/g;
 
 const formatFileSizeMb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+
+const normalizeEditorImageUrl = (value: string) => {
+  try {
+    const pathname = new URL(value, 'https://ntpcwsa.local').pathname;
+    return pathname.startsWith('/images/editor/') ? pathname : null;
+  } catch {
+    return value.startsWith('/images/editor/') ? value : null;
+  }
+};
+
+const collectEditorImageUrls = (input: unknown, urls: Set<string>) => {
+  if (typeof input === 'string') {
+    for (const match of input.matchAll(EDITOR_IMAGE_PATH_PATTERN)) {
+      const normalized = normalizeEditorImageUrl(match[1] || match[0]);
+      if (normalized) {
+        urls.add(normalized);
+      }
+    }
+    return;
+  }
+
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      collectEditorImageUrls(item, urls);
+    }
+    return;
+  }
+
+  if (input && typeof input === 'object') {
+    for (const value of Object.values(input)) {
+      collectEditorImageUrls(value, urls);
+    }
+  }
+};
+
+const extractCmsEditorImageUrls = (data: CmsData | null) => {
+  const urls = new Set<string>();
+  if (data) {
+    collectEditorImageUrls(data, urls);
+  }
+  return urls;
+};
 
 const validateEditorImageFile = (file: File) => {
   if (!EDITOR_IMAGE_ALLOWED_TYPES.has(file.type)) {
@@ -287,7 +330,8 @@ const RichTextEditor: React.FC<{
   value: string;
   onChange: (value: string) => void;
   height?: number;
-}> = ({ value, onChange, height = 240 }) => {
+  onImageUploaded?: (url: string) => void;
+}> = ({ value, onChange, height = 240, onImageUploaded }) => {
   const editorRef = useRef<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageHint, setImageHint] = useState<string | null>(null);
@@ -300,6 +344,7 @@ const RichTextEditor: React.FC<{
         setUploadingImage(true);
         setImageHint('圖片上傳中...');
         const url = await uploadValidatedEditorImage(file);
+        onImageUploaded?.(url);
         editorRef.current?.insertContent(`<img src="${url}" alt="${file.name}" />`);
         setImageHint('圖片已插入內文。');
       } catch (error) {
@@ -326,7 +371,26 @@ const RichTextEditor: React.FC<{
       <Editor
         apiKey={TINYMCE_API_KEY}
         value={value}
-        init={buildRichTextEditorInit(height)}
+        init={{
+          ...buildRichTextEditorInit(height),
+          images_upload_handler: async (blobInfo: { blob: () => Blob; filename: () => string }) => {
+            const file = new File([blobInfo.blob()], blobInfo.filename(), {
+              type: blobInfo.blob().type || 'image/png'
+            });
+            const url = await uploadValidatedEditorImage(file);
+            onImageUploaded?.(url);
+            return url;
+          },
+          file_picker_callback: (callback: (url: string, meta?: { alt?: string; title?: string }) => void, _value: string, meta: { filetype?: string }) => {
+            if (meta.filetype === 'image') {
+              openImagePicker(async (file) => {
+                const url = await uploadValidatedEditorImage(file);
+                onImageUploaded?.(url);
+                callback(url, { alt: file.name, title: file.name });
+              });
+            }
+          }
+        }}
         onInit={(_evt, editor) => {
           editorRef.current = editor;
         }}
@@ -365,13 +429,14 @@ const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: strin
   </div>
 );
 // 協會簡介編輯器
-const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void }> = ({ value, onChange }) => (
+const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void; onImageUploaded?: (url: string) => void }> = ({ value, onChange, onImageUploaded }) => (
   <div className="mb-8">
     <label className="block text-lg font-bold text-primary mb-2">首頁協會簡介</label>
     <RichTextEditor
       value={value}
       height={260}
       onChange={onChange}
+      onImageUploaded={onImageUploaded}
     />
   </div>
 );
@@ -439,6 +504,7 @@ const GalleryItemEditor: React.FC<GalleryItemEditorProps> = ({ item, onUpdate })
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
+  const pendingEditorImageUrlsRef = useRef<Set<string>>(new Set());
   
   // 登入狀態
   const [authenticated, setAuthenticated] = useState(false);
@@ -456,6 +522,12 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [editorImages, setEditorImages] = useState<EditorImageAsset[]>([]);
+  const [loadingEditorImages, setLoadingEditorImages] = useState(false);
+  const [deletingEditorImages, setDeletingEditorImages] = useState(false);
+  const [editorImageKeyword, setEditorImageKeyword] = useState('');
+  const [selectedEditorImages, setSelectedEditorImages] = useState<string[]>([]);
+  const [showOnlyUnusedEditorImages, setShowOnlyUnusedEditorImages] = useState(false);
   
   // 展開的區塊
   const [expandedSection, setExpandedSection] = useState<string>('homeNews');
@@ -552,8 +624,28 @@ const Admin: React.FC = () => {
       expandedKey: 'galleryItems',
       icon: Eye,
       tone: 'bg-amber-50 text-amber-700 border-amber-100'
+    },
+    {
+      id: 'quick-editor-images',
+      title: '檢查編輯器圖片庫',
+      description: '人工查看 editor 圖片並刪除未使用檔案。',
+      sectionId: 'editor-image-library',
+      icon: Eye,
+      tone: 'bg-violet-50 text-violet-700 border-violet-100'
     }
   ];
+
+  const referencedEditorImageUrls = extractCmsEditorImageUrls(cmsData);
+  const filteredEditorImages = editorImages.filter((image) => {
+    if (showOnlyUnusedEditorImages && referencedEditorImageUrls.has(image.url)) {
+      return false;
+    }
+
+    const keyword = editorImageKeyword.trim().toLowerCase();
+    if (!keyword) return true;
+
+    return [image.name, image.path, image.url].some((value) => value.toLowerCase().includes(keyword));
+  });
 
   // 檢查登入狀態
   useEffect(() => {
@@ -570,6 +662,102 @@ const Admin: React.FC = () => {
     })();
   }, [authenticated]);
 
+  useEffect(() => {
+    if (!authenticated) return undefined;
+
+    const handlePageHide = () => {
+      const urls = Array.from(pendingEditorImageUrlsRef.current);
+      if (!urls.length) return;
+      void cleanupEditorImages(urls, true).catch(() => undefined);
+      pendingEditorImageUrlsRef.current.clear();
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [authenticated]);
+
+  const trackUploadedEditorImage = (url: string) => {
+    const normalized = normalizeEditorImageUrl(url);
+    if (normalized) {
+      pendingEditorImageUrlsRef.current.add(normalized);
+    }
+  };
+
+  const cleanupPendingEditorImages = async (urls?: string[]) => {
+    const targets = urls && urls.length ? urls : Array.from(pendingEditorImageUrlsRef.current);
+    if (!targets.length) return true;
+
+    await cleanupEditorImages(targets);
+    for (const url of targets) {
+      pendingEditorImageUrlsRef.current.delete(url);
+    }
+    return true;
+  };
+
+  const loadEditorImageLibrary = async () => {
+    setLoadingEditorImages(true);
+    try {
+      const images = await listEditorImages();
+      setEditorImages(images);
+      setSelectedEditorImages((previous) => previous.filter((url) => images.some((image) => image.url === url)));
+    } catch (error) {
+      console.error('載入圖片庫失敗:', error);
+      showMessage('error', error instanceof Error ? error.message : '載入圖片庫失敗');
+    }
+    setLoadingEditorImages(false);
+  };
+
+  const toggleEditorImageSelection = (url: string) => {
+    setSelectedEditorImages((previous) => (
+      previous.includes(url)
+        ? previous.filter((item) => item !== url)
+        : [...previous, url]
+    ));
+  };
+
+  const selectAllDeletableEditorImages = () => {
+    const deletableUrls = filteredEditorImages
+      .filter((image) => !referencedEditorImageUrls.has(image.url))
+      .map((image) => image.url);
+
+    setSelectedEditorImages(deletableUrls);
+  };
+
+  const handleDeleteSelectedEditorImages = async () => {
+    if (!selectedEditorImages.length) return;
+    if (!confirm(`確定要刪除 ${selectedEditorImages.length} 張圖片嗎？`)) return;
+
+    setDeletingEditorImages(true);
+    try {
+      await cleanupEditorImages(selectedEditorImages);
+      setEditorImages((previous) => previous.filter((image) => !selectedEditorImages.includes(image.url)));
+      setSelectedEditorImages([]);
+      showMessage('success', '已刪除選取的圖片。');
+    } catch (error) {
+      console.error('刪除圖片失敗:', error);
+      showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
+    }
+    setDeletingEditorImages(false);
+  };
+
+  const handleDeleteSingleEditorImage = async (url: string) => {
+    if (!confirm('確定要刪除這張圖片嗎？')) return;
+
+    setDeletingEditorImages(true);
+    try {
+      await cleanupEditorImages([url]);
+      setEditorImages((previous) => previous.filter((image) => image.url !== url));
+      setSelectedEditorImages((previous) => previous.filter((item) => item !== url));
+      showMessage('success', '已刪除圖片。');
+    } catch (error) {
+      console.error('刪除圖片失敗:', error);
+      showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
+    }
+    setDeletingEditorImages(false);
+  };
+
   const checkToken = async () => {
     const valid = await validateToken();
     setTokenValid(valid);
@@ -578,12 +766,21 @@ const Admin: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
+      if (pendingEditorImageUrlsRef.current.size) {
+        try {
+          await cleanupPendingEditorImages();
+        } catch (cleanupError) {
+          console.warn('清理未儲存圖片失敗，將在下次操作時再試一次', cleanupError);
+        }
+      }
+
       // 嘗試透過伺服器代理從 GitHub 取得整合後的 CMS 資料
       try {
         const result = await getFileContent();
         if (result && result.content) {
           setCmsData(normalizeCmsData(result.content as Partial<CmsData>));
           setCmsShas(result.shas || null);
+          await loadEditorImageLibrary();
           setLoading(false);
           return;
         }
@@ -594,6 +791,7 @@ const Admin: React.FC = () => {
       const [{ loadCmsData }] = await Promise.all([import('../services/cmsLoader')]);
       setCmsData(await loadCmsData());
       setCmsShas(null);
+      await loadEditorImageLibrary();
     } catch (error) {
       console.error('載入資料失敗:', error);
       showMessage('error', '載入資料失敗');
@@ -612,7 +810,15 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      if (pendingEditorImageUrlsRef.current.size) {
+        await cleanupPendingEditorImages();
+      }
+    } catch (cleanupError) {
+      console.warn('登出前清理未儲存圖片失敗', cleanupError);
+    }
+
     logout();
     setAuthenticated(false);
     setCmsData(null);
@@ -635,7 +841,21 @@ const Admin: React.FC = () => {
     
     setSaving(true);
     try {
+      const referencedImageUrls = extractCmsEditorImageUrls(cmsData);
+      const unusedPendingUrls = Array.from(pendingEditorImageUrlsRef.current).filter((url) => !referencedImageUrls.has(url));
+      pendingEditorImageUrlsRef.current = new Set(unusedPendingUrls);
+
       await updateCmsData(cmsData, `📝 管理員更新網站內容 - ${new Date().toLocaleString('zh-TW')}`, cmsShas);
+
+      if (unusedPendingUrls.length) {
+        try {
+          await cleanupPendingEditorImages(unusedPendingUrls);
+        } catch (cleanupError) {
+          console.warn('儲存後清理未使用圖片失敗，稍後會再嘗試', cleanupError);
+        }
+      }
+
+      pendingEditorImageUrlsRef.current.clear();
       await loadData();
       showMessage('success', '儲存成功！網站將在 1-2 分鐘內更新');
     } catch (error: any) {
@@ -1080,6 +1300,125 @@ const Admin: React.FC = () => {
               </div>
             </section>
 
+            <section id="editor-image-library" className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm scroll-mt-24">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">編輯器圖片庫</h2>
+                  <p className="text-sm text-slate-600 mt-2">人工檢查 editor 圖片、搜尋檔名，並刪除目前未被內容引用的圖片。</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={loadEditorImageLibrary}
+                    disabled={loadingEditorImages || deletingEditorImages}
+                    className="px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+                  >
+                    {loadingEditorImages ? '載入中...' : '重新整理圖片庫'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={selectAllDeletableEditorImages}
+                    disabled={loadingEditorImages || deletingEditorImages || !filteredEditorImages.some((image) => !referencedEditorImageUrls.has(image.url))}
+                    className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    全選可刪圖片
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelectedEditorImages}
+                    disabled={deletingEditorImages || !selectedEditorImages.length}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                  >
+                    {deletingEditorImages ? '刪除中...' : `刪除選取圖片 (${selectedEditorImages.length})`}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  value={editorImageKeyword}
+                  onChange={(event) => setEditorImageKeyword(event.target.value)}
+                  className="md:col-span-2 w-full px-3 py-2 border border-slate-200 rounded-lg"
+                  placeholder="搜尋檔名或路徑"
+                />
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600">
+                  共 {filteredEditorImages.length} 張，可刪 {filteredEditorImages.filter((image) => !referencedEditorImageUrls.has(image.url)).length} 張
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <label className="flex items-center gap-2 text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={showOnlyUnusedEditorImages}
+                    onChange={(event) => setShowOnlyUnusedEditorImages(event.target.checked)}
+                  />
+                  只看未引用圖片
+                </label>
+                <span className="text-slate-500">開啟後只顯示目前未被 CMS 內容引用、可直接整理的圖片。</span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {loadingEditorImages ? (
+                  <p className="text-sm text-slate-500">圖片清單載入中...</p>
+                ) : filteredEditorImages.length ? (
+                  filteredEditorImages.map((image) => {
+                    const referenced = referencedEditorImageUrls.has(image.url);
+                    const selected = selectedEditorImages.includes(image.url);
+
+                    return (
+                      <div key={image.url} className="border border-slate-200 rounded-xl p-4 bg-slate-50">
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <div className="w-full md:w-40 h-28 rounded-lg overflow-hidden bg-white border border-slate-200 flex items-center justify-center">
+                            <img src={image.url} alt={image.name} className="max-w-full max-h-full object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <label className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  disabled={referenced || deletingEditorImages}
+                                  onChange={() => toggleEditorImageSelection(image.url)}
+                                />
+                                {image.name}
+                              </label>
+                              <span className={`text-xs px-2 py-0.5 rounded-full border ${referenced ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                                {referenced ? '內容引用中' : '可人工刪除'}
+                              </span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                {(image.size / 1024).toFixed(1)} KB
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-500 break-all">{image.path}</p>
+                            <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                              <span>網址：{image.url}</span>
+                              <span>上傳時間：{image.uploadedAt ? new Date(image.uploadedAt).toLocaleString('zh-TW') : '未知'}</span>
+                            </div>
+                            {!referenced && (
+                              <div className="mt-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSingleEditorImage(image.url)}
+                                  disabled={deletingEditorImages}
+                                  className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60"
+                                >
+                                  單張刪除
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-slate-500">目前沒有符合條件的 editor 圖片。</p>
+                )}
+              </div>
+            </section>
+
             <PageGroup
               sectionId="page-group-home"
               title="首頁"
@@ -1099,6 +1438,7 @@ const Admin: React.FC = () => {
                 <IntroEditor
                   value={cmsData.introContent || ''}
                   onChange={v => setCmsData({ ...cmsData, introContent: v })}
+                  onImageUploaded={trackUploadedEditorImage}
                 />
               </div>
 
@@ -1119,6 +1459,7 @@ const Admin: React.FC = () => {
                   <NewsItemEditor
                     item={item}
                     onUpdate={(field, value) => updateItemField('homeNews', index, field, value)}
+                    onImageUploaded={trackUploadedEditorImage}
                   />
                 )}
               />
@@ -1147,6 +1488,7 @@ const Admin: React.FC = () => {
                   <NewsItemEditor
                     item={item}
                     onUpdate={(field, value) => updateItemField('trainingRecords', index, field, value)}
+                    onImageUploaded={trackUploadedEditorImage}
                   />
                 )}
               />
@@ -1217,6 +1559,7 @@ const Admin: React.FC = () => {
                   <AwardItemEditor
                     item={item}
                     onUpdate={(field, value) => updateItemField('awards', index, field, value)}
+                    onImageUploaded={trackUploadedEditorImage}
                   />
                 )}
               />
@@ -1403,9 +1746,10 @@ const PageGroup: React.FC<PageGroupProps> = ({ sectionId, title, route, descript
 interface NewsItemEditorProps {
   item: NewsItem;
   onUpdate: (field: string, value: any) => void;
+  onImageUploaded?: (url: string) => void;
 }
 
-const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate }) => {
+const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate, onImageUploaded }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -1451,6 +1795,7 @@ const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate }) => {
         <RichTextEditor
           value={item.description || ''}
           onChange={(content) => onUpdate('description', content)}
+          onImageUploaded={onImageUploaded}
         />
       </div>
       <div className="md:col-span-2">
@@ -1471,9 +1816,10 @@ const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate }) => {
 interface AwardItemEditorProps {
   item: AwardItem;
   onUpdate: (field: string, value: any) => void;
+  onImageUploaded?: (url: string) => void;
 }
 
-const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate }) => {
+const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate, onImageUploaded }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
@@ -1509,6 +1855,7 @@ const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate }) => 
         <RichTextEditor
           value={item.description || ''}
           onChange={(content) => onUpdate('description', content)}
+          onImageUploaded={onImageUploaded}
         />
       </div>
     </div>
