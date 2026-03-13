@@ -1,6 +1,6 @@
 // 媒體報導編輯器
 interface MediaItemEditorProps {
-  item: any; // 或 MediaItem，如果你有定義型別
+  item: MediaItem;
   onUpdate: (field: string, value: any) => void;
 }
 
@@ -71,26 +71,8 @@ import {
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { getFileContent, updateCmsData, validateToken } from '../services/githubApi';
-import { NewsItem, AwardItem, TestimonialItem, GalleryItem } from '../types';
-
-// CMS 資料結構
-interface ThankYouItem {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface CmsData {
-  lastUpdated: string;
-  homeNews: NewsItem[];
-  mediaReports: any[];
-  awards: AwardItem[];
-  testimonials: TestimonialItem[];
-  trainingRecords: NewsItem[];
-  galleryItems: GalleryItem[];
-  introContent?: string; // 協會簡介內容
-  thankYouItems?: ThankYouItem[];
-}
+import { CmsCollectionKey, CmsData, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
+import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 // 感恩有您編輯器
@@ -219,7 +201,7 @@ const Admin: React.FC = () => {
   
   // 資料狀態
   const [cmsData, setCmsData] = useState<CmsData | null>(null);
-  const [cmsSha, setCmsSha] = useState<string | null>(null);
+  const [cmsShas, setCmsShas] = useState<CmsFileShas | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -253,32 +235,22 @@ const Admin: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // 嘗試透過伺服器代理從 GitHub 取得 cms-data.json
+      // 嘗試透過伺服器代理從 GitHub 取得整合後的 CMS 資料
       try {
         const result = await getFileContent();
         if (result && result.content) {
-          setCmsData({
-            ...result.content,
-            galleryItems: Array.isArray(result.content.galleryItems) ? result.content.galleryItems : []
-          });
-          setCmsSha(result.sha || null);
+          setCmsData(normalizeCmsData(result.content as Partial<CmsData>));
+          setCmsShas(result.shas || null);
           setLoading(false);
           return;
         }
       } catch (ghErr) {
-        console.warn('從後端 GitHub 代理載入失敗，回退至本地 cms-data.json', ghErr);
+        console.warn('從後端 GitHub 代理載入失敗，回退至本地 cms/*.json', ghErr);
       }
 
-      // 回退：從本地載入
-      const response = await fetch(`${import.meta.env.BASE_URL}cms-data.json`);
-      if (response.ok) {
-        const data = await response.json();
-        setCmsData({
-          ...data,
-          galleryItems: Array.isArray(data.galleryItems) ? data.galleryItems : []
-        });
-        setCmsSha(null);
-      }
+      const [{ loadCmsData }] = await Promise.all([import('../services/cmsLoader')]);
+      setCmsData(await loadCmsData());
+      setCmsShas(null);
     } catch (error) {
       console.error('載入資料失敗:', error);
       showMessage('error', '載入資料失敗');
@@ -301,7 +273,7 @@ const Admin: React.FC = () => {
     logout();
     setAuthenticated(false);
     setCmsData(null);
-    setCmsSha(null);
+    setCmsShas(null);
   };
 
   // GitHub token 存放改為伺服器端，前端僅顯示狀態並提供檢查功能
@@ -313,14 +285,14 @@ const Admin: React.FC = () => {
 
   const handleSave = async () => {
     if (!cmsData) return;
-    if (!cmsSha) {
+    if (!cmsShas) {
       showMessage('error', '目前不是最新的 GitHub 版本，請先重新載入資料後再儲存。');
       return;
     }
     
     setSaving(true);
     try {
-      await updateCmsData(cmsData, `📝 管理員更新網站內容 - ${new Date().toLocaleString('zh-TW')}`, cmsSha);
+      await updateCmsData(cmsData, `📝 管理員更新網站內容 - ${new Date().toLocaleString('zh-TW')}`, cmsShas);
       await loadData();
       showMessage('success', '儲存成功！網站將在 1-2 分鐘內更新');
     } catch (error: any) {
@@ -334,7 +306,7 @@ const Admin: React.FC = () => {
     setSaving(false);
   };
 
-  // 下載 JSON 檔案（本地預覽用）
+  // 下載整份 CMS 備份檔（手動維護或備份用）
   const handleDownloadJson = () => {
     if (!cmsData) return;
     
@@ -350,20 +322,20 @@ const Admin: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'cms-data.json';
+    a.download = 'cms-export.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showMessage('success', '已下載 cms-data.json，請放到 public/ 資料夾');
+    showMessage('success', '已下載 cms-export.json，可作為整站內容備份');
   };
 
   // 新增項目
-  const addItem = (section: keyof CmsData) => {
+  const addItem = (section: CmsCollectionKey) => {
     if (!cmsData) return;
     const newId = `${section}-${Date.now()}`;
-    let newItem: any;
+    let newItem: NewsItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
     switch (section) {
       case 'homeNews':
       case 'trainingRecords':
@@ -411,20 +383,27 @@ const Admin: React.FC = () => {
           isActive: true
         };
         break;
+      case 'thankYouItems':
+        newItem = {
+          id: newId,
+          name: '請輸入姓名或單位',
+          description: ''
+        };
+        break;
       default:
         return;
     }
     setCmsData({
       ...cmsData,
-      [section]: [newItem, ...(cmsData[section] as any[])]
+      [section]: [newItem, ...cmsData[section]]
     });
   };
 
   // 刪除項目
-  const deleteItem = (section: keyof CmsData, index: number) => {
+  const deleteItem = (section: CmsCollectionKey, index: number) => {
     if (!cmsData || !confirm('確定要刪除此項目嗎？')) return;
     
-    const items = [...(cmsData[section] as any[])];
+    const items = [...cmsData[section]];
     items.splice(index, 1);
     
     setCmsData({
@@ -434,10 +413,10 @@ const Admin: React.FC = () => {
   };
 
   // 更新項目欄位
-  const updateItemField = (section: keyof CmsData, index: number, field: string, value: any) => {
+  const updateItemField = (section: CmsCollectionKey, index: number, field: string, value: any) => {
     if (!cmsData) return;
     
-    const items = [...(cmsData[section] as any[])];
+    const items = [...cmsData[section]];
     items[index] = { ...items[index], [field]: value };
     
     setCmsData({
@@ -553,7 +532,7 @@ const Admin: React.FC = () => {
             {/* 儲存按鈕 */}
             <button
               onClick={handleSave}
-              disabled={saving || loading || !tokenValid || !cmsSha}
+              disabled={saving || loading || !tokenValid || !cmsShas}
               className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -647,7 +626,7 @@ const Admin: React.FC = () => {
           </div>
         )}
 
-        {tokenValid === true && !cmsSha && (
+        {tokenValid === true && !cmsShas && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>

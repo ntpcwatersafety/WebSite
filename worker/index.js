@@ -8,6 +8,16 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS'
 };
 
+const CMS_SECTION_FILE_NAMES = {
+  home: 'home.json',
+  media: 'media.json',
+  results: 'results.json',
+  gallery: 'gallery.json',
+  thankyou: 'thankyou.json'
+};
+
+const DEFAULT_CMS_DATA_ROOT = 'public/cms';
+
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
@@ -28,6 +38,7 @@ const parseJson = async (request) => {
 };
 
 const toBase64Url = (input) => input.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+
 const fromBase64Url = (input) => {
   const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
   const padding = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
@@ -36,13 +47,6 @@ const fromBase64Url = (input) => {
 
 const encodeJsonSegment = (value) => toBase64Url(btoa(JSON.stringify(value)));
 const decodeJsonSegment = (value) => JSON.parse(atob(fromBase64Url(value)));
-
-const stringToBase64 = (value) => {
-  let binary = '';
-  const bytes = textEncoder.encode(value);
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-};
 
 const bytesToBase64 = (bytes) => {
   let binary = '';
@@ -116,17 +120,32 @@ const parseDurationMs = (value) => {
   return amount * multipliers[unit];
 };
 
-const getConfig = (env) => ({
-  adminUser: env.ADMIN_USER || null,
-  adminPass: env.ADMIN_PASS || null,
-  jwtSecret: env.JWT_SECRET || null,
-  jwtExpiresIn: env.JWT_EXPIRES_IN || '24h',
-  githubToken: env.GITHUB_TOKEN || null,
-  githubOwner: env.OWNER || env.GITHUB_OWNER || 'ntpcwatersafety',
-  githubRepo: env.REPO || env.GITHUB_REPO || 'WebSite',
-  githubBranch: env.BRANCH || env.GITHUB_BRANCH || 'main',
-  githubDataPath: env.DATA_PATH || env.GITHUB_DATA_PATH || 'public/cms-data.json'
-});
+const inferCmsDataRoot = (candidate) => {
+  if (!candidate) return DEFAULT_CMS_DATA_ROOT;
+
+  const normalized = String(candidate).replace(/\\/g, '/').replace(/\/$/, '');
+  if (!normalized.endsWith('.json')) return normalized;
+
+  const lastSlash = normalized.lastIndexOf('/');
+  const parent = lastSlash === -1 ? '' : normalized.slice(0, lastSlash);
+  return `${parent ? `${parent}/` : ''}cms`;
+};
+
+const getConfig = (env) => {
+  const legacyDataPath = env.DATA_PATH || env.GITHUB_DATA_PATH || 'public/cms-data.json';
+
+  return {
+    adminUser: env.ADMIN_USER || null,
+    adminPass: env.ADMIN_PASS || null,
+    jwtSecret: env.JWT_SECRET || null,
+    jwtExpiresIn: env.JWT_EXPIRES_IN || '24h',
+    githubToken: env.GITHUB_TOKEN || null,
+    githubOwner: env.OWNER || env.GITHUB_OWNER || 'ntpcwatersafety',
+    githubRepo: env.REPO || env.GITHUB_REPO || 'WebSite',
+    githubBranch: env.BRANCH || env.GITHUB_BRANCH || 'main',
+    githubDataRoot: inferCmsDataRoot(env.DATA_ROOT || env.GITHUB_DATA_ROOT || legacyDataPath)
+  };
+};
 
 const hasAdminAuthConfig = (config) => !!(config.adminUser && config.adminPass && config.jwtSecret);
 
@@ -145,6 +164,214 @@ const githubHeaders = (config) => {
   };
   if (config.githubToken) headers.Authorization = `Bearer ${config.githubToken}`;
   return headers;
+};
+
+const createEmptyCmsData = () => ({
+  lastUpdated: '',
+  homeNews: [],
+  mediaReports: [],
+  awards: [],
+  testimonials: [],
+  trainingRecords: [],
+  galleryItems: [],
+  introContent: '',
+  thankYouItems: []
+});
+
+const createEmptyCmsSplitData = () => ({
+  home: { lastUpdated: '', introContent: '', homeNews: [] },
+  media: { lastUpdated: '', mediaReports: [], awards: [] },
+  results: { lastUpdated: '', testimonials: [], trainingRecords: [] },
+  gallery: { lastUpdated: '', galleryItems: [] },
+  thankyou: { lastUpdated: '', thankYouItems: [] }
+});
+
+const normalizeCmsData = (raw) => {
+  const empty = createEmptyCmsData();
+
+  return {
+    lastUpdated: typeof raw?.lastUpdated === 'string' ? raw.lastUpdated : empty.lastUpdated,
+    homeNews: Array.isArray(raw?.homeNews) ? raw.homeNews : empty.homeNews,
+    mediaReports: Array.isArray(raw?.mediaReports) ? raw.mediaReports : empty.mediaReports,
+    awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
+    testimonials: Array.isArray(raw?.testimonials) ? raw.testimonials : empty.testimonials,
+    trainingRecords: Array.isArray(raw?.trainingRecords) ? raw.trainingRecords : empty.trainingRecords,
+    galleryItems: Array.isArray(raw?.galleryItems) ? raw.galleryItems : empty.galleryItems,
+    introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
+    thankYouItems: Array.isArray(raw?.thankYouItems) ? raw.thankYouItems : empty.thankYouItems
+  };
+};
+
+const normalizeCmsSplitData = (raw) => {
+  const empty = createEmptyCmsSplitData();
+
+  return {
+    home: {
+      lastUpdated: typeof raw?.home?.lastUpdated === 'string' ? raw.home.lastUpdated : empty.home.lastUpdated,
+      introContent: typeof raw?.home?.introContent === 'string' ? raw.home.introContent : empty.home.introContent,
+      homeNews: Array.isArray(raw?.home?.homeNews) ? raw.home.homeNews : empty.home.homeNews
+    },
+    media: {
+      lastUpdated: typeof raw?.media?.lastUpdated === 'string' ? raw.media.lastUpdated : empty.media.lastUpdated,
+      mediaReports: Array.isArray(raw?.media?.mediaReports) ? raw.media.mediaReports : empty.media.mediaReports,
+      awards: Array.isArray(raw?.media?.awards) ? raw.media.awards : empty.media.awards
+    },
+    results: {
+      lastUpdated: typeof raw?.results?.lastUpdated === 'string' ? raw.results.lastUpdated : empty.results.lastUpdated,
+      testimonials: Array.isArray(raw?.results?.testimonials) ? raw.results.testimonials : empty.results.testimonials,
+      trainingRecords: Array.isArray(raw?.results?.trainingRecords) ? raw.results.trainingRecords : empty.results.trainingRecords
+    },
+    gallery: {
+      lastUpdated: typeof raw?.gallery?.lastUpdated === 'string' ? raw.gallery.lastUpdated : empty.gallery.lastUpdated,
+      galleryItems: Array.isArray(raw?.gallery?.galleryItems) ? raw.gallery.galleryItems : empty.gallery.galleryItems
+    },
+    thankyou: {
+      lastUpdated: typeof raw?.thankyou?.lastUpdated === 'string' ? raw.thankyou.lastUpdated : empty.thankyou.lastUpdated,
+      thankYouItems: Array.isArray(raw?.thankyou?.thankYouItems) ? raw.thankyou.thankYouItems : empty.thankyou.thankYouItems
+    }
+  };
+};
+
+const mergeCmsSplitData = (raw) => {
+  const normalized = normalizeCmsSplitData(raw);
+  const timestamps = [
+    normalized.home.lastUpdated,
+    normalized.media.lastUpdated,
+    normalized.results.lastUpdated,
+    normalized.gallery.lastUpdated,
+    normalized.thankyou.lastUpdated
+  ].filter(Boolean);
+
+  return normalizeCmsData({
+    lastUpdated: timestamps.sort().at(-1) || '',
+    introContent: normalized.home.introContent,
+    homeNews: normalized.home.homeNews,
+    mediaReports: normalized.media.mediaReports,
+    awards: normalized.media.awards,
+    testimonials: normalized.results.testimonials,
+    trainingRecords: normalized.results.trainingRecords,
+    galleryItems: normalized.gallery.galleryItems,
+    thankYouItems: normalized.thankyou.thankYouItems
+  });
+};
+
+const splitCmsData = (raw) => {
+  const normalized = normalizeCmsData(raw);
+  const timestamp = normalized.lastUpdated || new Date().toISOString();
+
+  return normalizeCmsSplitData({
+    home: {
+      lastUpdated: timestamp,
+      introContent: normalized.introContent || '',
+      homeNews: normalized.homeNews
+    },
+    media: {
+      lastUpdated: timestamp,
+      mediaReports: normalized.mediaReports,
+      awards: normalized.awards
+    },
+    results: {
+      lastUpdated: timestamp,
+      testimonials: normalized.testimonials,
+      trainingRecords: normalized.trainingRecords
+    },
+    gallery: {
+      lastUpdated: timestamp,
+      galleryItems: normalized.galleryItems
+    },
+    thankyou: {
+      lastUpdated: timestamp,
+      thankYouItems: normalized.thankYouItems || []
+    }
+  });
+};
+
+const getRepoCmsPath = (config, fileKey) => `${config.githubDataRoot}/${CMS_SECTION_FILE_NAMES[fileKey]}`;
+
+const githubRequest = async (config, path, options = {}) => fetch(`https://api.github.com${path}`, {
+  ...options,
+  headers: {
+    ...githubHeaders(config),
+    ...(options.headers || {})
+  }
+});
+
+const getGithubContentFile = async (config, fileKey) => {
+  const response = await githubRequest(
+    config,
+    `/repos/${config.githubOwner}/${config.githubRepo}/contents/${getRepoCmsPath(config, fileKey)}?ref=${config.githubBranch}`
+  );
+
+  if (response.status === 404) {
+    return { key: fileKey, content: null, sha: null };
+  }
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = await response.json();
+  return {
+    key: fileKey,
+    content: JSON.parse(base64ToUtf8(String(data.content || '').replace(/\n/g, ''))),
+    sha: data.sha || null
+  };
+};
+
+const getBranchRef = async (config) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/ref/heads/${config.githubBranch}`);
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
+const getCommit = async (config, commitSha) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/commits/${commitSha}`);
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
+const createBlob = async (config, content) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/blobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, encoding: 'utf-8' })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
+const createTree = async (config, baseTreeSha, tree) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/trees`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base_tree: baseTreeSha, tree })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
+const createCommit = async (config, message, treeSha, parentSha) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/commits`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, tree: treeSha, parents: [parentSha] })
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+};
+
+const updateBranchRef = async (config, commitSha) => {
+  const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/refs/heads/${config.githubBranch}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sha: commitSha, force: false })
+  });
+  if (!response.ok) {
+    const error = new Error(await response.text());
+    error.status = response.status;
+    throw error;
+  }
+  return response.json();
 };
 
 const handleLogin = async (request, config) => {
@@ -202,20 +429,20 @@ const handleGetCms = async (config) => {
     return jsonResponse({ message: 'GitHub token not configured on worker' }, 503);
   }
 
-  const url = `https://api.github.com/repos/${config.githubOwner}/${config.githubRepo}/contents/${config.githubDataPath}?ref=${config.githubBranch}`;
-  const response = await fetch(url, { headers: githubHeaders(config) });
+  const fileKeys = Object.keys(CMS_SECTION_FILE_NAMES);
+  const files = await Promise.all(fileKeys.map((fileKey) => getGithubContentFile(config, fileKey)));
 
-  if (response.status === 404) {
-    return jsonResponse({ message: 'CMS file not found on GitHub' }, 404);
+  const splitData = {};
+  const shas = {};
+  for (const file of files) {
+    splitData[file.key] = file.content || undefined;
+    if (file.sha) shas[file.key] = file.sha;
   }
 
-  if (!response.ok) {
-    return jsonResponse({ message: await response.text() }, response.status);
-  }
-
-  const data = await response.json();
-  const content = JSON.parse(base64ToUtf8(String(data.content || '').replace(/\n/g, '')));
-  return jsonResponse({ content, sha: data.sha });
+  return jsonResponse({
+    content: mergeCmsSplitData(splitData),
+    shas
+  });
 };
 
 const handlePutCms = async (request, config) => {
@@ -239,39 +466,56 @@ const handlePutCms = async (request, config) => {
   const body = await parseJson(request);
   if (!body?.newData) return jsonResponse({ message: 'Missing newData' }, 400);
 
-  const newData = {
+  const nextData = normalizeCmsData({
     ...body.newData,
     lastUpdated: new Date().toISOString()
-  };
-
-  const payload = {
-    message: body.commitMessage || 'Update cms-data.json',
-    content: stringToBase64(JSON.stringify(newData, null, 2)),
-    sha: body.sha || undefined,
-    branch: config.githubBranch
-  };
-
-  const url = `https://api.github.com/repos/${config.githubOwner}/${config.githubRepo}/contents/${config.githubDataPath}`;
-  const response = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      ...githubHeaders(config),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
   });
+  const splitData = splitCmsData(nextData);
+  const expectedShas = body.shas || {};
+  const fileKeys = Object.keys(CMS_SECTION_FILE_NAMES);
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const errMessage = err.message || 'GitHub API error';
-    const isVersionConflict = response.status === 409 || /sha|does not match|outdated/i.test(errMessage);
-    if (isVersionConflict) {
-      return jsonResponse({ message: 'CMS data has changed on GitHub. Please reload and try again.', detail: err }, 409);
+  const currentFiles = await Promise.all(fileKeys.map((fileKey) => getGithubContentFile(config, fileKey)));
+  for (const file of currentFiles) {
+    const expectedSha = expectedShas[file.key] || null;
+    const currentSha = file.sha || null;
+    if (expectedSha !== currentSha) {
+      return jsonResponse({ message: 'CMS data has changed on GitHub. Please reload and try again.' }, 409);
     }
-    return jsonResponse({ message: errMessage, detail: err }, response.status);
   }
 
-  return jsonResponse({ ok: true, resp: await response.json() });
+  try {
+    const branchRef = await getBranchRef(config);
+    const parentCommitSha = branchRef.object.sha;
+    const parentCommit = await getCommit(config, parentCommitSha);
+
+    const tree = [];
+    for (const fileKey of fileKeys) {
+      const blob = await createBlob(config, JSON.stringify(splitData[fileKey], null, 2));
+      tree.push({
+        path: getRepoCmsPath(config, fileKey),
+        mode: '100644',
+        type: 'blob',
+        sha: blob.sha
+      });
+    }
+
+    const nextTree = await createTree(config, parentCommit.tree.sha, tree);
+    const nextCommit = await createCommit(
+      config,
+      body.commitMessage || 'Update CMS content',
+      nextTree.sha,
+      parentCommitSha
+    );
+
+    await updateBranchRef(config, nextCommit.sha);
+
+    return jsonResponse({ ok: true, commitSha: nextCommit.sha });
+  } catch (error) {
+    if (error?.status === 409 || error?.status === 422) {
+      return jsonResponse({ message: 'CMS data has changed on GitHub. Please reload and try again.' }, 409);
+    }
+    return jsonResponse({ message: error instanceof Error ? error.message : 'Failed to update CMS on GitHub' }, 500);
+  }
 };
 
 const handleRequest = async (request, env) => {

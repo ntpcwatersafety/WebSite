@@ -18,17 +18,6 @@ export interface NewsItem {
 }
 
 /**
- * 🖼️ 圖片項目
- * 用於活動剪影、相簿等
- */
-  id: string;           // 唯一識別碼
-  imageUrl: string;     // 圖片網址
-  title: string;        // 圖片標題
-  description?: string; // 圖片說明（選填）
-  date?: string;        // 拍攝日期（選填）
-  category?: string;    // 分類（選填）
-}
-/**
  * 🖼️ 圖片項目（活動剪影/相簿）
  * 新增 isActive 欄位（上下架），title/description 可選填
  */
@@ -89,6 +78,42 @@ export interface TestimonialItem {
   role?: string;        // 身份說明（選填）
   date?: string;        // 日期（選填）
 }
+
+/**
+ * 🙏 感恩有您項目
+ */
+export interface ThankYouItem {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+/**
+ * 🗂️ CMS 主資料結構
+ */
+export interface CmsData {
+  lastUpdated: string;
+  homeNews: NewsItem[];
+  mediaReports: MediaItem[];
+  awards: AwardItem[];
+  testimonials: TestimonialItem[];
+  trainingRecords: NewsItem[];
+  galleryItems: GalleryItem[];
+  introContent?: string;
+  thankYouItems?: ThankYouItem[];
+}
+
+export interface CmsCollectionMap {
+  homeNews: NewsItem;
+  mediaReports: MediaItem;
+  awards: AwardItem;
+  testimonials: TestimonialItem;
+  trainingRecords: NewsItem;
+  galleryItems: GalleryItem;
+  thankYouItems: ThankYouItem;
+}
+
+export type CmsCollectionKey = keyof CmsCollectionMap;
 
 // 定義頁面或區塊的資料結構
 export interface SectionContent {

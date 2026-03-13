@@ -1,5 +1,6 @@
 import { SectionContent, NavItem, PageConfig } from '../types';
 import emailjs from '@emailjs/browser';
+import { loadCmsData } from './cmsLoader';
 
 // ===============================
 // 1. EmailJS 設定
@@ -80,10 +81,7 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
 // ===============================
 // 4. 首頁區塊內容
 // ===============================
-// 最新消息區塊已由後台管理系統維護，資料來源為 public/cms-data.json，請勿直接於此編輯。
-import { loadCmsData } from './cmsLoader';
-
-// 動態取得首頁區塊內容，合併 github/cms-data.json 的 introContent
+// 動態取得首頁區塊內容，合併 CMS 資料中的 introContent
 export const getHomeSections = async (): Promise<SectionContent[]> => {
   const cmsData = await loadCmsData();
   return [
@@ -124,7 +122,7 @@ export const RESULTS_SECTIONS: SectionContent[] = [];
 // ===============================
 // 7. 活動剪影（相簿）說明
 // ===============================
-// 活動剪影（galleryItems）已由後台管理系統維護，資料來源為 public/cms-data.json
+// 活動剪影（galleryItems）已由後台管理系統維護，資料來源為 public/cms/*.json
 // 欄位說明：id, imageUrl, title, description, isActive
 // 請勿直接於此編輯，請至後台管理介面操作。
 
@@ -132,7 +130,7 @@ export const RESULTS_SECTIONS: SectionContent[] = [];
 // 8. 媒體報導頁面內容
 // ===============================
 export const MEDIA_SECTIONS: SectionContent[] = [
-  // 新聞報導、獲獎紀錄等區塊已由後台管理系統維護，資料來源為 public/cms-data.json，請勿直接於此編輯。
+  // 新聞報導、獲獎紀錄等區塊已由後台管理系統維護，資料來源為 public/cms/*.json，請勿直接於此編輯。
 ];
 
 // ===============================

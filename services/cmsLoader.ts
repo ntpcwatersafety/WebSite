@@ -1,30 +1,13 @@
-import { NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '../types';
+import { CmsData, ThankYouItem, NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '../types';
 import { getFileContent, validateToken } from './githubApi';
+import { CMS_SECTION_FILE_NAMES, CmsSectionFileKey, mergeCmsSplitData, normalizeCmsData } from './cmsData';
 
 /**
  * =================================================================
  *  【CMS 資料載入服務】
- *  從 cms-data.json 載入動態內容
+ *  從 Worker API 或 public/cms/*.json 載入動態內容
  * =================================================================
  */
-// CMS 資料主結構
-export interface ThankYouItem {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-export interface CmsData {
-  lastUpdated: string;
-  homeNews: NewsItem[];
-  mediaReports: MediaItem[];
-  awards: AwardItem[];
-  testimonials: TestimonialItem[];
-  trainingRecords: NewsItem[];
-  galleryItems: GalleryItem[];
-  introContent?: string;
-  thankYouItems?: ThankYouItem[];
-}
 /**
  * 取得感恩有您
  */
@@ -53,6 +36,20 @@ let cachedData: CmsData | null = null;
 let cacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 分鐘快取
 
+const loadLocalCmsData = async (): Promise<CmsData> => {
+  const sectionEntries = await Promise.all(
+    (Object.keys(CMS_SECTION_FILE_NAMES) as CmsSectionFileKey[]).map(async (fileKey) => {
+      const response = await fetch(`${import.meta.env.BASE_URL}cms/${CMS_SECTION_FILE_NAMES[fileKey]}?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load local CMS section: ${fileKey}`);
+      }
+      return [fileKey, await response.json()] as const;
+    })
+  );
+
+  return mergeCmsSplitData(Object.fromEntries(sectionEntries));
+};
+
 /**
  * 載入 CMS 資料
  */
@@ -61,14 +58,14 @@ export const loadCmsData = async (): Promise<CmsData | null> => {
   if (cachedData && Date.now() - cacheTime < CACHE_DURATION) {
     return cachedData;
   }
-  // 以 GitHub 為主要資料來源：若伺服器端有設定 Token 且驗證成功，嘗試從 GitHub 取得 cms-data.json
+  // 以 GitHub 為主要資料來源：若伺服器端有設定 Token 且驗證成功，嘗試從 Worker 取得整合後的 CMS 資料
   try {
     try {
       const valid = await validateToken();
       if (valid) {
         const result = await getFileContent();
         if (result && result.content) {
-          cachedData = result.content as CmsData;
+          cachedData = normalizeCmsData(result.content as Partial<CmsData>);
           cacheTime = Date.now();
           return cachedData;
         }
@@ -77,13 +74,8 @@ export const loadCmsData = async (): Promise<CmsData | null> => {
       console.warn('從後端 GitHub 代理載入失敗，將回退至本地：', ghCheckErr);
     }
 
-    // 回退：從本地 public/cms-data.json 載入
-    const response = await fetch(`${import.meta.env.BASE_URL}cms-data.json?t=${Date.now()}`);
-    if (!response.ok) {
-      throw new Error('Failed to load CMS data (local)');
-    }
-
-    cachedData = await response.json();
+    // 回退：從本地 public/cms/*.json 載入
+    cachedData = await loadLocalCmsData();
     cacheTime = Date.now();
 
     return cachedData;

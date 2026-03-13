@@ -6,7 +6,7 @@ compatibility_date = "2026-03-12"
 OWNER = "ntpcwatersafety"
 REPO = "WebSite"
 BRANCH = "main"
-DATA_PATH = "public/cms-data.json"
+DATA_ROOT = "public/cms"
 JWT_EXPIRES_IN = "8h"
 
 routes = [

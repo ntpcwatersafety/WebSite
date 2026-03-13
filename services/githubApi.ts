@@ -1,3 +1,6 @@
+import { CmsData } from '../types';
+import { CmsFileShas } from './cmsData';
+
 /**
  * =================================================================
  *  【GitHub API 服務】
@@ -8,8 +11,8 @@
 // 現在透過後端 proxy 來存取 GitHub（避免將 GitHub Token 存放於前端）
 // 後端提供：
 // GET  /api/github/status -> { hasToken: boolean }
-// GET  /api/cms            -> { content, sha }
-// PUT  /api/cms            -> 更新 cms-data.json（需 Authorization: Bearer <admin-jwt>）
+// GET  /api/cms            -> { content, shas }
+// PUT  /api/cms            -> 更新多個 CMS JSON（需 Authorization: Bearer <admin-jwt>）
 
 const GITHUB_PROXY = {
   statusUrl: '/api/github/status',
@@ -19,7 +22,7 @@ const GITHUB_PROXY = {
 /**
  * 取得檔案目前內容和 SHA
  */
-export const getFileContent = async (): Promise<{ content: any; sha: string } | null> => {
+export const getFileContent = async (): Promise<{ content: CmsData; shas: CmsFileShas } | null> => {
   try {
     const resp = await fetch(GITHUB_PROXY.cmsUrl);
     if (!resp.ok) {
@@ -27,7 +30,7 @@ export const getFileContent = async (): Promise<{ content: any; sha: string } | 
       throw new Error(`伺服器回應錯誤: ${resp.status}`);
     }
     const data = await resp.json();
-    return { content: data.content, sha: data.sha };
+    return { content: data.content as CmsData, shas: (data.shas || {}) as CmsFileShas };
   } catch (error) {
     console.error('getFileContent error', error);
     throw error;
@@ -38,9 +41,9 @@ export const getFileContent = async (): Promise<{ content: any; sha: string } | 
  * 更新 CMS 資料檔案
  */
 export const updateCmsData = async (
-  newData: any,
+  newData: CmsData,
   commitMessage: string = '📝 更新網站內容',
-  sha?: string | null
+  shas?: CmsFileShas | null
 ): Promise<boolean> => {
   try {
     // 後端會更新 lastUpdated
@@ -51,7 +54,7 @@ export const updateCmsData = async (
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
-      body: JSON.stringify({ newData, commitMessage, sha: sha || undefined })
+      body: JSON.stringify({ newData, commitMessage, shas: shas || undefined })
     });
 
     if (!resp.ok) {
