@@ -339,6 +339,23 @@ const getTreeRecursive = async (config, treeSha) => {
   return response.json();
 };
 
+const getExistingRepoPaths = async (config, repoPaths) => {
+  if (!repoPaths.length) return new Set();
+
+  const branchRef = await getBranchRef(config);
+  const parentCommit = await getCommit(config, branchRef.object.sha);
+  const recursiveTree = await getTreeRecursive(config, parentCommit.tree.sha);
+  const requestedPaths = new Set(repoPaths.map((path) => String(path || '').replace(/\\/g, '/')));
+
+  return new Set(
+    Array.isArray(recursiveTree?.tree)
+      ? recursiveTree.tree
+          .filter((entry) => entry?.type === 'blob' && requestedPaths.has(String(entry.path || '').replace(/\\/g, '/')))
+          .map((entry) => String(entry.path || '').replace(/\\/g, '/'))
+      : []
+  );
+};
+
 const createBlob = async (config, content, encoding = 'utf-8') => {
   const response = await githubRequest(config, `/repos/${config.githubOwner}/${config.githubRepo}/git/blobs`, {
     method: 'POST',
@@ -672,15 +689,32 @@ const handleCleanupImages = async (request, config) => {
   }
 
   try {
+    const existingPaths = await getExistingRepoPaths(config, repoPaths);
+    const deletablePaths = repoPaths.filter((path) => existingPaths.has(String(path || '').replace(/\\/g, '/')));
+
+    if (!deletablePaths.length) {
+      return jsonResponse({
+        ok: true,
+        deleted: [],
+        skipped: repoPaths.map(toPublicAssetUrl)
+      });
+    }
+
     const nextCommit = await commitTreeEntries(
       config,
-      repoPaths.map((path) => ({ path, sha: null })),
-      `Cleanup unused editor images (${repoPaths.length})`
+      deletablePaths.map((path) => ({
+        path,
+        mode: '100644',
+        type: 'blob',
+        sha: null
+      })),
+      `Cleanup unused editor images (${deletablePaths.length})`
     );
 
     return jsonResponse({
       ok: true,
-      deleted: repoPaths.map(toPublicAssetUrl),
+      deleted: deletablePaths.map(toPublicAssetUrl),
+      skipped: repoPaths.filter((path) => !existingPaths.has(String(path || '').replace(/\\/g, '/'))).map(toPublicAssetUrl),
       commitSha: nextCommit.sha
     });
   } catch (error) {
