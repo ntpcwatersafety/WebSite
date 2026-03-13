@@ -76,6 +76,7 @@ import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
+const TINYMCE_LANGUAGE = 'zh_TW';
 
 const openImagePicker = (callback: (file: File) => void) => {
   const input = document.createElement('input');
@@ -93,19 +94,29 @@ const openImagePicker = (callback: (file: File) => void) => {
 
 const buildRichTextEditorInit = (height: number) => ({
   height,
+  language: TINYMCE_LANGUAGE,
   menubar: true,
   branding: false,
   promotion: false,
   plugins: [
     'advlist autolink lists link image charmap preview anchor template',
     'searchreplace visualblocks visualchars code fullscreen',
-    'insertdatetime media table paste help wordcount',
+    'insertdatetime media table paste help wordcount quickbars',
     'directionality emoticons hr nonbreaking',
     'code'
   ],
-  toolbar:
-    'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | styles template | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table hr blockquote | subscript superscript | removeformat | code fullscreen preview | emoticons help',
-  toolbar_mode: 'sliding',
+  toolbar: [
+    'undo redo | blocks | bold italic underline strikethrough | forecolor backcolor | removeformat',
+    'fontfamily fontsize | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent',
+    'link image media table blockquote hr anchor charmap emoticons | ltr rtl | subscript superscript',
+    'styles template | searchreplace visualblocks code fullscreen preview | help'
+  ],
+  toolbar_mode: 'wrap',
+  toolbar_sticky: true,
+  statusbar: true,
+  elementpath: true,
+  quickbars_selection_toolbar: 'bold italic underline | forecolor backcolor | link blockquote',
+  quickbars_insert_toolbar: 'quickimage quicktable hr',
   block_formats: '段落=p; 標題 1=h1; 標題 2=h2; 標題 3=h3; 標題 4=h4; 引言=blockquote',
   font_family_formats: 'Helvetica=helvetica,arial,sans-serif; 微軟正黑體=Microsoft JhengHei,sans-serif; 新細明體=PMingLiU,serif; Arial=arial,helvetica,sans-serif; Georgia=georgia,serif; Times New Roman=times new roman,times,serif; Verdana=verdana,geneva,sans-serif',
   font_size_formats: '12px 14px 16px 18px 20px 24px 28px 36px 48px',
