@@ -29,6 +29,20 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ items }) => {
           <button onClick={goNext} className="p-2 text-gray-500 hover:text-primary"><ChevronRight size={28} /></button>
         </div>
         <div>
+          {(item.category || item.date) && (
+            <div className="mb-3 flex flex-wrap gap-2 text-xs">
+              {item.category ? (
+                <span className="rounded-full bg-cyan-50 px-3 py-1 font-medium text-cyan-700 border border-cyan-100">
+                  {item.category}
+                </span>
+              ) : null}
+              {item.date ? (
+                <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-600 border border-slate-200">
+                  {item.date}
+                </span>
+              ) : null}
+            </div>
+          )}
           <h3 className="text-xl font-bold mb-2 text-primary">{item.title || '（無標題）'}</h3>
           {item.description && <div className="text-gray-700 mb-2 whitespace-pre-line">{item.description}</div>}
         </div>

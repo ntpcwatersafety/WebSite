@@ -23,6 +23,12 @@ const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
         if (cmsData) {
           // 用動態資料替換靜態資料
           const updatedSections = sections.map(section => {
+            if (section.id === 'courses' && cmsData.courseItems) {
+              return {
+                ...section,
+                courseItems: cmsData.courseItems
+              };
+            }
             // 訓練成果頁面 - 近期結訓學員
             if (section.id === 'recent_graduates' && cmsData.trainingRecords) {
               return {

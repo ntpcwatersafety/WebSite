@@ -1,6 +1,7 @@
-import { AwardItem, CmsData, GalleryItem, MediaItem, NewsItem, TestimonialItem, ThankYouItem } from '../types';
+import { AwardItem, CmsData, CourseItem, GalleryItem, MediaItem, NewsItem, TestimonialItem, ThankYouItem } from '../types';
 
 export const CMS_SECTION_FILE_NAMES = {
+  activities: 'activities.json',
   home: 'home.json',
   media: 'media.json',
   results: 'results.json',
@@ -15,6 +16,11 @@ export interface CmsHomeData {
   lastUpdated: string;
   introContent: string;
   homeNews: NewsItem[];
+}
+
+export interface CmsActivitiesData {
+  lastUpdated: string;
+  courseItems: CourseItem[];
 }
 
 export interface CmsMediaData {
@@ -40,6 +46,7 @@ export interface CmsThankYouData {
 }
 
 export interface CmsSplitData {
+  activities: CmsActivitiesData;
   home: CmsHomeData;
   media: CmsMediaData;
   results: CmsResultsData;
@@ -55,6 +62,10 @@ export const getRepoCmsFilePath = (repoRoot: string, fileKey: CmsSectionFileKey)
 };
 
 export const createEmptyCmsSplitData = (): CmsSplitData => ({
+  activities: {
+    lastUpdated: '',
+    courseItems: []
+  },
   home: {
     lastUpdated: '',
     introContent: '',
@@ -82,6 +93,7 @@ export const createEmptyCmsSplitData = (): CmsSplitData => ({
 
 export const createEmptyCmsData = (): CmsData => ({
   lastUpdated: '',
+  courseItems: [],
   homeNews: [],
   mediaReports: [],
   awards: [],
@@ -96,6 +108,10 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
   const empty = createEmptyCmsSplitData();
 
   return {
+    activities: {
+      lastUpdated: typeof raw?.activities?.lastUpdated === 'string' ? raw.activities.lastUpdated : empty.activities.lastUpdated,
+      courseItems: Array.isArray(raw?.activities?.courseItems) ? raw.activities.courseItems : empty.activities.courseItems
+    },
     home: {
       lastUpdated: typeof raw?.home?.lastUpdated === 'string' ? raw.home.lastUpdated : empty.home.lastUpdated,
       introContent: typeof raw?.home?.introContent === 'string' ? raw.home.introContent : empty.home.introContent,
@@ -127,6 +143,7 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
 
   return {
     lastUpdated: typeof raw?.lastUpdated === 'string' ? raw.lastUpdated : empty.lastUpdated,
+    courseItems: Array.isArray(raw?.courseItems) ? raw.courseItems : empty.courseItems,
     homeNews: Array.isArray(raw?.homeNews) ? raw.homeNews : empty.homeNews,
     mediaReports: Array.isArray(raw?.mediaReports) ? raw.mediaReports : empty.mediaReports,
     awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
@@ -141,6 +158,7 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
 export const mergeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefined): CmsData => {
   const normalized = normalizeCmsSplitData(raw);
   const timestamps = [
+    normalized.activities.lastUpdated,
     normalized.home.lastUpdated,
     normalized.media.lastUpdated,
     normalized.results.lastUpdated,
@@ -150,6 +168,7 @@ export const mergeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefined)
 
   return normalizeCmsData({
     lastUpdated: timestamps.sort().at(-1) || '',
+    courseItems: normalized.activities.courseItems,
     introContent: normalized.home.introContent,
     homeNews: normalized.home.homeNews,
     mediaReports: normalized.media.mediaReports,
@@ -166,6 +185,10 @@ export const splitCmsData = (raw: Partial<CmsData> | null | undefined): CmsSplit
   const timestamp = normalized.lastUpdated || new Date().toISOString();
 
   return normalizeCmsSplitData({
+    activities: {
+      lastUpdated: timestamp,
+      courseItems: normalized.courseItems
+    },
     home: {
       lastUpdated: timestamp,
       introContent: normalized.introContent || '',

@@ -71,7 +71,8 @@ import {
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
-import { CmsCollectionKey, CmsData, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
+import { loadCmsData } from '../services/cmsLoader';
+import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
 import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
@@ -440,6 +441,88 @@ const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: strin
     </div>
   </div>
 );
+
+const normalizeFeatureLines = (value: string) => (
+  value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+);
+
+const CourseItemEditor: React.FC<{
+  item: CourseItem;
+  onUpdate: (field: string, value: any) => void;
+  onImageUploaded?: (url: string) => void;
+}> = ({ item, onUpdate, onImageUploaded }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="md:col-span-2">
+      <label className="block text-xs text-gray-500 mb-1">課程名稱</label>
+      <input
+        type="text"
+        value={item.title}
+        onChange={e => onUpdate('title', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">上課時間</label>
+      <input
+        type="text"
+        value={item.schedule || ''}
+        onChange={e => onUpdate('schedule', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        placeholder="例：每週六 09:00-12:00"
+      />
+    </div>
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">地點</label>
+      <input
+        type="text"
+        value={item.location || ''}
+        onChange={e => onUpdate('location', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">費用</label>
+      <input
+        type="text"
+        value={item.price || ''}
+        onChange={e => onUpdate('price', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        placeholder="例：每人 2,500 元"
+      />
+    </div>
+    <div className="flex items-center gap-2 pt-6">
+      <input
+        id={`recruiting-${item.id}`}
+        type="checkbox"
+        checked={item.isRecruiting !== false}
+        onChange={e => onUpdate('isRecruiting', e.target.checked)}
+      />
+      <label htmlFor={`recruiting-${item.id}`} className="text-sm text-gray-700">目前開放報名</label>
+    </div>
+    <div className="md:col-span-2">
+      <label className="block text-xs text-gray-500 mb-1">課程說明</label>
+      <RichTextEditor
+        value={item.description}
+        onChange={(content) => onUpdate('description', content)}
+        onImageUploaded={onImageUploaded}
+      />
+    </div>
+    <div className="md:col-span-2">
+      <label className="block text-xs text-gray-500 mb-1">課程特色</label>
+      <textarea
+        value={(item.features || []).join('\n')}
+        onChange={e => onUpdate('features', normalizeFeatureLines(e.target.value))}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        rows={4}
+        placeholder="一行一點，例如：\n小班制\n含基礎救生訓練"
+      />
+      <p className="mt-1 text-xs text-gray-400">一行代表前台一個特色標籤。</p>
+    </div>
+  </div>
+);
 // 協會簡介編輯器
 const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void; onImageUploaded?: (url: string) => void }> = ({ value, onChange, onImageUploaded }) => (
   <div className="mb-8">
@@ -555,6 +638,12 @@ const Admin: React.FC = () => {
       note: '首頁下方感恩名單同步使用「感恩有您」資料'
     },
     {
+      page: '訓練與活動',
+      route: '/#/activities',
+      sections: '課程與活動項目',
+      note: '前台活動頁會直接顯示這份課程清單與招生狀態'
+    },
+    {
       page: '訓練成果',
       route: '/#/results',
       sections: '訓練紀錄、學員心得',
@@ -627,6 +716,15 @@ const Admin: React.FC = () => {
       expandedKey: 'trainingRecords',
       icon: MessageSquare,
       tone: 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    },
+    {
+      id: 'quick-activities',
+      title: '編輯訓練與活動',
+      description: '快速前往課程與活動項目區塊。',
+      sectionId: 'section-courseItems',
+      expandedKey: 'courseItems',
+      icon: Edit3,
+      tone: 'bg-lime-50 text-lime-700 border-lime-100'
     },
     {
       id: 'quick-gallery',
@@ -801,7 +899,6 @@ const Admin: React.FC = () => {
         console.warn('從後端 GitHub 代理載入失敗，回退至本地 cms/*.json', ghErr);
       }
 
-      const [{ loadCmsData }] = await Promise.all([import('../services/cmsLoader')]);
       setCmsData(await loadCmsData());
       setCmsShas(null);
       await loadEditorImageLibrary();
@@ -911,8 +1008,20 @@ const Admin: React.FC = () => {
   const addItem = (section: CmsCollectionKey) => {
     if (!cmsData) return;
     const newId = `${section}-${Date.now()}`;
-    let newItem: NewsItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
+    let newItem: CourseItem | NewsItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
     switch (section) {
+      case 'courseItems':
+        newItem = {
+          id: newId,
+          title: '新課程名稱',
+          description: '<p>請輸入課程說明。</p>',
+          schedule: '',
+          location: '',
+          price: '',
+          features: [],
+          isRecruiting: true
+        };
+        break;
       case 'homeNews':
       case 'trainingRecords':
         newItem = {
@@ -956,6 +1065,8 @@ const Admin: React.FC = () => {
           imageUrl: '',
           title: '',
           description: '',
+          date: '',
+          category: '',
           isActive: true
         };
         break;
@@ -1272,6 +1383,13 @@ const Admin: React.FC = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => jumpToSection('page-group-activities')}
+                  className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+                >
+                  查看訓練與活動全部區塊
+                </button>
+                <button
+                  type="button"
                   onClick={() => jumpToSection('page-group-results')}
                   className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
                 >
@@ -1327,6 +1445,21 @@ const Admin: React.FC = () => {
                     className="px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60"
                   >
                     {loadingEditorImages ? '載入中...' : '重新整理圖片庫'}
+                  <label className="block text-xs text-gray-500 mb-1 mt-2">活動日期（非必填）</label>
+                  <input
+                    type="date"
+                    value={item.date || ''}
+                    onChange={e => onUpdate('date', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                  <label className="block text-xs text-gray-500 mb-1 mt-2">分類（非必填）</label>
+                  <input
+                    type="text"
+                    value={item.category || ''}
+                    onChange={e => onUpdate('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    placeholder="例：訓練、宣導、活動花絮"
+                  />
                   </button>
                   <button
                     type="button"
@@ -1472,6 +1605,35 @@ const Admin: React.FC = () => {
                   <NewsItemEditor
                     item={item}
                     onUpdate={(field, value) => updateItemField('homeNews', index, field, value)}
+                    onImageUploaded={trackUploadedEditorImage}
+                  />
+                )}
+              />
+            </PageGroup>
+
+            <PageGroup
+              sectionId="page-group-activities"
+              title="訓練與活動"
+              route="/#/activities"
+              description="這一組對應前台訓練與活動頁的課程與活動內容。"
+            >
+              <SectionEditor
+                sectionId="section-courseItems"
+                title="訓練與活動 / 課程與活動項目"
+                pageLabel="訓練與活動 / 課程清單"
+                description="對應前台訓練與活動頁中的課程卡片、特色與招生狀態。"
+                icon={<Edit3 className="w-5 h-5" />}
+                items={cmsData.courseItems || []}
+                sectionKey="courseItems"
+                expanded={expandedSection === 'courseItems'}
+                onToggle={() => setExpandedSection(expandedSection === 'courseItems' ? '' : 'courseItems')}
+                onAdd={() => addItem('courseItems')}
+                onDelete={(index) => deleteItem('courseItems', index)}
+                onUpdate={(index, field, value) => updateItemField('courseItems', index, field, value)}
+                renderItem={(item, index) => (
+                  <CourseItemEditor
+                    item={item}
+                    onUpdate={(field, value) => updateItemField('courseItems', index, field, value)}
                     onImageUploaded={trackUploadedEditorImage}
                   />
                 )}

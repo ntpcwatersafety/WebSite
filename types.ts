@@ -93,6 +93,7 @@ export interface ThankYouItem {
  */
 export interface CmsData {
   lastUpdated: string;
+  courseItems: CourseItem[];
   homeNews: NewsItem[];
   mediaReports: MediaItem[];
   awards: AwardItem[];
@@ -104,6 +105,7 @@ export interface CmsData {
 }
 
 export interface CmsCollectionMap {
+  courseItems: CourseItem;
   homeNews: NewsItem;
   mediaReports: MediaItem;
   awards: AwardItem;
@@ -127,7 +129,8 @@ export interface SectionContent {
   awardItems?: AwardItem[]; // 獲獎列表
   courseItems?: CourseItem[]; // 課程列表
   testimonialItems?: TestimonialItem[]; // 心得列表
-  type: 'text' | 'list' | 'news' | 'gallery' | 'media' | 'awards' | 'courses' | 'testimonials' | 'contact_info';
+  thankYouItems?: ThankYouItem[]; // 感恩名單
+  type: 'text' | 'list' | 'news' | 'gallery' | 'media' | 'awards' | 'courses' | 'testimonials' | 'thankyou' | 'contact_info';
   isOpenDefault?: boolean;
 }
 

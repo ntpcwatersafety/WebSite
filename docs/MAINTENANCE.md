@@ -19,6 +19,7 @@
 
 目前使用的是 split CMS 架構，檔案如下：
 
+- public/cms/activities.json
 - public/cms/home.json
 - public/cms/media.json
 - public/cms/results.json

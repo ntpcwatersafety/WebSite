@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Hero from '../components/Hero';
 import { PAGE_CONTENT } from '../services/cms';
-import { getThankYouItems, ThankYouItem } from '../services/cmsLoader';
+import { getThankYouItems } from '../services/cmsLoader';
+import { ThankYouItem } from '../types';
 
 const ThankYou: React.FC = () => {
   const pageData = PAGE_CONTENT.thankyou;
@@ -24,7 +25,9 @@ const ThankYou: React.FC = () => {
           {loading ? (
             <div className="text-center text-gray-400 py-12">載入中...</div>
           ) : items.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">尚無資料</div>
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+              感謝名單整理中，後續將於此更新。
+            </div>
           ) : (
             <ul className="space-y-4">
               {items.map(item => (

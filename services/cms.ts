@@ -102,8 +102,8 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
     {
       id: 'thankyou',
       title: '感恩有您',
-      type: 'list',
-      listItems: (cmsData?.thankYouItems || []).map(item => item.name + (item.description ? ' - ' + item.description : '')),
+      type: 'thankyou',
+      thankYouItems: cmsData?.thankYouItems || [],
       isOpenDefault: false,
     },
   ];
@@ -112,12 +112,35 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
 // ===============================
 // 5. 訓練與活動頁面內容
 // ===============================
-export const ACTIVITIES_SECTIONS: SectionContent[] = [];
+export const ACTIVITIES_SECTIONS: SectionContent[] = [
+  {
+    id: 'courses',
+    title: '訓練與活動',
+    type: 'courses',
+    courseItems: [],
+    isOpenDefault: true,
+  },
+];
 
 // ===============================
 // 6. 訓練成果頁面內容
 // ===============================
-export const RESULTS_SECTIONS: SectionContent[] = [];
+export const RESULTS_SECTIONS: SectionContent[] = [
+  {
+    id: 'recent_graduates',
+    title: '訓練紀錄',
+    type: 'news',
+    newsItems: [],
+    isOpenDefault: true,
+  },
+  {
+    id: 'testimonials',
+    title: '學員心得',
+    type: 'testimonials',
+    testimonialItems: [],
+    isOpenDefault: true,
+  },
+];
 
 // ===============================
 // 7. 活動剪影（相簿）說明
@@ -130,7 +153,20 @@ export const RESULTS_SECTIONS: SectionContent[] = [];
 // 8. 媒體報導頁面內容
 // ===============================
 export const MEDIA_SECTIONS: SectionContent[] = [
-  // 新聞報導、獲獎紀錄等區塊已由後台管理系統維護，資料來源為 public/cms/*.json，請勿直接於此編輯。
+  {
+    id: 'news_reports',
+    title: '媒體報導',
+    type: 'media',
+    mediaItems: [],
+    isOpenDefault: true,
+  },
+  {
+    id: 'awards',
+    title: '獲獎紀錄',
+    type: 'awards',
+    awardItems: [],
+    isOpenDefault: true,
+  },
 ];
 
 // ===============================

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem } from '../types';
+import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
 
 /**
@@ -12,7 +12,17 @@ import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react'
 /**
  * 渲染最新消息列表
  */
+const renderEmptyState = (message: string) => (
+  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+    {message}
+  </div>
+);
+
 export const renderNewsItems = (items: NewsItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無資料，後續更新後會顯示於此。');
+  }
+
   // 先排序：置頂的放前面，然後按日期排序（新的在前）
   const sortedItems = [...items].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
@@ -66,6 +76,10 @@ export const renderNewsItems = (items: NewsItem[]) => {
  * 渲染媒體報導列表
  */
 export const renderMediaItems = (items: MediaItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無媒體報導資料。');
+  }
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'video': return <Play className="w-4 h-4" />;
@@ -109,6 +123,10 @@ export const renderMediaItems = (items: MediaItem[]) => {
  * 渲染獲獎紀錄列表
  */
 export const renderAwardItems = (items: AwardItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無獲獎紀錄。');
+  }
+
   return (
     <div className="space-y-3 text-left">
       {items.map((item, index) => {
@@ -146,6 +164,10 @@ export const renderAwardItems = (items: AwardItem[]) => {
  * 渲染學員心得列表
  */
 export const renderTestimonialItems = (items: TestimonialItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無學員心得。');
+  }
+
   const borderColors = ['border-primary', 'border-secondary', 'border-green-500', 'border-purple-500'];
   
   return (
@@ -165,10 +187,71 @@ export const renderTestimonialItems = (items: TestimonialItem[]) => {
   );
 };
 
+export const renderCourseItems = (items: CourseItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無課程與活動資料。');
+  }
+
+  return (
+    <div className="space-y-4 text-left">
+      {items.map((item) => (
+        <article key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+              {item.description && (
+                <div className="mt-2 text-sm leading-relaxed text-slate-700" dangerouslySetInnerHTML={{ __html: item.description }} />
+              )}
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isRecruiting ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+              {item.isRecruiting ? '招生中' : '暫停招生'}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-2 text-sm text-slate-600 md:grid-cols-3">
+            <div>上課時間：{item.schedule || '未提供'}</div>
+            <div>地點：{item.location || '未提供'}</div>
+            <div>費用：{item.price || '請洽協會'}</div>
+          </div>
+          {item.features?.length ? (
+            <ul className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+              {item.features.map((feature, index) => (
+                <li key={`${item.id}-${index}`} className="rounded-lg bg-white px-3 py-2 border border-slate-200">
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </article>
+      ))}
+    </div>
+  );
+};
+
+export const renderThankYouItems = (items: ThankYouItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('感謝名單整理中，後續將於此更新。');
+  }
+
+  return (
+    <ul className="space-y-4">
+      {items.map((item) => (
+        <li key={item.id} className="border-b border-gray-100 pb-3 last:border-0">
+          <span className="font-semibold text-lg text-primary">{item.name}</span>
+          {item.description ? <span className="ml-2 text-gray-600">{item.description}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 /**
  * 渲染圖片庫
  */
 export const renderGalleryItems = (items: GalleryItem[]) => {
+  if (items.length === 0) {
+    return renderEmptyState('目前尚無活動照片。');
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {items.map((item) => (
@@ -179,6 +262,12 @@ export const renderGalleryItems = (items: GalleryItem[]) => {
             className="rounded-lg shadow-md w-full h-48 object-cover hover:scale-105 transition cursor-pointer"
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 rounded-b-lg opacity-0 group-hover:opacity-100 transition">
+            {(item.category || item.date) && (
+              <div className="mb-2 flex flex-wrap gap-2 text-[11px]">
+                {item.category ? <span className="rounded-full bg-white/20 px-2 py-0.5 text-white">{item.category}</span> : null}
+                {item.date ? <span className="rounded-full bg-white/20 px-2 py-0.5 text-white">{item.date}</span> : null}
+              </div>
+            )}
             <p className="text-white text-sm font-medium">{item.title}</p>
             {item.description && (
               <p className="text-white/80 text-xs">{item.description}</p>
@@ -284,6 +373,18 @@ export const renderSectionContent = (section: SectionContent): React.ReactNode =
     case 'testimonials':
       if (section.testimonialItems) {
         return renderTestimonialItems(section.testimonialItems);
+      }
+      return null;
+
+    case 'courses':
+      if (section.courseItems) {
+        return renderCourseItems(section.courseItems);
+      }
+      return null;
+
+    case 'thankyou':
+      if (section.thankYouItems) {
+        return renderThankYouItems(section.thankYouItems);
       }
       return null;
       

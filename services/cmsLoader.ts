@@ -1,4 +1,4 @@
-import { CmsData, ThankYouItem, NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem } from '../types';
+import { CmsData, ThankYouItem, NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem, CourseItem } from '../types';
 import { getFileContent, validateToken } from './githubApi';
 import { CMS_SECTION_FILE_NAMES, CmsSectionFileKey, mergeCmsSplitData, normalizeCmsData } from './cmsData';
 
@@ -30,6 +30,11 @@ export const getIntroContent = async (): Promise<string> => {
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   const data = await loadCmsData();
   return data?.galleryItems || [];
+};
+
+export const getCourseItems = async (): Promise<CourseItem[]> => {
+  const data = await loadCmsData();
+  return data?.courseItems || [];
 };
 
 let cachedData: CmsData | null = null;

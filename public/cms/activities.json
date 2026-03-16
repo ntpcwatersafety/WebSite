@@ -1,0 +1,33 @@
+{
+  "lastUpdated": "2026-03-16T00:00:00.000Z",
+  "courseItems": [
+    {
+      "id": "courseItems-activity-safety-01",
+      "title": "水上安全宣導與自救體驗",
+      "description": "<p>結合基礎防溺觀念、自救技巧與現場示範，適合學校、社區與企業團體預約安排。</p>",
+      "schedule": "可依單位需求預約安排",
+      "location": "新北市各合作場域",
+      "price": "請洽協會",
+      "features": [
+        "基礎防溺觀念宣導",
+        "岸上自救與求救流程",
+        "可配合團體客製安排"
+      ],
+      "isRecruiting": true
+    },
+    {
+      "id": "courseItems-lifesaving-02",
+      "title": "救生訓練班",
+      "description": "<p>提供系統化救生技能訓練，包含泳池實作、基本救援觀念與團隊協作。</p>",
+      "schedule": "每期時間依公告為主",
+      "location": "板橋地區泳池與訓練場地",
+      "price": "依每期招生公告",
+      "features": [
+        "分級訓練安排",
+        "實作與體能並重",
+        "適合有志參與救生服務者"
+      ],
+      "isRecruiting": true
+    }
+  ]
+}
