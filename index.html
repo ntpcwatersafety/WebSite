@@ -5,29 +5,9 @@
     <link rel="icon" type="image/png" href="/images/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>新北市水上安全協會</title>
-    <!-- Tailwind CSS 依然可以使用 CDN 方式，這是最快的方法 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#006994',
-              secondary: '#4A90E2',
-              background: '#E6F7FF',
-              text: '#333333',
-            },
-            fontFamily: {
-              sans: ['"Helvetica Neue"', '"Microsoft JhengHei"', 'Arial', 'sans-serif'],
-            }
-          }
-        }
-      }
-    </script>
   </head>
   <body class="bg-background text-text antialiased">
     <div id="root"></div>
-    <!-- 這一行最重要！告訴 Vite 程式進入點在哪 -->
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>

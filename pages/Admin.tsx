@@ -1445,21 +1445,6 @@ const Admin: React.FC = () => {
                     className="px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60"
                   >
                     {loadingEditorImages ? '載入中...' : '重新整理圖片庫'}
-                  <label className="block text-xs text-gray-500 mb-1 mt-2">活動日期（非必填）</label>
-                  <input
-                    type="date"
-                    value={item.date || ''}
-                    onChange={e => onUpdate('date', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                  <label className="block text-xs text-gray-500 mb-1 mt-2">分類（非必填）</label>
-                  <input
-                    type="text"
-                    value={item.category || ''}
-                    onChange={e => onUpdate('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="例：訓練、宣導、活動花絮"
-                  />
                   </button>
                   <button
                     type="button"
