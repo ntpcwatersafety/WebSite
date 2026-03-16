@@ -259,6 +259,12 @@ const openImagePicker = (callback: (file: File) => void) => {
 
 const buildRichTextEditorInit = (height: number) => {
   const minEditorHeight = Math.min(height, 160);
+  const plugins = [
+    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor', 'template',
+    'searchreplace', 'visualblocks', 'visualchars', 'code', 'fullscreen', 'autoresize',
+    'insertdatetime', 'media', 'table', 'paste', 'help', 'wordcount', 'quickbars',
+    'directionality', 'emoticons', 'hr', 'nonbreaking'
+  ].join(' ');
 
   return {
     language: TINYMCE_LANGUAGE,
@@ -267,13 +273,7 @@ const buildRichTextEditorInit = (height: number) => {
     branding: false,
     promotion: false,
     resize: false,
-    plugins: [
-      'advlist autolink lists link image charmap preview anchor template',
-      'searchreplace visualblocks visualchars code fullscreen autoresize',
-      'insertdatetime media table paste help wordcount quickbars',
-      'directionality emoticons hr nonbreaking',
-      'code'
-    ],
+    plugins,
     toolbar: [
       'undo redo | image media | blocks | fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | removeformat',
       'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table blockquote hr | styles template | searchreplace code preview fullscreen | help'
