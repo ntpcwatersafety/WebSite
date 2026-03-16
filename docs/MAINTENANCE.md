@@ -13,6 +13,7 @@
 
 - 前台：GitHub Pages
 - 後台頁面：正式站 /#/admin
+- 後台轉址入口：正式站 /admin 會自動導向 /#/admin
 - 後台 API：Cloudflare Worker
 - CMS 儲存：GitHub repo 的 public/cms/*.json
 - 編輯器圖片：GitHub repo 的 public/images/editor/*
@@ -33,10 +34,11 @@
 操作順序：
 
 1. 開啟正式站 /#/admin
-2. 使用管理員帳密登入
-3. 修改內容後按儲存
-4. 等待 GitHub Pages 與快取更新
-5. 回前台確認畫面
+2. 若有人打 /admin，確認頁面有自動跳到 /#/admin
+3. 使用管理員帳密登入
+4. 修改內容後按儲存
+5. 等待 GitHub Pages 與快取更新
+6. 回前台確認畫面
 
 如果只是大量內容整理或要做版本比對，也可以直接修改 public/cms/*.json 後再 push。
 
@@ -57,14 +59,16 @@
 1. /api/github/status
 2. /api/cms
 3. /#/admin
-4. 後台插入圖片是否成功
-5. 前台實際頁面
+4. /admin
+5. 後台插入圖片是否成功
+6. 前台實際頁面
 
 預期結果：
 
 - /api/github/status 會回 JSON
 - /api/cms 會回 content 與 shas
 - /#/admin 可登入、可載入、可儲存
+- /admin 會自動導向 /#/admin
 - 編輯器插入圖片後，內容中應出現 /images/editor/... 路徑
 - 前台能讀到更新後內容
 
@@ -105,6 +109,7 @@ Vars：
 
 先查：
 
+- /admin 是否有自動導向 /#/admin
 - /api/github/status
 - Cloudflare Worker 是否成功部署
 - ADMIN_USER、ADMIN_PASS、JWT_SECRET 是否還在

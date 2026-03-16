@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>頁面轉址中</title>
+    <script>
+      (function () {
+        var path = window.location.pathname.replace(/\/+$/, '');
+
+        if (!path || path === '/') {
+          window.location.replace('/#/');
+          return;
+        }
+
+        if (path.indexOf('/api/') === 0) {
+          return;
+        }
+
+        window.location.replace('/#' + path + window.location.search + window.location.hash);
+      })();
+    </script>
+  </head>
+  <body>
+    <p>頁面轉址中，若未自動跳轉，請返回首頁。</p>
+  </body>
+</html>
