@@ -1,7 +1,7 @@
 import React from 'react';
 import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
-import { sortCourseItems } from './cmsData';
+import { sortCourseItems, sortGalleryItems } from './cmsData';
 
 /**
  * =================================================================
@@ -365,16 +365,21 @@ export const renderThankYouItems = (items: ThankYouItem[]) => {
  * 渲染圖片庫
  */
 export const renderGalleryItems = (items: GalleryItem[]) => {
-  if (items.length === 0) {
+  const activeItems = sortGalleryItems(items).filter((item) => item.isActive !== false && item.photos?.length);
+
+  if (activeItems.length === 0) {
     return renderEmptyState('目前尚無活動照片。');
   }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-      {items.map((item) => (
+      {activeItems.map((item) => {
+        const coverPhoto = item.photos[0];
+
+        return (
         <div key={item.id} className="group relative">
           <img 
-            src={item.imageUrl} 
+            src={coverPhoto.imageUrl} 
             alt={item.title}
             className="rounded-lg shadow-md w-full h-48 object-cover hover:scale-105 transition cursor-pointer"
           />
@@ -389,9 +394,10 @@ export const renderGalleryItems = (items: GalleryItem[]) => {
             {item.description && (
               <p className="text-white/80 text-xs">{item.description}</p>
             )}
+            <p className="mt-1 text-white/80 text-[11px]">共 {item.photos.length} 張</p>
           </div>
         </div>
-      ))}
+      )})}
     </div>
   );
 };

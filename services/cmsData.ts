@@ -10,6 +10,75 @@ const toComparableSortOrder = (value?: number): number => (
   typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY
 );
 
+const normalizeGalleryItems = (items: unknown): GalleryItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item, index) => {
+    const rawItem = item as Record<string, unknown>;
+    const rawPhotos = Array.isArray(rawItem?.photos) ? rawItem.photos : null;
+
+    if (rawPhotos) {
+      const normalizedPhotos = rawPhotos
+        .map((photo, photoIndex) => {
+          const rawPhoto = photo as Record<string, unknown>;
+          if (typeof rawPhoto?.imageUrl !== 'string' || !rawPhoto.imageUrl) {
+            return null;
+          }
+
+          return {
+            id: typeof rawPhoto.id === 'string' ? rawPhoto.id : `${typeof rawItem.id === 'string' ? rawItem.id : `gallery-activity-${index}`}-photo-${photoIndex + 1}`,
+            imageUrl: rawPhoto.imageUrl,
+            title: typeof rawPhoto.title === 'string' ? rawPhoto.title : '',
+            description: typeof rawPhoto.description === 'string' ? rawPhoto.description : ''
+          };
+        })
+        .filter(Boolean) as GalleryItem['photos'];
+
+      return {
+        id: typeof rawItem.id === 'string' ? rawItem.id : `gallery-activity-${index}`,
+        title: typeof rawItem.title === 'string' && rawItem.title.trim() ? rawItem.title : `未命名活動 ${index + 1}`,
+        description: typeof rawItem.description === 'string' ? rawItem.description : '',
+        isActive: rawItem.isActive !== false,
+        date: typeof rawItem.date === 'string' ? rawItem.date : '',
+        category: typeof rawItem.category === 'string' ? rawItem.category : '',
+        sortOrder: typeof rawItem.sortOrder === 'number' && Number.isFinite(rawItem.sortOrder) ? rawItem.sortOrder : undefined,
+        coverPhotoId: typeof rawItem.coverPhotoId === 'string' && normalizedPhotos.some((photo) => photo.id === rawItem.coverPhotoId)
+          ? rawItem.coverPhotoId
+          : normalizedPhotos[0]?.id,
+        photos: normalizedPhotos
+      };
+    }
+
+    // 相容舊格式：一張圖就是一筆資料
+    const legacyTitle = typeof rawItem.category === 'string' && rawItem.category.trim()
+      ? rawItem.category
+      : typeof rawItem.title === 'string' && rawItem.title.trim()
+        ? rawItem.title
+        : `未命名活動 ${index + 1}`;
+
+    const legacyPhotos = typeof rawItem.imageUrl === 'string' && rawItem.imageUrl
+      ? [{
+          id: `${typeof rawItem.id === 'string' ? rawItem.id : `gallery-activity-${index}`}-photo-1`,
+          imageUrl: rawItem.imageUrl,
+          title: typeof rawItem.title === 'string' ? rawItem.title : '',
+          description: typeof rawItem.description === 'string' ? rawItem.description : ''
+        }]
+      : [];
+
+    return {
+      id: typeof rawItem.id === 'string' ? rawItem.id : `gallery-activity-${index}`,
+      title: legacyTitle,
+      description: typeof rawItem.description === 'string' ? rawItem.description : '',
+      isActive: rawItem.isActive !== false,
+      date: typeof rawItem.date === 'string' ? rawItem.date : '',
+      category: typeof rawItem.category === 'string' ? rawItem.category : '',
+      sortOrder: typeof rawItem.sortOrder === 'number' && Number.isFinite(rawItem.sortOrder) ? rawItem.sortOrder : undefined,
+      coverPhotoId: legacyPhotos[0]?.id,
+      photos: legacyPhotos
+    };
+  });
+};
+
 export const CMS_SECTION_FILE_NAMES = {
   activities: 'activities.json',
   home: 'home.json',
@@ -139,7 +208,7 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
     },
     gallery: {
       lastUpdated: typeof raw?.gallery?.lastUpdated === 'string' ? raw.gallery.lastUpdated : empty.gallery.lastUpdated,
-      galleryItems: Array.isArray(raw?.gallery?.galleryItems) ? raw.gallery.galleryItems : empty.gallery.galleryItems
+      galleryItems: normalizeGalleryItems(raw?.gallery?.galleryItems)
     },
     thankyou: {
       lastUpdated: typeof raw?.thankyou?.lastUpdated === 'string' ? raw.thankyou.lastUpdated : empty.thankyou.lastUpdated,
@@ -159,7 +228,7 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
     awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
     testimonials: Array.isArray(raw?.testimonials) ? raw.testimonials : empty.testimonials,
     trainingRecords: Array.isArray(raw?.trainingRecords) ? raw.trainingRecords : empty.trainingRecords,
-    galleryItems: Array.isArray(raw?.galleryItems) ? raw.galleryItems : empty.galleryItems,
+    galleryItems: normalizeGalleryItems(raw?.galleryItems),
     introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
     thankYouItems: Array.isArray(raw?.thankYouItems) ? raw.thankYouItems : empty.thankYouItems
   };
@@ -238,6 +307,20 @@ export const sortCourseItems = (items: CourseItem[] | null | undefined): CourseI
     if ((left.isRecruiting ?? true) !== (right.isRecruiting ?? true)) {
       return left.isRecruiting === false ? 1 : -1;
     }
+
+    return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
+  });
+};
+
+export const sortGalleryItems = (items: GalleryItem[] | null | undefined): GalleryItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((left, right) => {
+    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+    if (sortOrderDiff !== 0) return sortOrderDiff;
+
+    const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
+    if (dateDiff !== 0) return dateDiff;
 
     return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
   });

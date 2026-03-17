@@ -89,8 +89,8 @@ import {
 import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { loadCmsData } from '../services/cmsLoader';
-import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
-import { CmsFileShas, normalizeCmsData, sortCourseItems } from '../services/cmsData';
+import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem } from '../types';
+import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
@@ -573,63 +573,247 @@ const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void; onIm
     />
   </div>
 );
-// 圖片上傳工具
-const handleImageUpload = (file: File, callback: (url: string) => void) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    if (e.target && typeof e.target.result === 'string') {
-      callback(e.target.result);
-    }
-  };
-  reader.readAsDataURL(file);
-};
-// 活動剪影編輯器
-interface GalleryItemEditorProps {
-  item: GalleryItem;
-  onUpdate: (field: string, value: any) => void;
+
+interface GalleryActivitiesEditorProps {
+  sectionId?: string;
+  items: GalleryItem[];
+  expanded: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
+  onDeleteActivity: (activityId: string) => void;
+  onUpdateActivity: (activityId: string, field: keyof GalleryItem, value: any) => void;
+  onSetCoverPhoto: (activityId: string, photoId: string) => void;
+  onUploadPhotos: (activityId: string, files: FileList) => void;
+  onDeletePhoto: (activityId: string, photoId: string) => void;
+  onMoveActivity: (draggedId: string, targetId: string) => void;
+  onMovePhoto: (activityId: string, draggedId: string, targetId: string) => void;
+  uploadingActivityId: string | null;
 }
 
-const GalleryItemEditor: React.FC<GalleryItemEditorProps> = ({ item, onUpdate }) => {
+const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
+  sectionId,
+  items,
+  expanded,
+  onToggle,
+  onAdd,
+  onDeleteActivity,
+  onUpdateActivity,
+  onSetCoverPhoto,
+  onUploadPhotos,
+  onDeletePhoto,
+  onMoveActivity,
+  onMovePhoto,
+  uploadingActivityId
+}) => {
+  const sortedActivities = sortGalleryItems(items);
+  const [draggingActivityId, setDraggingActivityId] = useState<string | null>(null);
+  const [draggingPhoto, setDraggingPhoto] = useState<{ activityId: string; photoId: string } | null>(null);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label className="block text-xs text-gray-500 mb-1">圖片</label>
-        {item.imageUrl && (
-          <img src={item.imageUrl} alt="預覽" className="w-32 h-24 object-cover rounded mb-2 border" />
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          onChange={e => {
-            if (e.target.files && e.target.files[0]) {
-              handleImageUpload(e.target.files[0], (url) => onUpdate('imageUrl', url));
-            }
-          }}
-        />
-      </div>
-      <div className="flex flex-col gap-2">
-        <label className="block text-xs text-gray-500 mb-1">標題（非必填）</label>
-        <input
-          type="text"
-          value={item.title || ''}
-          onChange={e => onUpdate('title', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-        />
-        <label className="block text-xs text-gray-500 mb-1 mt-2">內容描述（非必填）</label>
-        <textarea
-          value={item.description || ''}
-          onChange={e => onUpdate('description', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          rows={2}
-        />
-        <label className="block text-xs text-gray-500 mb-1 mt-2">上架</label>
-        <input
-          type="checkbox"
-          checked={item.isActive !== false}
-          onChange={e => onUpdate('isActive', e.target.checked)}
-        />
-        <span className="text-xs text-gray-400">（未勾選則為下架，前台不顯示）</span>
-      </div>
+    <div id={sectionId} className="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24">
+      <button
+        onClick={onToggle}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+      >
+        <div className="flex items-center gap-3 text-left">
+          <span className="text-blue-600 self-start mt-0.5"><Eye className="w-5 h-5" /></span>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-gray-800">活動剪影 / 活動相簿</span>
+              <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                前台：活動剪影 / 活動輪播
+              </span>
+              <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
+                {sortedActivities.length} 個活動
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">每個活動可上傳多張照片、拖拉調整活動順序與照片順序，前台會以活動為單位輪播顯示。</p>
+          </div>
+        </div>
+        {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+      </button>
+
+      {expanded ? (
+        <div className="px-6 pb-6">
+          <button
+            onClick={onAdd}
+            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 mb-4"
+          >
+            <Plus className="w-5 h-5" />
+            新增活動
+          </button>
+
+          <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 mb-4 text-sm text-blue-800">
+            直接拖拉整個活動卡片可調整前台活動順序；活動內的照片縮圖也可拖拉改變播放順序。每次可一次上傳多張圖片。
+          </div>
+
+          <div className="space-y-4">
+            {sortedActivities.map((activity, index) => (
+              <div
+                key={activity.id}
+                draggable
+                onDragStart={() => setDraggingActivityId(activity.id)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (draggingActivityId && draggingActivityId !== activity.id) {
+                    onMoveActivity(draggingActivityId, activity.id);
+                  }
+                  setDraggingActivityId(null);
+                }}
+                onDragEnd={() => setDraggingActivityId(null)}
+                className={`rounded-2xl border bg-slate-50 p-4 ${draggingActivityId === activity.id ? 'border-blue-300 shadow-md' : 'border-slate-200'}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-bold text-white">
+                      {index + 1}
+                    </span>
+                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500">
+                      可拖拉排序
+                    </span>
+                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-500">
+                      {activity.photos.length} 張照片
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteActivity(activity.id)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    刪除活動
+                  </button>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">活動名稱</label>
+                    <input
+                      type="text"
+                      value={activity.title || ''}
+                      onChange={(event) => onUpdateActivity(activity.id, 'title', event.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">活動日期</label>
+                    <input
+                      type="date"
+                      value={activity.date || ''}
+                      onChange={(event) => onUpdateActivity(activity.id, 'date', event.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">活動分類（選填）</label>
+                    <input
+                      type="text"
+                      value={activity.category || ''}
+                      onChange={(event) => onUpdateActivity(activity.id, 'category', event.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 pt-6">
+                    <input
+                      id={`gallery-active-${activity.id}`}
+                      type="checkbox"
+                      checked={activity.isActive !== false}
+                      onChange={(event) => onUpdateActivity(activity.id, 'isActive', event.target.checked)}
+                    />
+                    <label htmlFor={`gallery-active-${activity.id}`} className="text-sm text-gray-700">前台顯示這個活動</label>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">活動描述（選填）</label>
+                    <textarea
+                      value={activity.description || ''}
+                      onChange={(event) => onUpdateActivity(activity.id, 'description', event.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-bold text-slate-800">活動照片</h4>
+                      <p className="mt-1 text-xs text-slate-500">可多選檔案一次上傳；縮圖可直接拖拉改順序，也可指定其中一張作為活動封面。</p>
+                    </div>
+                    <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${uploadingActivityId === activity.id ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={uploadingActivityId === activity.id}
+                        onChange={(event) => {
+                          if (event.target.files?.length) {
+                            onUploadPhotos(activity.id, event.target.files);
+                            event.target.value = '';
+                          }
+                        }}
+                      />
+                      {uploadingActivityId === activity.id ? '上傳中...' : '新增多張照片'}
+                    </label>
+                  </div>
+
+                  {activity.photos.length ? (
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-5">
+                      {activity.photos.map((photo, photoIndex) => (
+                        <div
+                          key={photo.id}
+                          draggable
+                          onDragStart={() => setDraggingPhoto({ activityId: activity.id, photoId: photo.id })}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={() => {
+                            if (draggingPhoto && draggingPhoto.activityId === activity.id && draggingPhoto.photoId !== photo.id) {
+                              onMovePhoto(activity.id, draggingPhoto.photoId, photo.id);
+                            }
+                            setDraggingPhoto(null);
+                          }}
+                          onDragEnd={() => setDraggingPhoto(null)}
+                          className={`overflow-hidden rounded-xl border bg-slate-50 ${draggingPhoto?.photoId === photo.id ? 'border-blue-300 shadow-md' : 'border-slate-200'}`}
+                        >
+                          <div className="relative aspect-square bg-slate-100">
+                            <img src={photo.imageUrl} alt={photo.title || activity.title} className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => onDeletePhoto(activity.id, photo.id)}
+                              className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white hover:bg-black/70"
+                              title="刪除這張照片"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                            <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-bold text-slate-700">
+                              {photoIndex + 1}
+                            </span>
+                            {activity.coverPhotoId === photo.id ? (
+                              <span className="absolute bottom-2 left-2 rounded-full bg-cyan-600 px-2 py-0.5 text-xs font-semibold text-white">
+                                封面
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="border-t border-slate-200 bg-white p-2">
+                            <button
+                              type="button"
+                              onClick={() => onSetCoverPhoto(activity.id, photo.id)}
+                              className={`w-full rounded-lg border px-2 py-1.5 text-xs font-medium ${activity.coverPhotoId === photo.id ? 'border-cyan-200 bg-cyan-50 text-cyan-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                            >
+                              {activity.coverPhotoId === photo.id ? '目前封面' : '設為封面'}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-slate-500">尚未上傳照片。</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
@@ -658,6 +842,7 @@ const Admin: React.FC = () => {
   const [editorImages, setEditorImages] = useState<EditorImageAsset[]>([]);
   const [loadingEditorImages, setLoadingEditorImages] = useState(false);
   const [deletingEditorImages, setDeletingEditorImages] = useState(false);
+  const [uploadingGalleryActivityId, setUploadingGalleryActivityId] = useState<string | null>(null);
   const [editorImageKeyword, setEditorImageKeyword] = useState('');
   const [selectedEditorImages, setSelectedEditorImages] = useState<string[]>([]);
   const [showOnlyUnusedEditorImages, setShowOnlyUnusedEditorImages] = useState(false);
@@ -982,6 +1167,134 @@ const Admin: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const moveGalleryActivity = (draggedId: string, targetId: string) => {
+    if (!cmsData) return;
+
+    const orderedItems = sortGalleryItems(cmsData.galleryItems || []);
+    const draggedIndex = orderedItems.findIndex((item) => item.id === draggedId);
+    const targetIndex = orderedItems.findIndex((item) => item.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return;
+
+    const nextOrderedItems = [...orderedItems];
+    const [movedItem] = nextOrderedItems.splice(draggedIndex, 1);
+    nextOrderedItems.splice(targetIndex, 0, movedItem);
+
+    const reorderedMap = new Map(
+      nextOrderedItems.map((item, index) => [item.id, { ...item, sortOrder: (index + 1) * 10 }])
+    );
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).map((item) => reorderedMap.get(item.id) || item)
+    });
+  };
+
+  const updateGalleryActivityField = (activityId: string, field: keyof GalleryItem, value: any) => {
+    if (!cmsData) return;
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).map((item) => (
+        item.id === activityId ? { ...item, [field]: value } : item
+      ))
+    });
+  };
+
+  const setGalleryCoverPhoto = (activityId: string, photoId: string) => {
+    if (!cmsData) return;
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).map((item) => (
+        item.id === activityId ? { ...item, coverPhotoId: photoId } : item
+      ))
+    });
+  };
+
+  const deleteGalleryActivity = (activityId: string) => {
+    if (!cmsData || !confirm('確定要刪除此活動嗎？')) return;
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).filter((item) => item.id !== activityId)
+    });
+  };
+
+  const moveGalleryPhoto = (activityId: string, draggedPhotoId: string, targetPhotoId: string) => {
+    if (!cmsData) return;
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).map((item) => {
+        if (item.id !== activityId) return item;
+
+        const photos = [...(item.photos || [])];
+        const draggedIndex = photos.findIndex((photo) => photo.id === draggedPhotoId);
+        const targetIndex = photos.findIndex((photo) => photo.id === targetPhotoId);
+        if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return item;
+
+        const [movedPhoto] = photos.splice(draggedIndex, 1);
+        photos.splice(targetIndex, 0, movedPhoto);
+        return { ...item, photos };
+      })
+    });
+  };
+
+  const deleteGalleryPhoto = (activityId: string, photoId: string) => {
+    if (!cmsData || !confirm('確定要把這張照片從此活動移除嗎？這只會移除活動內的引用，不會刪除 repo 圖檔。')) return;
+
+    setCmsData({
+      ...cmsData,
+      galleryItems: (cmsData.galleryItems || []).map((item) => {
+        if (item.id !== activityId) return item;
+
+        const nextPhotos = (item.photos || []).filter((photo) => photo.id !== photoId);
+        const nextCoverPhotoId = item.coverPhotoId === photoId ? nextPhotos[0]?.id : item.coverPhotoId;
+
+        return { ...item, photos: nextPhotos, coverPhotoId: nextCoverPhotoId };
+      })
+    });
+  };
+
+  const uploadGalleryPhotos = async (activityId: string, files: FileList) => {
+    if (!cmsData) return;
+
+    setUploadingGalleryActivityId(activityId);
+    try {
+      const uploadedPhotos = await Promise.all(Array.from(files).map(async (file, index): Promise<GalleryPhoto> => {
+        const url = await uploadValidatedEditorImage(file);
+        trackUploadedEditorImage(url);
+        return {
+          id: `${activityId}-photo-${Date.now()}-${index}`,
+          imageUrl: url,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          description: ''
+        };
+      }));
+
+      setCmsData((previous) => {
+        if (!previous) return previous;
+        return {
+          ...previous,
+          galleryItems: (previous.galleryItems || []).map((item) => (
+            item.id === activityId
+              ? {
+                  ...item,
+                  coverPhotoId: item.coverPhotoId || uploadedPhotos[0]?.id,
+                  photos: [...(item.photos || []), ...uploadedPhotos]
+                }
+              : item
+          ))
+        };
+      });
+      showMessage('success', `已新增 ${uploadedPhotos.length} 張照片。`);
+    } catch (error) {
+      console.error('活動照片上傳失敗:', error);
+      showMessage('error', error instanceof Error ? error.message : '活動照片上傳失敗');
+    }
+    setUploadingGalleryActivityId(null);
+  };
+
   const moveCourseItemByPreview = (courseId: string, direction: 'up' | 'down') => {
     if (!cmsData) return;
 
@@ -1138,14 +1451,22 @@ const Admin: React.FC = () => {
         };
         break;
       case 'galleryItems':
+        const nextGalleryItems = sortGalleryItems(cmsData.galleryItems || []);
+        const nextGallerySortOrder = nextGalleryItems.reduce((maxOrder, item) => (
+          typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
+            ? Math.max(maxOrder, item.sortOrder)
+            : maxOrder
+        ), 0) + 10;
         newItem = {
           id: newId,
-          imageUrl: '',
-          title: '',
+          title: '新活動名稱',
           description: '',
-          date: '',
+          date: new Date().toISOString().split('T')[0],
           category: '',
-          isActive: true
+          isActive: true,
+          sortOrder: nextGallerySortOrder,
+          coverPhotoId: undefined,
+          photos: []
         };
         break;
       case 'thankYouItems':
@@ -1871,25 +2192,20 @@ const Admin: React.FC = () => {
               route="/#/gallery"
               description="這一組對應前台活動剪影頁的相簿與輪播內容。"
             >
-              <SectionEditor
+              <GalleryActivitiesEditor
                 sectionId="section-galleryItems"
-                title="活動剪影 / 相簿內容"
-                pageLabel="活動剪影 / 相簿"
-                description="對應前台活動剪影頁的圖片輪播與相簿內容。"
-                icon={<Eye className="w-5 h-5" />}
                 items={cmsData.galleryItems || []}
-                sectionKey="galleryItems"
                 expanded={expandedSection === 'galleryItems'}
                 onToggle={() => setExpandedSection(expandedSection === 'galleryItems' ? '' : 'galleryItems')}
                 onAdd={() => addItem('galleryItems')}
-                onDelete={(index) => deleteItem('galleryItems', index)}
-                onUpdate={(index, field, value) => updateItemField('galleryItems', index, field, value)}
-                renderItem={(item, index) => (
-                  <GalleryItemEditor
-                    item={item}
-                    onUpdate={(field, value) => updateItemField('galleryItems', index, field, value)}
-                  />
-                )}
+                onDeleteActivity={deleteGalleryActivity}
+                onUpdateActivity={updateGalleryActivityField}
+                onSetCoverPhoto={setGalleryCoverPhoto}
+                onUploadPhotos={uploadGalleryPhotos}
+                onDeletePhoto={deleteGalleryPhoto}
+                onMoveActivity={moveGalleryActivity}
+                onMovePhoto={moveGalleryPhoto}
+                uploadingActivityId={uploadingGalleryActivityId}
               />
             </PageGroup>
 
