@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface CollapsibleCardProps {
@@ -10,6 +10,35 @@ interface CollapsibleCardProps {
 const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, isOpenDefault = false, children }) => {
   const [isOpen, setIsOpen] = useState(isOpenDefault);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const element = contentRef.current;
+    if (!element) return;
+
+    const updateHeight = () => {
+      setContentHeight(element.scrollHeight);
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    observer.observe(element);
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [children, isOpen]);
 
   return (
     <div className="mb-6 overflow-hidden rounded-2xl border-t-4 border-primary bg-white shadow-sm transition-all duration-300 md:mb-8">
@@ -28,7 +57,7 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, isOpenDefault 
       <div
         className="transition-[max-height] duration-300 ease-out overflow-hidden"
         style={{
-          maxHeight: isOpen ? `${contentRef.current?.scrollHeight}px` : '0px',
+          maxHeight: isOpen ? `${contentHeight}px` : '0px',
         }}
       >
         <div 
