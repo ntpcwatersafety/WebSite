@@ -12,16 +12,16 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, isOpenDefault 
   const contentRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="bg-white mb-8 rounded-lg shadow-sm border-t-4 border-primary overflow-hidden transition-all duration-300">
+    <div className="mb-6 overflow-hidden rounded-2xl border-t-4 border-primary bg-white shadow-sm transition-all duration-300 md:mb-8">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-start md:justify-start gap-4 px-8 py-6 cursor-pointer bg-white hover:bg-gray-50 transition-colors select-none ${
+        className={`flex w-full items-center justify-between gap-4 bg-white px-5 py-4 text-left transition-colors select-none hover:bg-gray-50 sm:px-6 sm:py-5 md:px-8 md:py-6 ${
           isOpen ? 'border-b border-gray-100' : ''
-        } max-md:justify-center`} // Mobile: center, Desktop: start
+        }`}
       >
-        <h2 className="text-2xl font-bold text-primary m-0">{title}</h2>
+        <h2 className="m-0 pr-2 text-xl font-bold leading-snug text-primary sm:text-2xl">{title}</h2>
         <ChevronDown 
-          className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`} 
+          className={`h-5 w-5 flex-shrink-0 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`} 
         />
       </button>
 
@@ -33,7 +33,7 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, isOpenDefault 
       >
         <div 
           ref={contentRef}
-          className={`px-8 pb-8 pt-2 transition-all duration-300 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}
+          className={`px-5 pb-5 pt-2 transition-all duration-300 sm:px-6 sm:pb-6 md:px-8 md:pb-8 ${isOpen ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'}`}
         >
           {children}
         </div>

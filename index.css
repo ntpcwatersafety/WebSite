@@ -23,6 +23,46 @@
 	font-weight: 700;
 }
 
+.cms-richtext {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.cms-richtext > :first-child {
+	margin-top: 0;
+}
+
+.cms-richtext > :last-child {
+	margin-bottom: 0;
+}
+
+.cms-richtext a {
+	word-break: break-all;
+}
+
+.cms-richtext img,
+.cms-richtext video,
+.cms-richtext iframe,
+.cms-richtext canvas,
+.cms-richtext svg {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+.cms-richtext table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+	border-collapse: collapse;
+}
+
+.cms-richtext pre,
+.cms-richtext code {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
 @layer base {
 	body {
 		@apply bg-background text-text antialiased;

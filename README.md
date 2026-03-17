@@ -113,7 +113,9 @@ Vite 設定在 3000 port，因此本機通常是：
 - 可直接在編輯器內插入圖片
 - 圖片會先透過 /api/upload-image 上傳到 repo 的 public/images/editor/*
 - 之後內容只會保存圖片網址，不會把整張圖塞進 cms JSON
-- 若上傳後沒有儲存文章，repo 內仍可能留下未使用圖片，屬於目前可接受的維運取捨
+- 後台目前會直接把 GitHub raw URL 寫進內容，讓圖片在 GitHub Pages redeploy 前也能先正常顯示
+- 若上傳後沒有儲存文章，系統會在重新載入、登出、離開頁面或成功儲存後，盡量自動清理本次編輯產生但未引用的圖片
+- 後台另提供 /api/editor-images 與 /api/cleanup-images 對應的圖片庫與清理能力
 
 所以後台的「讀取」有 fallback，但「儲存」需要可用的後端代理與 GitHub Token。
 

@@ -31,36 +31,39 @@ export const renderNewsItems = (items: NewsItem[]) => {
   });
 
   return (
-    <ul className="space-y-3">
+    <ul className="space-y-4">
       {sortedItems.map((item) => (
         <li 
           key={item.id} 
-          className={`flex flex-col md:flex-row md:items-start text-gray-700 border-b border-gray-100 pb-3 last:border-0 ${
-            item.isPinned ? 'bg-yellow-50 -mx-2 px-2 py-2 rounded-lg border-l-4 border-yellow-400' : ''
+          className={`overflow-hidden flex flex-col gap-3 rounded-xl border border-transparent pb-4 text-gray-700 last:border-0 md:flex-row md:items-start ${
+            item.isPinned ? 'border-yellow-200 bg-yellow-50 px-3 py-3 shadow-sm' : 'px-1'
           }`}
         >
-          <div className="flex items-center gap-2 md:w-36 flex-shrink-0 whitespace-nowrap mb-2 md:mb-0">
-            <span className="text-primary font-semibold text-base md:text-lg tracking-wide bg-gray-50 px-2 py-1 rounded shadow-sm border border-gray-200">{item.date}</span>
+          <div className="flex max-w-full flex-wrap items-center gap-2 md:w-40 md:flex-shrink-0 md:pt-0.5">
+            <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-sm font-semibold tracking-wide text-primary shadow-sm md:text-base">{item.date}</span>
             {item.isNew && (
-              <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse ml-1">
+              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white animate-pulse">
                 NEW
               </span>
             )}
             {item.isPinned && (
-              <span className="text-yellow-600 text-xs ml-1">📌</span>
+              <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">置頂</span>
             )}
           </div>
-          <div className="flex-1 min-w-0 md:pl-4">
-            <div className="font-medium break-words text-base md:text-lg leading-snug">{item.title}</div>
+          <div className="min-w-0 flex-1 md:pl-4">
+            <div className="text-base font-semibold leading-snug break-words text-slate-800 [overflow-wrap:anywhere] md:text-lg">{item.title}</div>
             {item.description && (
-              <div className="text-sm text-gray-500 mt-1 break-words" dangerouslySetInnerHTML={{ __html: item.description }} />
+              <div
+                className="cms-richtext mt-2 text-sm leading-7 text-gray-600 [overflow-wrap:anywhere]"
+                dangerouslySetInnerHTML={{ __html: item.description }}
+              />
             )}
             {item.link && (
               <a 
                 href={item.link} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 mt-1"
+                className="mt-2 inline-flex max-w-full items-center gap-1 break-all text-sm text-blue-600 hover:text-blue-800"
               >
                 查看詳情 <ExternalLink className="w-3 h-3" />
               </a>
@@ -91,11 +94,11 @@ export const renderMediaItems = (items: MediaItem[]) => {
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li key={item.id} className="flex flex-col md:flex-row md:items-center text-gray-700 border-b border-gray-100 pb-3 last:border-0">
-          <span className="text-primary font-semibold md:w-32 flex-shrink-0">{item.date}</span>
-          <div className="flex items-center gap-2 flex-1">
+        <li key={item.id} className="flex flex-col gap-2 border-b border-gray-100 pb-3 text-gray-700 last:border-0 md:flex-row md:items-center">
+          <span className="text-primary font-semibold md:w-32 md:flex-shrink-0">{item.date}</span>
+          <div className="min-w-0 flex-1 flex-wrap items-center gap-2 md:flex">
             {item.source && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+              <span className="max-w-full rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 break-all">
                 {item.source}
               </span>
             )}
@@ -104,13 +107,13 @@ export const renderMediaItems = (items: MediaItem[]) => {
                 href={item.link} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                className="inline-flex min-w-0 max-w-full items-center gap-1 break-all text-blue-600 hover:text-blue-800 hover:underline"
               >
                 {getIcon(item.type)}
-                {item.title}
+                <span className="min-w-0 [overflow-wrap:anywhere]">{item.title}</span>
               </a>
             ) : (
-              <span>{item.title}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{item.title}</span>
             )}
           </div>
         </li>
@@ -150,7 +153,7 @@ export const renderAwardItems = (items: AwardItem[]) => {
                 {item.year} {item.title}
               </p>
               {item.description && (
-                <p className={`text-sm ${color.desc}`} dangerouslySetInnerHTML={{ __html: item.description }} />
+                <div className={`cms-richtext text-sm ${color.desc}`} dangerouslySetInnerHTML={{ __html: item.description }} />
               )}
             </div>
           </div>
@@ -177,7 +180,7 @@ export const renderTestimonialItems = (items: TestimonialItem[]) => {
           key={item.id} 
           className={`border-l-4 ${borderColors[index % borderColors.length]} bg-gray-50 p-4 italic`}
         >
-          "{item.content}" <br />
+          <span className="[overflow-wrap:anywhere]">"{item.content}"</span> <br />
           <span className="text-sm text-gray-600 not-italic">
             — {item.author}{item.role ? `，${item.role}` : ''}
           </span>
@@ -200,7 +203,7 @@ export const renderCourseItems = (items: CourseItem[]) => {
             <div>
               <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
               {item.description && (
-                <div className="mt-2 text-sm leading-relaxed text-slate-700" dangerouslySetInnerHTML={{ __html: item.description }} />
+                <div className="cms-richtext mt-2 text-sm leading-relaxed text-slate-700" dangerouslySetInnerHTML={{ __html: item.description }} />
               )}
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.isRecruiting ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
@@ -236,8 +239,8 @@ export const renderThankYouItems = (items: ThankYouItem[]) => {
     <ul className="space-y-4">
       {items.map((item) => (
         <li key={item.id} className="border-b border-gray-100 pb-3 last:border-0">
-          <span className="font-semibold text-lg text-primary">{item.name}</span>
-          {item.description ? <span className="ml-2 text-gray-600">{item.description}</span> : null}
+          <span className="text-lg font-semibold text-primary [overflow-wrap:anywhere]">{item.name}</span>
+          {item.description ? <span className="ml-2 text-gray-600 [overflow-wrap:anywhere]">{item.description}</span> : null}
         </li>
       ))}
     </ul>
@@ -288,14 +291,14 @@ export const renderLegacyList = (items: string[]) => {
       {items.map((item: string, index: number) => {
         const parts = item.split(' - ');
         return (
-          <li key={index} className="flex flex-col md:flex-row md:items-center text-gray-700 border-b border-gray-100 pb-2 last:border-0">
+          <li key={index} className="flex flex-col text-gray-700 border-b border-gray-100 pb-2 last:border-0 md:flex-row md:items-center">
             {parts.length > 1 ? (
               <>
-                <strong className="text-primary font-semibold md:w-32 flex-shrink-0">{parts[0]}</strong>
-                <span dangerouslySetInnerHTML={{ __html: parts.slice(1).join(' - ') }} />
+                <strong className="text-primary font-semibold md:w-32 md:flex-shrink-0 [overflow-wrap:anywhere]">{parts[0]}</strong>
+                <span className="cms-richtext min-w-0 [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: parts.slice(1).join(' - ') }} />
               </>
             ) : (
-              <span dangerouslySetInnerHTML={{ __html: item }} />
+              <span className="cms-richtext min-w-0 [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: item }} />
             )}
           </li>
         );
@@ -341,7 +344,7 @@ export const renderContactInfo = (content: string) => {
 export const renderTextContent = (content: string) => {
   return (
     <div 
-      className="text-gray-700 leading-relaxed text-justify"
+      className="cms-richtext text-justify text-gray-700 leading-relaxed"
       dangerouslySetInnerHTML={{ __html: content || '' }}
     />
   );
