@@ -27,6 +27,40 @@ const COURSE_FEATURE_TONES = [
   'border-amber-200 bg-amber-50 text-amber-800'
 ];
 
+const getYouTubeEmbedUrl = (value?: string): string | null => {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.replace(/^www\./, '').toLowerCase();
+
+    if (hostname === 'youtu.be') {
+      const videoId = url.pathname.split('/').filter(Boolean)[0];
+      return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : null;
+    }
+
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+      if (url.pathname === '/watch') {
+        const videoId = url.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0` : null;
+      }
+
+      const pathParts = url.pathname.split('/').filter(Boolean);
+      if (pathParts[0] === 'embed' && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}?rel=0`;
+      }
+
+      if (pathParts[0] === 'shorts' && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}?rel=0`;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
 export const renderNewsItems = (items: NewsItem[]) => {
   if (items.length === 0) {
     return renderEmptyState('目前尚無資料，後續更新後會顯示於此。');
@@ -104,16 +138,20 @@ export const renderMediaItems = (items: MediaItem[]) => {
 
   return (
     <ul className="space-y-3">
-      {items.map((item) => (
-        <li key={item.id} className="flex flex-col gap-2 border-b border-gray-100 pb-3 text-gray-700 last:border-0 md:flex-row md:items-center">
-          <span className="text-primary font-semibold md:w-32 md:flex-shrink-0">{item.date}</span>
-          <div className="min-w-0 flex-1 flex-wrap items-center gap-2 md:flex">
+      {items.map((item) => {
+        const youtubeEmbedUrl = item.type === 'video' ? getYouTubeEmbedUrl(item.link) : null;
+
+        return (
+        <li key={item.id} className="border-b border-gray-100 pb-4 text-gray-700 last:border-0">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <span className="text-primary font-semibold md:w-32 md:flex-shrink-0">{item.date}</span>
+            <div className="min-w-0 flex-1 flex-wrap items-center gap-2 md:flex">
             {item.source && (
               <span className="max-w-full rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 break-all">
                 {item.source}
               </span>
             )}
-            {item.link ? (
+            {item.link && !youtubeEmbedUrl ? (
               <a 
                 href={item.link} 
                 target="_blank" 
@@ -127,8 +165,28 @@ export const renderMediaItems = (items: MediaItem[]) => {
               <span className="min-w-0 [overflow-wrap:anywhere]">{item.title}</span>
             )}
           </div>
+          </div>
+          {youtubeEmbedUrl ? (
+            <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                {getIcon(item.type)}
+                <span className="font-semibold text-slate-800">{item.title}</span>
+              </div>
+              <div className="aspect-video overflow-hidden rounded-xl bg-slate-200 shadow-sm">
+                <iframe
+                  src={youtubeEmbedUrl}
+                  title={item.title}
+                  className="h-full w-full"
+                  loading="lazy"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          ) : null}
         </li>
-      ))}
+      )})}
     </ul>
   );
 };

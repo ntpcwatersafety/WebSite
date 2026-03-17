@@ -11,8 +11,16 @@ interface GenericPageProps {
   sections?: SectionContent[];
 }
 
+const shouldDisplaySection = (section: SectionContent): boolean => {
+  if (section.id === 'awards') {
+    return Boolean(section.awardItems?.length);
+  }
+
+  return true;
+};
+
 const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
-  const [dynamicSections, setDynamicSections] = useState<SectionContent[]>(sections || []);
+  const [dynamicSections, setDynamicSections] = useState<SectionContent[]>((sections || []).filter(shouldDisplaySection));
 
   useEffect(() => {
     const loadDynamicData = async () => {
@@ -59,7 +67,7 @@ const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
             }
             return section;
           });
-          setDynamicSections(updatedSections);
+          setDynamicSections(updatedSections.filter(shouldDisplaySection));
         }
       } catch (error) {
         console.error('載入動態資料失敗:', error);

@@ -4,7 +4,21 @@ interface MediaItemEditorProps {
   onUpdate: (field: string, value: any) => void;
 }
 
+const isYouTubeLink = (value?: string) => {
+  if (!value) return false;
+
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.replace(/^www\./, '').toLowerCase();
+    return ['youtube.com', 'm.youtube.com', 'youtu.be'].includes(hostname);
+  } catch {
+    return false;
+  }
+};
+
 const MediaItemEditor: React.FC<MediaItemEditorProps> = ({ item, onUpdate }) => {
+  const youtubeLink = isYouTubeLink(item.link);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -43,6 +57,9 @@ const MediaItemEditor: React.FC<MediaItemEditorProps> = ({ item, onUpdate }) => 
           className="w-full px-3 py-2 border border-gray-300 rounded-lg"
           placeholder="https://..."
         />
+        <p className={`mt-1 text-xs ${youtubeLink ? 'text-blue-600' : 'text-gray-400'}`}>
+          {youtubeLink ? '這是 YouTube 連結，前台會自動顯示嵌入影片預覽。' : '若填入 YouTube 連結，前台會自動改成嵌入影片預覽。'}
+        </p>
       </div>
       <div>
         <label className="block text-xs text-gray-500 mb-1">類型</label>
