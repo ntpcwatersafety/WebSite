@@ -20,6 +20,9 @@ const renderEmptyState = (message: string) => (
 );
 
 const COURSE_PAGE_SIZE = 5;
+const RESULTS_ROW_SIZE = 3;
+const RESULTS_INITIAL_ROWS = 2;
+const RESULTS_INITIAL_COUNT = RESULTS_ROW_SIZE * RESULTS_INITIAL_ROWS;
 const COURSE_FEATURE_TONES = [
   'border-cyan-200 bg-cyan-50 text-cyan-800',
   'border-blue-200 bg-blue-50 text-blue-800',
@@ -259,6 +262,128 @@ export const renderTestimonialItems = (items: TestimonialItem[]) => {
   );
 };
 
+const ResultsNewsCards: React.FC<{ items: NewsItem[] }> = ({ items }) => {
+  const sortedItems = React.useMemo(() => (
+    [...items].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
+  ), [items]);
+  const [visibleCount, setVisibleCount] = React.useState(RESULTS_INITIAL_COUNT);
+
+  React.useEffect(() => {
+    setVisibleCount(RESULTS_INITIAL_COUNT);
+  }, [items]);
+
+  const visibleItems = sortedItems.slice(0, visibleCount);
+  const canLoadMore = visibleCount < sortedItems.length;
+
+  if (sortedItems.length === 0) {
+    return renderEmptyState('目前尚無訓練紀錄。');
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleItems.map((item) => (
+          <article key={item.id} className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-wide text-primary">
+                {item.date}
+              </span>
+              {item.isNew ? <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white">NEW</span> : null}
+              {item.isPinned ? <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">置頂</span> : null}
+            </div>
+            <h3 className="mt-4 text-lg font-bold leading-snug text-slate-900 [overflow-wrap:anywhere]">{item.title}</h3>
+            {item.description ? (
+              <div
+                className="cms-richtext mt-3 flex-1 text-sm leading-7 text-slate-600 [overflow-wrap:anywhere]"
+                dangerouslySetInnerHTML={{ __html: item.description }}
+              />
+            ) : (
+              <div className="mt-3 flex-1 text-sm leading-7 text-slate-400">尚無補充說明。</div>
+            )}
+            {item.link ? (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:text-blue-900"
+              >
+                查看詳情 <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ) : null}
+          </article>
+        ))}
+      </div>
+      {canLoadMore ? (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((current) => Math.min(current + RESULTS_ROW_SIZE, sortedItems.length))}
+            className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+          >
+            查看更多
+          </button>
+          <p className="mt-2 text-xs text-slate-500">目前顯示 {visibleItems.length} / {sortedItems.length} 筆</p>
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+const TestimonialCards: React.FC<{ items: TestimonialItem[] }> = ({ items }) => {
+  const [visibleCount, setVisibleCount] = React.useState(RESULTS_INITIAL_COUNT);
+
+  React.useEffect(() => {
+    setVisibleCount(RESULTS_INITIAL_COUNT);
+  }, [items]);
+
+  const visibleItems = items.slice(0, visibleCount);
+  const canLoadMore = visibleCount < items.length;
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {visibleItems.map((item, index) => {
+          const toneClasses = [
+            'border-cyan-200 bg-cyan-50/70',
+            'border-emerald-200 bg-emerald-50/70',
+            'border-amber-200 bg-amber-50/70'
+          ];
+          const toneClass = toneClasses[index % toneClasses.length];
+
+          return (
+            <article key={item.id} className={`flex h-full flex-col rounded-2xl border p-5 shadow-sm ${toneClass}`}>
+              <div className="text-3xl leading-none text-slate-300">“</div>
+              <p className="mt-3 flex-1 text-sm leading-7 text-slate-700 [overflow-wrap:anywhere]">{item.content}</p>
+              <div className="mt-5 border-t border-white/70 pt-4">
+                <p className="font-semibold text-slate-900">{item.author}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {item.role ? item.role : '學員回饋'}{item.date ? ` ・ ${item.date}` : ''}
+                </p>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      {canLoadMore ? (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((current) => Math.min(current + RESULTS_ROW_SIZE, items.length))}
+            className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+          >
+            查看更多
+          </button>
+          <p className="mt-2 text-xs text-slate-500">目前顯示 {visibleItems.length} / {items.length} 筆</p>
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
 const CoursesList: React.FC<{ items: CourseItem[] }> = ({ items }) => {
   const sortedItems = React.useMemo(() => sortCourseItems(items), [items]);
   const [visibleCount, setVisibleCount] = React.useState(COURSE_PAGE_SIZE);
@@ -477,6 +602,9 @@ export const renderSectionContent = (section: SectionContent): React.ReactNode =
   switch (section.type) {
     case 'news':
       if (section.newsItems) {
+        if (section.id === 'recent_graduates') {
+          return <ResultsNewsCards items={section.newsItems} />;
+        }
         return renderNewsItems(section.newsItems);
       }
       return null;
@@ -495,6 +623,9 @@ export const renderSectionContent = (section: SectionContent): React.ReactNode =
       
     case 'testimonials':
       if (section.testimonialItems) {
+        if (section.id === 'testimonials') {
+          return <TestimonialCards items={section.testimonialItems} />;
+        }
         return renderTestimonialItems(section.testimonialItems);
       }
       return null;

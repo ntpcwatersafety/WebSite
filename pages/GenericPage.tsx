@@ -16,6 +16,10 @@ const shouldDisplaySection = (section: SectionContent): boolean => {
     return Boolean(section.awardItems?.length);
   }
 
+  if (section.id === 'testimonials') {
+    return Boolean(section.testimonialItems?.length);
+  }
+
   return true;
 };
 
