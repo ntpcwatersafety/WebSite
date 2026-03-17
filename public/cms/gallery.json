@@ -1,14 +1,70 @@
 {
-  "lastUpdated": "2026-03-17T07:05:26.290Z",
+  "lastUpdated": "2026-03-17T09:12:07.355Z",
   "galleryItems": [
     {
       "id": "galleryItems-1773306517013",
-      "imageUrl": "/images/gallery/20260307-xinchun-tuanbai.jpg",
-      "title": "20260307新春團拜",
-      "description": "",
+      "title": "新春團拜",
+      "description": "新春佳節，齊聚一堂，彼此祝賀。感謝會員一年來的 投入訓練與相互扶持，讓泳技與凝聚力持續成長",
+      "isActive": true,
       "date": "2026-03-07",
       "category": "新春團拜",
-      "isActive": true
+      "coverPhotoId": "galleryItems-1773306517013-photo-1",
+      "photos": [
+        {
+          "id": "galleryItems-1773306517013-photo-1",
+          "imageUrl": "/images/gallery/20260307-xinchun-tuanbai.jpg",
+          "title": "20260307新春團拜",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738656424-0",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_1-jpg-1773738652726-b7xptm.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_1",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738659857-1",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_7-jpg-1773738656621-7s2uae.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_7",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738663213-2",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_15-jpg-1773738659999-v1wdvv.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_15",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738667129-3",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_35-jpg-1773738663343-09tixk.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_35",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738671182-4",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_39-jpg-1773738667270-ce9ha5.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_39",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738678007-6",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_49-jpg-1773738674691-idix1m.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_49",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738681267-7",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_50-jpg-1773738678154-tqrxaw.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_50",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1773306517013-photo-1773738674556-5",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20260307-_260312_47-jpg-1773738671359-5jcwky.jpg",
+          "title": "LINE_ALBUM_20260307新春團拜_260312_47",
+          "description": ""
+        }
+      ]
     }
   ]
 }
