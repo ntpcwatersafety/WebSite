@@ -2016,20 +2016,36 @@ interface PageGroupProps {
   children: React.ReactNode;
 }
 
-const PageGroup: React.FC<PageGroupProps> = ({ sectionId, title, route, description, children }) => (
-  <section id={sectionId} className="space-y-4 scroll-mt-24">
-    <div className="bg-slate-800 text-white rounded-xl px-6 py-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-bold">前台頁面：{title}</h2>
-        <span className="bg-white/10 border border-white/10 text-xs px-2 py-0.5 rounded-full">
-          {route}
-        </span>
+const PageGroup: React.FC<PageGroupProps> = ({ sectionId, title, route, description, children }) => {
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <section id={sectionId} className="space-y-4 scroll-mt-24">
+      <div className="overflow-hidden rounded-xl bg-slate-800 text-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="flex w-full items-start justify-between gap-4 px-6 py-4 text-left transition hover:bg-white/5"
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-lg font-bold">前台頁面：{title}</h2>
+              <span className="rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-xs">
+                {route}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-slate-200">{description}</p>
+          </div>
+          <span className="mt-0.5 inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-100">
+            {expanded ? '收合' : '展開'}
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </span>
+        </button>
       </div>
-      <p className="text-sm text-slate-200 mt-2">{description}</p>
-    </div>
-    {children}
-  </section>
-);
+      {expanded ? children : null}
+    </section>
+  );
+};
 
 // 消息項目編輯器
 interface NewsItemEditorProps {
