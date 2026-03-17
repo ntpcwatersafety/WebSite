@@ -91,6 +91,8 @@ import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages
 import { loadCmsData } from '../services/cmsLoader';
 import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem } from '../types';
 import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems } from '../services/cmsData';
+import AdminFeedbackToast from '../components/AdminFeedbackToast';
+import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
@@ -574,6 +576,15 @@ const IntroEditor: React.FC<{ value: string; onChange: (v: string) => void; onIm
   </div>
 );
 
+interface ConfirmDialogState {
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  tone?: 'danger' | 'primary';
+  onConfirm: () => void;
+}
+
 interface GalleryActivitiesEditorProps {
   sectionId?: string;
   items: GalleryItem[];
@@ -608,6 +619,9 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
   const sortedActivities = sortGalleryItems(items);
   const [draggingActivityId, setDraggingActivityId] = useState<string | null>(null);
   const [draggingPhoto, setDraggingPhoto] = useState<{ activityId: string; photoId: string } | null>(null);
+  const getCoverPhoto = (activity: GalleryItem) => (
+    activity.photos.find((photo) => photo.id === activity.coverPhotoId) || activity.photos[0]
+  );
 
   return (
     <div id={sectionId} className="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24">
@@ -647,8 +661,16 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
             直接拖拉整個活動卡片可調整前台活動順序；活動內的照片縮圖也可拖拉改變播放順序。每次可一次上傳多張圖片。
           </div>
 
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50/70 p-4 mb-4 text-sm text-cyan-800">
+            多張照片的封面設定方式：先把照片上傳進活動，再點每張縮圖下方的「設為封面」；被選中的照片會顯示「封面」標記，前台活動卡片會優先使用這張圖。
+          </div>
+
           <div className="space-y-4">
             {sortedActivities.map((activity, index) => (
+              (() => {
+                const coverPhoto = getCoverPhoto(activity);
+
+                return (
               <div
                 key={activity.id}
                 draggable
@@ -734,6 +756,27 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-cyan-900">目前封面預覽</p>
+                        <p className="mt-1 text-xs text-cyan-800">按下「設為封面」後，這裡會立即更新，前台活動卡片也會使用同一張圖。</p>
+                      </div>
+                      {coverPhoto ? (
+                        <span className="rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-medium text-cyan-700">
+                          {coverPhoto.title || '未命名封面'}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100 bg-white">
+                      {coverPhoto ? (
+                        <img src={coverPhoto.imageUrl} alt={coverPhoto.title || activity.title} className="h-52 w-full object-cover md:h-64" />
+                      ) : (
+                        <div className="flex h-40 items-center justify-center text-sm text-slate-500">尚未上傳照片，封面預覽會顯示在這裡。</div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="font-bold text-slate-800">活動照片</h4>
@@ -810,6 +853,8 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
                   )}
                 </div>
               </div>
+                );
+              })()
             ))}
           </div>
         </div>
@@ -822,6 +867,7 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
 const Admin: React.FC = () => {
   const navigate = useNavigate();
   const pendingEditorImageUrlsRef = useRef<Set<string>>(new Set());
+  const toastTimeoutsRef = useRef<Map<number, number>>(new Map());
   
   // 登入狀態
   const [authenticated, setAuthenticated] = useState(false);
@@ -838,7 +884,8 @@ const Admin: React.FC = () => {
   const [cmsShas, setCmsShas] = useState<CmsFileShas | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [messages, setMessages] = useState<Array<{ id: number; type: 'success' | 'error'; text: string }>>([]);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const [editorImages, setEditorImages] = useState<EditorImageAsset[]>([]);
   const [loadingEditorImages, setLoadingEditorImages] = useState(false);
   const [deletingEditorImages, setDeletingEditorImages] = useState(false);
@@ -1062,36 +1109,50 @@ const Admin: React.FC = () => {
 
   const handleDeleteSelectedEditorImages = async () => {
     if (!selectedEditorImages.length) return;
-    if (!confirm(`確定要刪除 ${selectedEditorImages.length} 張圖片嗎？`)) return;
 
-    const targetUrls = [...selectedEditorImages];
-    setDeletingEditorImages(true);
-    try {
-      await cleanupEditorImages(targetUrls);
-      setSelectedEditorImages([]);
-      await loadEditorImageLibrary();
-      showMessage('success', '已刪除選取的圖片。');
-    } catch (error) {
-      console.error('刪除圖片失敗:', error);
-      showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
-    }
-    setDeletingEditorImages(false);
+    requestConfirmation({
+      title: `確定要刪除 ${selectedEditorImages.length} 張圖片嗎？`,
+      description: '這些圖片會從 editor 圖片庫移除，請先確認它們目前沒有被內容引用。',
+      confirmLabel: '刪除圖片',
+      tone: 'danger',
+      onConfirm: async () => {
+        const targetUrls = [...selectedEditorImages];
+        setDeletingEditorImages(true);
+        try {
+          await cleanupEditorImages(targetUrls);
+          setSelectedEditorImages([]);
+          await loadEditorImageLibrary();
+          showMessage('success', '已刪除選取的圖片。');
+        } catch (error) {
+          console.error('刪除圖片失敗:', error);
+          showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
+        }
+        setDeletingEditorImages(false);
+      }
+    });
   };
 
   const handleDeleteSingleEditorImage = async (url: string) => {
-    if (!confirm('確定要刪除這張圖片嗎？')) return;
 
-    setDeletingEditorImages(true);
-    try {
-      await cleanupEditorImages([url]);
-      setSelectedEditorImages((previous) => previous.filter((item) => item !== url));
-      await loadEditorImageLibrary();
-      showMessage('success', '已刪除圖片。');
-    } catch (error) {
-      console.error('刪除圖片失敗:', error);
-      showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
-    }
-    setDeletingEditorImages(false);
+    requestConfirmation({
+      title: '確定要刪除這張圖片嗎？',
+      description: '這張圖片會從 editor 圖片庫移除，若其他內容仍在使用，前台圖片將失效。',
+      confirmLabel: '刪除圖片',
+      tone: 'danger',
+      onConfirm: async () => {
+        setDeletingEditorImages(true);
+        try {
+          await cleanupEditorImages([url]);
+          setSelectedEditorImages((previous) => previous.filter((item) => item !== url));
+          await loadEditorImageLibrary();
+          showMessage('success', '已刪除圖片。');
+        } catch (error) {
+          console.error('刪除圖片失敗:', error);
+          showMessage('error', error instanceof Error ? error.message : '刪除圖片失敗');
+        }
+        setDeletingEditorImages(false);
+      }
+    });
   };
 
   const checkToken = async () => {
@@ -1163,8 +1224,40 @@ const Admin: React.FC = () => {
   // GitHub token 存放改為伺服器端，前端僅顯示狀態並提供檢查功能
 
   const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setMessages((previous) => [...previous, { id, type, text }]);
+
+    const timeoutId = window.setTimeout(() => {
+      setMessages((previous) => previous.filter((message) => message.id !== id));
+      toastTimeoutsRef.current.delete(id);
+    }, 3600);
+
+    toastTimeoutsRef.current.set(id, timeoutId);
+  };
+
+  const dismissMessage = (id: number) => {
+    const timeoutId = toastTimeoutsRef.current.get(id);
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+      toastTimeoutsRef.current.delete(id);
+    }
+
+    setMessages((previous) => previous.filter((message) => message.id !== id));
+  };
+
+  const requestConfirmation = (options: ConfirmDialogState) => {
+    setConfirmDialog(options);
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog(null);
+  };
+
+  const handleConfirmDialog = () => {
+    if (!confirmDialog) return;
+    const action = confirmDialog.onConfirm;
+    setConfirmDialog(null);
+    action();
   };
 
   const moveGalleryActivity = (draggedId: string, targetId: string) => {
@@ -1212,11 +1305,19 @@ const Admin: React.FC = () => {
   };
 
   const deleteGalleryActivity = (activityId: string) => {
-    if (!cmsData || !confirm('確定要刪除此活動嗎？')) return;
+    if (!cmsData) return;
 
-    setCmsData({
-      ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).filter((item) => item.id !== activityId)
+    requestConfirmation({
+      title: '確定要刪除此活動嗎？',
+      description: '這會移除整個活動與活動內的照片排序資料，但不會刪除 repo 裡已上傳的圖片檔案。',
+      confirmLabel: '刪除活動',
+      tone: 'danger',
+      onConfirm: () => {
+        setCmsData({
+          ...cmsData,
+          galleryItems: (cmsData.galleryItems || []).filter((item) => item.id !== activityId)
+        });
+      }
     });
   };
 
@@ -1241,18 +1342,26 @@ const Admin: React.FC = () => {
   };
 
   const deleteGalleryPhoto = (activityId: string, photoId: string) => {
-    if (!cmsData || !confirm('確定要把這張照片從此活動移除嗎？這只會移除活動內的引用，不會刪除 repo 圖檔。')) return;
+    if (!cmsData) return;
 
-    setCmsData({
-      ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).map((item) => {
-        if (item.id !== activityId) return item;
+    requestConfirmation({
+      title: '確定要把這張照片從此活動移除嗎？',
+      description: '這只會移除活動內的引用，不會刪除 repo 圖檔。若這張圖目前是封面，系統會自動改用下一張照片。',
+      confirmLabel: '移除照片',
+      tone: 'danger',
+      onConfirm: () => {
+        setCmsData({
+          ...cmsData,
+          galleryItems: (cmsData.galleryItems || []).map((item) => {
+            if (item.id !== activityId) return item;
 
-        const nextPhotos = (item.photos || []).filter((photo) => photo.id !== photoId);
-        const nextCoverPhotoId = item.coverPhotoId === photoId ? nextPhotos[0]?.id : item.coverPhotoId;
+            const nextPhotos = (item.photos || []).filter((photo) => photo.id !== photoId);
+            const nextCoverPhotoId = item.coverPhotoId === photoId ? nextPhotos[0]?.id : item.coverPhotoId;
 
-        return { ...item, photos: nextPhotos, coverPhotoId: nextCoverPhotoId };
-      })
+            return { ...item, photos: nextPhotos, coverPhotoId: nextCoverPhotoId };
+          })
+        });
+      }
     });
   };
 
@@ -1487,14 +1596,22 @@ const Admin: React.FC = () => {
 
   // 刪除項目
   const deleteItem = (section: CmsCollectionKey, index: number) => {
-    if (!cmsData || !confirm('確定要刪除此項目嗎？')) return;
-    
-    const items = [...cmsData[section]];
-    items.splice(index, 1);
-    
-    setCmsData({
-      ...cmsData,
-      [section]: items
+    if (!cmsData) return;
+
+    requestConfirmation({
+      title: '確定要刪除此項目嗎？',
+      description: '刪除後會在本次編輯中立即生效，需按右上角「發布更新」才會正式送出。',
+      confirmLabel: '刪除項目',
+      tone: 'danger',
+      onConfirm: () => {
+        const items = [...cmsData[section]];
+        items.splice(index, 1);
+
+        setCmsData({
+          ...cmsData,
+          [section]: items
+        });
+      }
     });
   };
 
@@ -1646,15 +1763,18 @@ const Admin: React.FC = () => {
         </div>
       </header>
 
-      {/* 訊息提示 */}
-      {message && (
-        <div className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
-          message.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          {message.text}
-        </div>
-      )}
+      <AdminFeedbackToast messages={messages} onDismiss={dismissMessage} />
+
+      <AdminConfirmDialog
+        open={Boolean(confirmDialog)}
+        title={confirmDialog?.title || ''}
+        description={confirmDialog?.description}
+        confirmLabel={confirmDialog?.confirmLabel}
+        cancelLabel={confirmDialog?.cancelLabel}
+        tone={confirmDialog?.tone}
+        onConfirm={handleConfirmDialog}
+        onCancel={closeConfirmDialog}
+      />
 
       {/* Token 設定 Modal */}
       {showTokenSetup && (
