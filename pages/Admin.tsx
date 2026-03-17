@@ -1230,7 +1230,7 @@ const Admin: React.FC = () => {
     const timeoutId = window.setTimeout(() => {
       setMessages((previous) => previous.filter((message) => message.id !== id));
       toastTimeoutsRef.current.delete(id);
-    }, 3600);
+    }, type === 'error' ? 12000 : 3600);
 
     toastTimeoutsRef.current.set(id, timeoutId);
   };
@@ -1370,16 +1370,19 @@ const Admin: React.FC = () => {
 
     setUploadingGalleryActivityId(activityId);
     try {
-      const uploadedPhotos = await Promise.all(Array.from(files).map(async (file, index): Promise<GalleryPhoto> => {
+      const uploadedPhotos: GalleryPhoto[] = [];
+      const selectedFiles = Array.from(files);
+
+      for (const [index, file] of selectedFiles.entries()) {
         const url = await uploadValidatedEditorImage(file);
         trackUploadedEditorImage(url);
-        return {
+        uploadedPhotos.push({
           id: `${activityId}-photo-${Date.now()}-${index}`,
           imageUrl: url,
           title: file.name.replace(/\.[^.]+$/, ''),
           description: ''
-        };
-      }));
+        });
+      }
 
       setCmsData((previous) => {
         if (!previous) return previous;
@@ -1399,7 +1402,8 @@ const Admin: React.FC = () => {
       showMessage('success', `已新增 ${uploadedPhotos.length} 張照片。`);
     } catch (error) {
       console.error('活動照片上傳失敗:', error);
-      showMessage('error', error instanceof Error ? error.message : '活動照片上傳失敗');
+      const errorMessage = error instanceof Error ? error.message : '活動照片上傳失敗';
+      showMessage('error', `活動照片上傳失敗：${errorMessage}`);
     }
     setUploadingGalleryActivityId(null);
   };
