@@ -965,6 +965,36 @@ const Admin: React.FC = () => {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const moveCourseItemByPreview = (courseId: string, direction: 'up' | 'down') => {
+    if (!cmsData) return;
+
+    const orderedItems = sortCourseItems(cmsData.courseItems || []);
+    const currentIndex = orderedItems.findIndex((item) => item.id === courseId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= orderedItems.length) return;
+
+    const nextOrderedItems = [...orderedItems];
+    const [movedItem] = nextOrderedItems.splice(currentIndex, 1);
+    nextOrderedItems.splice(targetIndex, 0, movedItem);
+
+    const reorderedMap = new Map(
+      nextOrderedItems.map((item, index) => [
+        item.id,
+        {
+          ...item,
+          sortOrder: (index + 1) * 10
+        }
+      ])
+    );
+
+    setCmsData({
+      ...cmsData,
+      courseItems: (cmsData.courseItems || []).map((item) => reorderedMap.get(item.id) || item)
+    });
+  };
+
   const handleSave = async () => {
     if (!cmsData) return;
     if (!cmsShas) {
@@ -1651,7 +1681,7 @@ const Admin: React.FC = () => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <h4 className="text-sm font-bold text-blue-900">前台排序預覽</h4>
-                        <p className="mt-1 text-xs text-blue-700">前台會依「自訂排序」由小到大，再依「排序日期」由新到舊顯示。未填自訂排序時，會自動排到後面再比日期。</p>
+                        <p className="mt-1 text-xs text-blue-700">前台會依「自訂排序」由小到大，再依「排序日期」由新到舊顯示。未填自訂排序時，會自動排到後面再比日期，也可直接用右側上下按鈕快速調整。</p>
                       </div>
                       <span className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-700">
                         共 {sortedCoursePreview.length} 筆
@@ -1672,13 +1702,33 @@ const Admin: React.FC = () => {
                                 ) : null}
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                               <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                                 排序：{typeof course.sortOrder === 'number' ? course.sortOrder : '未設定'}
                               </span>
                               <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
                                 日期：{course.date || '未設定'}
                               </span>
+                              <div className="ml-0 flex items-center gap-1 md:ml-2">
+                                <button
+                                  type="button"
+                                  onClick={() => moveCourseItemByPreview(course.id, 'up')}
+                                  disabled={index === 0}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  title="往前移一格"
+                                >
+                                  <ChevronUp className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveCourseItemByPreview(course.id, 'down')}
+                                  disabled={index === sortedCoursePreview.length - 1}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  title="往後移一格"
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
