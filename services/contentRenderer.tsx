@@ -39,19 +39,21 @@ export const renderNewsItems = (items: NewsItem[]) => {
             item.isPinned ? 'border-yellow-200 bg-yellow-50 px-3 py-3 shadow-sm' : 'px-1'
           }`}
         >
-          <div className="flex max-w-full flex-wrap items-center gap-2 md:w-40 md:flex-shrink-0 md:pt-0.5">
+          <div className="flex max-w-full flex-wrap items-center gap-2 md:w-36 md:flex-shrink-0 md:pt-0.5">
             <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-sm font-semibold tracking-wide text-primary shadow-sm md:text-base">{item.date}</span>
-            {item.isNew && (
-              <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white animate-pulse">
-                NEW
-              </span>
-            )}
-            {item.isPinned && (
-              <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">置頂</span>
-            )}
           </div>
           <div className="min-w-0 flex-1 md:pl-4">
-            <div className="text-base font-semibold leading-snug break-words text-slate-800 [overflow-wrap:anywhere] md:text-lg">{item.title}</div>
+            <div className="flex flex-wrap items-start gap-2 md:gap-3">
+              <div className="min-w-0 flex-1 text-base font-semibold leading-snug break-words text-slate-800 [overflow-wrap:anywhere] md:text-lg">{item.title}</div>
+              {item.isNew && (
+                <span className="mt-0.5 inline-flex flex-shrink-0 rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white animate-pulse">
+                  NEW
+                </span>
+              )}
+              {item.isPinned && (
+                <span className="mt-0.5 inline-flex flex-shrink-0 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-700">置頂</span>
+              )}
+            </div>
             {item.description && (
               <div
                 className="cms-richtext mt-2 text-sm leading-7 text-gray-600 [overflow-wrap:anywhere]"

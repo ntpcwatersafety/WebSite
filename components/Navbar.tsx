@@ -14,31 +14,35 @@ const Navbar: React.FC = () => {
   }, [location]);
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-[70px] bg-white/95 backdrop-blur-sm shadow-md z-50 flex items-center justify-between px-[5%] md:px-[5%]">
-      {/* Mobile Menu Button - Absolute Left on Mobile */}
+    <nav className="fixed left-0 top-0 z-50 flex h-[70px] w-full items-center justify-center bg-white/95 px-4 shadow-md backdrop-blur-sm md:justify-between md:px-[5%]">
       <button 
-        className="md:hidden absolute left-5 text-primary p-1"
+        type="button"
+        aria-label={isMenuOpen ? '關閉選單' : '開啟選單'}
+        className="absolute left-4 p-1 text-primary md:hidden"
         onClick={() => setIsMenuOpen(!isMenuOpen)}
       >
         {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
 
-      {/* Logo - Centered on Mobile, Left on Desktop */}
-      <Link to="/" className="text-2xl font-bold text-primary flex items-center gap-2 mx-auto md:mx-0 z-[52]">
+      <Link to="/" className="z-[52] mx-auto flex min-w-0 max-w-[calc(100%-96px)] items-center justify-center gap-2 text-primary md:mx-0 md:max-w-none md:justify-start">
         {!logoError ? (
           <img 
             src="https://lh3.googleusercontent.com/d/17JcUzZwnqsetUO7m-RVOelb1IFKqtN3F"
             alt="新北市水上安全協會 Logo" 
-            className="w-10 h-10 object-contain"
+            className="h-9 w-9 flex-shrink-0 object-contain md:h-10 md:w-10"
             onError={() => setLogoError(true)}
           />
         ) : (
-          <Waves className="w-8 h-8" />
+          <Waves className="h-7 w-7 flex-shrink-0 md:h-8 md:w-8" />
         )}
-        <span>新北市水上安全協會</span>
+        <div className="min-w-0 text-left">
+          <span className="block truncate text-base font-bold leading-none tracking-[0.08em] md:hidden">水安協會</span>
+          <span className="hidden text-2xl font-bold md:block">新北市水上安全協會</span>
+        </div>
       </Link>
 
-      {/* Desktop Menu */}
+      <div className="absolute right-4 h-9 w-9 md:hidden" aria-hidden="true" />
+
       <ul className="hidden md:flex gap-6 list-none">
         {NAV_ITEMS.map((item) => (
           <li key={item.path}>
@@ -54,9 +58,8 @@ const Navbar: React.FC = () => {
         ))}
       </ul>
 
-      {/* Mobile Menu Overlay */}
       <div 
-        className={`fixed top-[70px] left-0 w-full h-[calc(100vh-70px)] bg-white shadow-xl flex flex-col items-center pt-8 gap-0 transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed left-0 top-[70px] flex h-[calc(100vh-70px)] w-full flex-col items-center gap-0 bg-white pt-6 shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -64,7 +67,7 @@ const Navbar: React.FC = () => {
           <Link
             key={item.path}
             to={item.path}
-            className={`w-full text-center py-5 text-xl font-medium border-b border-gray-100 hover:bg-gray-50 ${
+            className={`w-full border-b border-gray-100 py-4 text-center text-lg font-medium hover:bg-gray-50 ${
                 location.pathname === item.path ? 'text-secondary bg-blue-50/30' : 'text-gray-600'
             }`}
           >
