@@ -73,7 +73,7 @@ import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { loadCmsData } from '../services/cmsLoader';
 import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, ThankYouItem } from '../types';
-import { CmsFileShas, normalizeCmsData } from '../services/cmsData';
+import { CmsFileShas, normalizeCmsData, sortCourseItems } from '../services/cmsData';
 
 const CONFLICT_ERROR_MESSAGE = '資料已被其他人更新，請先重新載入最新內容後再儲存。';
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
@@ -465,6 +465,27 @@ const CourseItemEditor: React.FC<{
       />
     </div>
     <div>
+      <label className="block text-xs text-gray-500 mb-1">排序日期</label>
+      <input
+        type="date"
+        value={item.date || ''}
+        onChange={e => onUpdate('date', e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+      />
+      <p className="mt-1 text-xs text-gray-400">若未設定自訂排序，前台會優先顯示較新的日期。</p>
+    </div>
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">自訂排序</label>
+      <input
+        type="number"
+        value={typeof item.sortOrder === 'number' ? item.sortOrder : ''}
+        onChange={e => onUpdate('sortOrder', e.target.value === '' ? undefined : Number(e.target.value))}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        placeholder="數字越小越前面"
+      />
+      <p className="mt-1 text-xs text-gray-400">建議用 10、20、30 留間距，之後插隊比較方便。</p>
+    </div>
+    <div>
       <label className="block text-xs text-gray-500 mb-1">上課時間</label>
       <input
         type="text"
@@ -757,6 +778,8 @@ const Admin: React.FC = () => {
     return [image.name, image.path, image.url].some((value) => value.toLowerCase().includes(keyword));
   });
 
+  const sortedCoursePreview = sortCourseItems(cmsData?.courseItems || []);
+
   // 檢查登入狀態
   useEffect(() => {
     setAuthenticated(isAuthenticated());
@@ -1011,10 +1034,18 @@ const Admin: React.FC = () => {
     let newItem: CourseItem | NewsItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
     switch (section) {
       case 'courseItems':
+        const nextCourseItems = sortCourseItems(cmsData.courseItems || []);
+        const nextSortOrder = nextCourseItems.reduce((maxOrder, item) => (
+          typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
+            ? Math.max(maxOrder, item.sortOrder)
+            : maxOrder
+        ), 0) + 10;
         newItem = {
           id: newId,
           title: '新課程名稱',
           description: '<p>請輸入課程說明。</p>',
+          date: new Date().toISOString().split('T')[0],
+          sortOrder: nextSortOrder,
           schedule: '',
           location: '',
           price: '',
@@ -1615,6 +1646,48 @@ const Admin: React.FC = () => {
                 onAdd={() => addItem('courseItems')}
                 onDelete={(index) => deleteItem('courseItems', index)}
                 onUpdate={(index, field, value) => updateItemField('courseItems', index, field, value)}
+                helperContent={(
+                  <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-sm font-bold text-blue-900">前台排序預覽</h4>
+                        <p className="mt-1 text-xs text-blue-700">前台會依「自訂排序」由小到大，再依「排序日期」由新到舊顯示。未填自訂排序時，會自動排到後面再比日期。</p>
+                      </div>
+                      <span className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-700">
+                        共 {sortedCoursePreview.length} 筆
+                      </span>
+                    </div>
+                    {sortedCoursePreview.length ? (
+                      <div className="mt-3 space-y-2">
+                        {sortedCoursePreview.map((course, index) => (
+                          <div key={course.id} className="flex flex-col gap-2 rounded-lg border border-blue-100 bg-white px-3 py-2 md:flex-row md:items-center md:justify-between">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-bold text-white">
+                                  {index + 1}
+                                </span>
+                                <span className="font-medium text-slate-800">{course.title}</span>
+                                {course.isRecruiting === false ? (
+                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">未招生</span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+                                排序：{typeof course.sortOrder === 'number' ? course.sortOrder : '未設定'}
+                              </span>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
+                                日期：{course.date || '未設定'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-blue-700">目前尚無課程資料。</p>
+                    )}
+                  </div>
+                )}
                 renderItem={(item, index) => (
                   <CourseItemEditor
                     item={item}
@@ -1806,6 +1879,7 @@ interface SectionEditorProps {
   onDelete: (index: number) => void;
   onUpdate: (index: number, field: string, value: any) => void;
   renderItem: (item: any, index: number) => React.ReactNode;
+  helperContent?: React.ReactNode;
 }
 
 const SectionEditor: React.FC<SectionEditorProps> = ({
@@ -1819,7 +1893,8 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
   onToggle,
   onAdd,
   onDelete,
-  renderItem
+  renderItem,
+  helperContent
 }) => {
   return (
     <div id={sectionId} className="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24">
@@ -1858,6 +1933,10 @@ const SectionEditor: React.FC<SectionEditorProps> = ({
             <Plus className="w-5 h-5" />
             新增項目
           </button>
+
+          {helperContent ? (
+            <div className="mb-4">{helperContent}</div>
+          ) : null}
           
           <div className="space-y-4">
             {items.map((item, index) => (

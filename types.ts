@@ -61,6 +61,8 @@ export interface CourseItem {
   id: string;           // 唯一識別碼
   title: string;        // 課程名稱
   description: string;  // 課程說明
+  date?: string;        // 課程日期或排序參考日期（選填）
+  sortOrder?: number;   // 自訂排序，數字越小越前面（選填）
   schedule?: string;    // 上課時間（選填）
   location?: string;    // 上課地點（選填）
   price?: string;       // 費用（選填）

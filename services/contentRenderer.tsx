@@ -1,6 +1,7 @@
 import React from 'react';
 import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
+import { sortCourseItems } from './cmsData';
 
 /**
  * =================================================================
@@ -17,6 +18,14 @@ const renderEmptyState = (message: string) => (
     {message}
   </div>
 );
+
+const COURSE_PAGE_SIZE = 5;
+const COURSE_FEATURE_TONES = [
+  'border-cyan-200 bg-cyan-50 text-cyan-800',
+  'border-blue-200 bg-blue-50 text-blue-800',
+  'border-emerald-200 bg-emerald-50 text-emerald-800',
+  'border-amber-200 bg-amber-50 text-amber-800'
+];
 
 export const renderNewsItems = (items: NewsItem[]) => {
   if (items.length === 0) {
@@ -192,18 +201,40 @@ export const renderTestimonialItems = (items: TestimonialItem[]) => {
   );
 };
 
-export const renderCourseItems = (items: CourseItem[]) => {
-  if (items.length === 0) {
+const CoursesList: React.FC<{ items: CourseItem[] }> = ({ items }) => {
+  const sortedItems = React.useMemo(() => sortCourseItems(items), [items]);
+  const [visibleCount, setVisibleCount] = React.useState(COURSE_PAGE_SIZE);
+
+  React.useEffect(() => {
+    setVisibleCount(COURSE_PAGE_SIZE);
+  }, [items]);
+
+  const visibleItems = sortedItems.slice(0, visibleCount);
+  const canLoadMore = visibleCount < sortedItems.length;
+
+  if (sortedItems.length === 0) {
     return renderEmptyState('目前尚無課程與活動資料。');
   }
 
   return (
     <div className="space-y-4 text-left">
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <article key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                {item.date ? (
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold tracking-wide text-slate-500">
+                    {item.date}
+                  </span>
+                ) : null}
+                {typeof item.sortOrder === 'number' ? (
+                  <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold tracking-wide text-slate-500">
+                    排序 {item.sortOrder}
+                  </span>
+                ) : null}
+              </div>
+              <h3 className="mt-3 text-lg font-bold text-slate-900">{item.title}</h3>
               {item.description && (
                 <div className="cms-richtext mt-2 text-sm leading-relaxed text-slate-700" dangerouslySetInnerHTML={{ __html: item.description }} />
               )}
@@ -218,19 +249,42 @@ export const renderCourseItems = (items: CourseItem[]) => {
             <div>費用：{item.price || '請洽協會'}</div>
           </div>
           {item.features?.length ? (
-            <ul className="mt-4 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-white/80 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h4 className="text-sm font-bold tracking-wide text-slate-800">課程特色</h4>
+                <span className="text-xs text-slate-400">{item.features.length} 項</span>
+              </div>
+              <ul className="grid gap-2 text-sm md:grid-cols-2">
               {item.features.map((feature, index) => (
-                <li key={`${item.id}-${index}`} className="rounded-lg bg-white px-3 py-2 border border-slate-200">
+                <li
+                  key={`${item.id}-${index}`}
+                  className={`rounded-xl border px-3 py-2 font-medium ${COURSE_FEATURE_TONES[index % COURSE_FEATURE_TONES.length]}`}
+                >
                   {feature}
                 </li>
               ))}
-            </ul>
+              </ul>
+            </div>
           ) : null}
         </article>
       ))}
+      {canLoadMore ? (
+        <div className="pt-2 text-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((current) => Math.min(current + COURSE_PAGE_SIZE, sortedItems.length))}
+            className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+          >
+            顯示更多
+          </button>
+          <p className="mt-2 text-xs text-slate-500">目前顯示 {visibleItems.length} / {sortedItems.length} 筆</p>
+        </div>
+      ) : null}
     </div>
   );
 };
+
+export const renderCourseItems = (items: CourseItem[]) => <CoursesList items={items} />;
 
 export const renderThankYouItems = (items: ThankYouItem[]) => {
   if (items.length === 0) {

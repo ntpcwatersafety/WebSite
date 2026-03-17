@@ -1,5 +1,15 @@
 import { AwardItem, CmsData, CourseItem, GalleryItem, MediaItem, NewsItem, TestimonialItem, ThankYouItem } from '../types';
 
+const toComparableTimestamp = (value?: string): number => {
+  if (!value) return Number.NEGATIVE_INFINITY;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
+};
+
+const toComparableSortOrder = (value?: number): number => (
+  typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY
+);
+
 export const CMS_SECTION_FILE_NAMES = {
   activities: 'activities.json',
   home: 'home.json',
@@ -212,5 +222,23 @@ export const splitCmsData = (raw: Partial<CmsData> | null | undefined): CmsSplit
       lastUpdated: timestamp,
       thankYouItems: normalized.thankYouItems || []
     }
+  });
+};
+
+export const sortCourseItems = (items: CourseItem[] | null | undefined): CourseItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((left, right) => {
+    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+    if (sortOrderDiff !== 0) return sortOrderDiff;
+
+    const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
+    if (dateDiff !== 0) return dateDiff;
+
+    if ((left.isRecruiting ?? true) !== (right.isRecruiting ?? true)) {
+      return left.isRecruiting === false ? 1 : -1;
+    }
+
+    return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
   });
 };
