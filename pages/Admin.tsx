@@ -290,7 +290,7 @@ const scheduleEditorAutoResize = (editor: any) => {
 };
 
 const buildRichTextEditorInit = (height: number) => {
-  const minEditorHeight = Math.min(height, 160);
+  const minEditorHeight = Math.max(height, 160);
   const plugins = [
     'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor', 'template',
     'searchreplace', 'visualblocks', 'visualchars', 'code', 'fullscreen', 'autoresize',
