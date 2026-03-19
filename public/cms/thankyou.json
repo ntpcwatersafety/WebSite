@@ -1,59 +1,68 @@
 {
-  "lastUpdated": "2026-03-19T08:20:09.885Z",
+  "lastUpdated": "2026-03-19T09:44:08.423Z",
   "thankYouItems": [
-    {
-      "id": "thankYouItems-1773908354380",
-      "year": "114",
-      "name": "劉俊澔總教練",
-      "description": "日月潭長泳班"
-    },
-    {
-      "id": "thankYouItems-1773908333115",
-      "year": "114",
-      "name": "吳載鵬總教練",
-      "description": "四式班"
-    },
-    {
-      "id": "thankYouItems-1773908306315",
-      "year": "114",
-      "name": "簡憶如總教練",
-      "description": "小小救生班"
-    },
-    {
-      "id": "thankYouItems-1773908266794",
-      "year": "114",
-      "name": "陳明煌總教練",
-      "description": "救生班"
-    },
-    {
-      "id": "thankYouItems-1773908228827",
-      "year": "114",
-      "name": "王毅銘總教練",
-      "description": "蛙式進階班"
-    },
-    {
-      "id": "thankYouItems-1773908205442",
-      "year": "114",
-      "name": "李宜芳總教練",
-      "description": "第二期基礎泳訓班"
-    },
-    {
-      "id": "thankYouItems-1773908162882",
-      "year": "114",
-      "name": "蔡聰欽總教練",
-      "description": "第一期基礎泳訓班"
-    },
     {
       "id": "thankYouItems-1773907077867",
       "name": "李德融女士/亞東百貨聯名",
       "year": "115",
+      "sortOrder": 10,
       "description": "捐獻10000元"
     },
     {
       "id": "thankYouItems-1773907046362",
       "name": "飛朵資訊",
       "year": "115",
+      "sortOrder": 20,
       "description": "協助製作官網"
+    },
+    {
+      "id": "thankYouItems-1773908354380",
+      "name": "劉俊澔總教練",
+      "year": "114",
+      "sortOrder": 10,
+      "description": "日月潭長泳班"
+    },
+    {
+      "id": "thankYouItems-1773908333115",
+      "name": "吳載鵬總教練",
+      "year": "114",
+      "sortOrder": 20,
+      "description": "四式班"
+    },
+    {
+      "id": "thankYouItems-1773908306315",
+      "name": "簡憶如總教練",
+      "year": "114",
+      "sortOrder": 30,
+      "description": "小小救生班"
+    },
+    {
+      "id": "thankYouItems-1773908266794",
+      "name": "陳明煌總教練",
+      "year": "114",
+      "sortOrder": 40,
+      "description": "救生班"
+    },
+    {
+      "id": "thankYouItems-1773908228827",
+      "name": "王毅銘總教練",
+      "year": "114",
+      "sortOrder": 50,
+      "description": "蛙式進階班"
+    },
+    {
+      "id": "thankYouItems-1773908205442",
+      "name": "李宜芳總教練",
+      "year": "114",
+      "sortOrder": 60,
+      "description": "第二期基礎泳訓班"
+    },
+    {
+      "id": "thankYouItems-1773908162882",
+      "name": "蔡聰欽總教練",
+      "year": "114",
+      "sortOrder": 70,
+      "description": "第一期基礎泳訓班"
     }
   ]
 }
