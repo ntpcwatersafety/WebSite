@@ -1,4 +1,17 @@
 {
-  "lastUpdated": "2026-03-19T07:48:33.546Z",
-  "thankYouItems": []
+  "lastUpdated": "2026-03-19T07:58:57.720Z",
+  "thankYouItems": [
+    {
+      "id": "thankYouItems-1773907077867",
+      "year": "115",
+      "name": "李德融女士/亞東百貨聯名",
+      "description": "捐獻10000元"
+    },
+    {
+      "id": "thankYouItems-1773907046362",
+      "year": "115",
+      "name": "飛朵資訊",
+      "description": "協助製作官網"
+    }
+  ]
 }

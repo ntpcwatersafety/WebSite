@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-19T07:48:33.546Z",
+  "lastUpdated": "2026-03-19T07:58:57.720Z",
   "testimonials": [],
   "trainingRecords": [
     {
@@ -7,7 +7,9 @@
       "date": "2026-03-17",
       "title": "新消息標題",
       "description": "<p>請輸入說明文字</p>",
+      "link": "",
       "isNew": true,
+      "isPinned": false,
       "detailBlocks": [
         {
           "id": "training-record-detail-1",
