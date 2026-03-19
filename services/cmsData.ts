@@ -49,6 +49,40 @@ const normalizeTrainingRecords = (items: unknown): TrainingRecordItem[] => {
   });
 };
 
+const normalizeThankYouYear = (value: unknown): string => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(Math.trunc(value));
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().replace(/年$/, '');
+    if (/^\d{2,3}$/.test(normalized)) {
+      return normalized;
+    }
+  }
+
+  return '';
+};
+
+const normalizeThankYouItems = (items: unknown): ThankYouItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item, index) => {
+      const rawItem = item as Record<string, unknown>;
+      const name = typeof rawItem.name === 'string' ? rawItem.name.trim() : '';
+      if (!name) return null;
+
+      return {
+        id: typeof rawItem.id === 'string' ? rawItem.id : `thank-you-${index + 1}`,
+        name,
+        year: normalizeThankYouYear(rawItem.year),
+        description: typeof rawItem.description === 'string' ? rawItem.description : ''
+      };
+    })
+    .filter(Boolean) as ThankYouItem[];
+};
+
 const normalizeGalleryItems = (items: unknown): GalleryItem[] => {
   if (!Array.isArray(items)) return [];
 
@@ -251,7 +285,7 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
     },
     thankyou: {
       lastUpdated: typeof raw?.thankyou?.lastUpdated === 'string' ? raw.thankyou.lastUpdated : empty.thankyou.lastUpdated,
-      thankYouItems: Array.isArray(raw?.thankyou?.thankYouItems) ? raw.thankyou.thankYouItems : empty.thankyou.thankYouItems
+      thankYouItems: normalizeThankYouItems(raw?.thankyou?.thankYouItems)
     }
   };
 };
@@ -269,7 +303,7 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
     trainingRecords: normalizeTrainingRecords(raw?.trainingRecords),
     galleryItems: normalizeGalleryItems(raw?.galleryItems),
     introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
-    thankYouItems: Array.isArray(raw?.thankYouItems) ? raw.thankYouItems : empty.thankYouItems
+    thankYouItems: normalizeThankYouItems(raw?.thankYouItems)
   };
 };
 
@@ -377,5 +411,18 @@ export const sortTrainingRecords = (items: TrainingRecordItem[] | null | undefin
     if (dateDiff !== 0) return dateDiff;
 
     return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
+  });
+};
+
+export const sortThankYouItems = (items: ThankYouItem[] | null | undefined): ThankYouItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((left, right) => {
+    const rightYear = Number.parseInt(right.year || '', 10);
+    const leftYear = Number.parseInt(left.year || '', 10);
+    const yearDiff = (Number.isFinite(rightYear) ? rightYear : Number.NEGATIVE_INFINITY) - (Number.isFinite(leftYear) ? leftYear : Number.NEGATIVE_INFINITY);
+    if (yearDiff !== 0) return yearDiff;
+
+    return String(left.name || '').localeCompare(String(right.name || ''), 'zh-Hant');
   });
 };

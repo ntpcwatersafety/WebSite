@@ -439,7 +439,18 @@ const RichTextEditor: React.FC<{
 };
 // 感恩有您編輯器
 const ThankYouItemEditor: React.FC<{ item: ThankYouItem; onUpdate: (field: string, value: any) => void }> = ({ item, onUpdate }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">年度（民國年）</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={item.year || ''}
+        onChange={e => onUpdate('year', e.target.value.replace(/[^\d]/g, '').slice(0, 3))}
+        placeholder="例如 114"
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
     <div>
       <label className="block text-xs text-gray-500 mb-1">姓名/單位</label>
       <input
@@ -472,6 +483,8 @@ const createTrainingRecordDetailBlock = (): TrainingRecordDetailBlock => ({
   id: `training-record-detail-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
   content: '<p>請輸入詳細內容。</p>'
 });
+
+const getCurrentRocYear = (): string => String(new Date().getFullYear() - 1911);
 
 const CourseItemEditor: React.FC<{
   item: CourseItem;
@@ -1599,6 +1612,7 @@ const Admin: React.FC = () => {
       case 'thankYouItems':
         newItem = {
           id: newId,
+          year: getCurrentRocYear(),
           name: '請輸入姓名或單位',
           description: ''
         };

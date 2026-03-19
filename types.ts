@@ -104,6 +104,7 @@ export interface TestimonialItem {
 export interface ThankYouItem {
   id: string;
   name: string;
+  year?: string;
   description?: string;
 }
 

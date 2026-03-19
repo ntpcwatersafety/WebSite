@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem, TrainingRecordItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
-import { sortCourseItems, sortGalleryItems, sortTrainingRecords } from './cmsData';
+import { sortCourseItems, sortGalleryItems, sortThankYouItems, sortTrainingRecords } from './cmsData';
 
 /**
  * =================================================================
@@ -468,15 +468,41 @@ export const renderThankYouItems = (items: ThankYouItem[]) => {
     return renderEmptyState('感謝名單整理中，後續將於此更新。');
   }
 
+  const grouped = sortThankYouItems(items).reduce<Array<{ year: string; entries: ThankYouItem[] }>>((result, item) => {
+    const year = item.year?.trim() || '未分類';
+    const existing = result.find((group) => group.year === year);
+
+    if (existing) {
+      existing.entries.push(item);
+      return result;
+    }
+
+    result.push({ year, entries: [item] });
+    return result;
+  }, []);
+
   return (
-    <ul className="space-y-4">
-      {items.map((item) => (
-        <li key={item.id} className="border-b border-gray-100 pb-3 last:border-0">
-          <span className="text-lg font-semibold text-primary [overflow-wrap:anywhere]">{item.name}</span>
-          {item.description ? <span className="ml-2 text-gray-600 [overflow-wrap:anywhere]">{item.description}</span> : null}
-        </li>
+    <div className="space-y-6">
+      {grouped.map((group, index) => (
+        <section
+          key={group.year}
+          className={`overflow-hidden rounded-3xl border ${index % 2 === 0 ? 'border-sky-200 bg-sky-50/70' : 'border-amber-200 bg-amber-50/80'}`}
+        >
+          <div className={`flex items-center justify-between gap-4 px-6 py-5 ${index % 2 === 0 ? 'bg-sky-100/80' : 'bg-amber-100/90'}`}>
+            <h3 className="text-3xl font-black text-slate-900">{group.year === '未分類' ? group.year : `${group.year}年`}</h3>
+            <div className="rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">共 {group.entries.length} 項</div>
+          </div>
+          <ul className="divide-y divide-white/80 px-6 py-2">
+            {group.entries.map((item) => (
+              <li key={item.id} className="grid gap-2 py-4 md:grid-cols-[minmax(220px,360px)_1fr] md:items-start md:gap-6">
+                <div className="text-lg font-semibold text-slate-900 [overflow-wrap:anywhere]">{item.name}</div>
+                <div className="text-sm leading-7 text-slate-600 [overflow-wrap:anywhere]">{item.description || '感謝支持與協助。'}</div>
+              </li>
+            ))}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 };
 
