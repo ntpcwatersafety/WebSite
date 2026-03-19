@@ -276,13 +276,39 @@ const openImagePicker = (callback: (file: File) => void) => {
   input.click();
 };
 
-const scheduleEditorAutoResize = (editor: any) => {
+const resizeEditorToContent = (editor: any, minHeight: number) => {
+  if (!editor) return;
+
+  const container = editor.getContainer?.();
+  const contentArea = editor.getContentAreaContainer?.();
+  const body = editor.getBody?.();
+  const doc = editor.getDoc?.();
+
+  if (!container || !contentArea || !body || !doc) return;
+
+  const chromeHeight = Math.max(container.offsetHeight - contentArea.offsetHeight, 0);
+  const bodyHeight = Math.max(
+    body.scrollHeight || 0,
+    body.offsetHeight || 0,
+    doc.documentElement?.scrollHeight || 0
+  );
+  const nextHeight = Math.min(2400, Math.max(minHeight, bodyHeight + chromeHeight + 16));
+
+  if (typeof editor.theme?.resizeTo === 'function') {
+    editor.theme.resizeTo(null, nextHeight);
+    return;
+  }
+
+  contentArea.style.height = `${Math.max(minHeight, bodyHeight + 16)}px`;
+  container.style.height = `${nextHeight}px`;
+};
+
+const scheduleEditorAutoResize = (editor: any, minHeight: number) => {
   if (!editor || typeof window === 'undefined') return;
 
   window.requestAnimationFrame(() => {
     try {
-      editor.execCommand('mceAutoResize');
-      editor.dispatch('ResizeEditor');
+      resizeEditorToContent(editor, minHeight);
     } catch (error) {
       console.warn('編輯器自動調整高度失敗', error);
     }
@@ -338,11 +364,11 @@ const buildRichTextEditorInit = (height: number) => {
       { title: '細字說明', inline: 'small' }
     ],
     setup: (editor: any) => {
-      const handleResize = () => scheduleEditorAutoResize(editor);
+      const handleResize = () => scheduleEditorAutoResize(editor, minEditorHeight);
       editor.on('init SetContent change input undo redo keyup ObjectResized', handleResize);
     },
     init_instance_callback: (editor: any) => {
-      scheduleEditorAutoResize(editor);
+      scheduleEditorAutoResize(editor, minEditorHeight);
     },
     templates: [
       {
@@ -387,10 +413,11 @@ const RichTextEditor: React.FC<{
   const editorRef = useRef<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageHint, setImageHint] = useState<string | null>(null);
+  const minEditorHeight = Math.max(height, 160);
 
   useEffect(() => {
-    scheduleEditorAutoResize(editorRef.current);
-  }, [value]);
+    scheduleEditorAutoResize(editorRef.current, minEditorHeight);
+  }, [value, minEditorHeight]);
 
   const handleInsertImage = () => {
     if (uploadingImage) return;
@@ -449,11 +476,11 @@ const RichTextEditor: React.FC<{
         }}
         onInit={(_evt, editor) => {
           editorRef.current = editor;
-          scheduleEditorAutoResize(editor);
+          scheduleEditorAutoResize(editor, minEditorHeight);
         }}
         onEditorChange={(nextValue) => {
           onChange(nextValue);
-          scheduleEditorAutoResize(editorRef.current);
+          scheduleEditorAutoResize(editorRef.current, minEditorHeight);
         }}
       />
       <p className="mt-2 text-xs text-gray-500">
