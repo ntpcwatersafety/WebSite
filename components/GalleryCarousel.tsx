@@ -57,7 +57,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ items }) => {
             <div className="relative flex min-h-[320px] items-center justify-center bg-slate-100 md:min-h-[420px]">
               <img
                 src={currentPhoto?.imageUrl}
-                alt={currentPhoto?.title || currentActivity.title || '活動剪影'}
+                alt={currentActivity.title || '活動剪影'}
                 className="h-full max-h-[520px] w-full object-contain"
               />
               <button onClick={goPrev} className="absolute left-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65">
@@ -76,7 +76,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ items }) => {
                     onClick={() => setPhotoIndex(index)}
                     className={`h-16 w-24 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${index === photoIndex ? 'border-primary shadow-sm' : 'border-transparent opacity-75 hover:opacity-100'}`}
                   >
-                    <img src={photo.imageUrl} alt={photo.title || currentActivity.title} className="h-full w-full object-cover" />
+                    <img src={photo.imageUrl} alt={currentActivity.title || '活動剪影縮圖'} className="h-full w-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -103,10 +103,9 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({ items }) => {
             )}
             <h3 className="text-2xl font-bold text-primary">{currentActivity.title || '（無標題活動）'}</h3>
             {currentActivity.description ? <div className="mt-3 whitespace-pre-line text-gray-700">{currentActivity.description}</div> : null}
-            {currentPhoto?.title || currentPhoto?.description ? (
+            {currentPhoto?.description ? (
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                {currentPhoto.title ? <p className="font-semibold text-slate-800">{currentPhoto.title}</p> : null}
-                {currentPhoto.description ? <p className="mt-2 text-sm leading-6 text-slate-600">{currentPhoto.description}</p> : null}
+                <p className="text-sm leading-6 text-slate-600">{currentPhoto.description}</p>
               </div>
             ) : null}
           </div>
