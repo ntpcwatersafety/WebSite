@@ -89,7 +89,7 @@ import {
 import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { loadCmsData } from '../services/cmsLoader';
-import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem } from '../types';
+import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem, TrainingRecordItem, TrainingRecordDetailBlock } from '../types';
 import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems } from '../services/cmsData';
 import AdminFeedbackToast from '../components/AdminFeedbackToast';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
@@ -467,6 +467,11 @@ const normalizeFeatureLines = (value: string) => (
     .map((line) => line.trim())
     .filter(Boolean)
 );
+
+const createTrainingRecordDetailBlock = (): TrainingRecordDetailBlock => ({
+  id: `training-record-detail-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+  content: '<p>請輸入詳細內容。</p>'
+});
 
 const CourseItemEditor: React.FC<{
   item: CourseItem;
@@ -1504,7 +1509,7 @@ const Admin: React.FC = () => {
   const addItem = (section: CmsCollectionKey) => {
     if (!cmsData) return;
     const newId = `${section}-${Date.now()}`;
-    let newItem: CourseItem | NewsItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
+    let newItem: CourseItem | NewsItem | TrainingRecordItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
     switch (section) {
       case 'courseItems':
         const nextCourseItems = sortCourseItems(cmsData.courseItems || []);
@@ -1527,13 +1532,22 @@ const Admin: React.FC = () => {
         };
         break;
       case 'homeNews':
-      case 'trainingRecords':
         newItem = {
           id: newId,
           date: new Date().toISOString().split('T')[0],
           title: '新消息標題',
           description: '請輸入說明文字',
           isNew: true
+        };
+        break;
+      case 'trainingRecords':
+        newItem = {
+          id: newId,
+          date: new Date().toISOString().split('T')[0],
+          title: '新訓練紀錄標題',
+          description: '<p>請輸入卡片摘要。</p>',
+          isNew: true,
+          detailBlocks: [createTrainingRecordDetailBlock()]
         };
         break;
       case 'mediaReports':
@@ -2230,7 +2244,7 @@ const Admin: React.FC = () => {
                 onDelete={(index) => deleteItem('trainingRecords', index)}
                 onUpdate={(index, field, value) => updateItemField('trainingRecords', index, field, value)}
                 renderItem={(item, index) => (
-                  <NewsItemEditor
+                  <TrainingRecordEditor
                     item={item}
                     onUpdate={(field, value) => updateItemField('trainingRecords', index, field, value)}
                     onImageUploaded={trackUploadedEditorImage}
@@ -2569,6 +2583,125 @@ const NewsItemEditor: React.FC<NewsItemEditorProps> = ({ item, onUpdate, onImage
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           placeholder="https://..."
         />
+      </div>
+    </div>
+  );
+};
+
+interface TrainingRecordEditorProps {
+  item: TrainingRecordItem;
+  onUpdate: (field: string, value: any) => void;
+  onImageUploaded?: (url: string) => void;
+}
+
+const TrainingRecordEditor: React.FC<TrainingRecordEditorProps> = ({ item, onUpdate, onImageUploaded }) => {
+  const detailBlocks = item.detailBlocks || [];
+
+  const updateDetailBlock = (blockId: string, content: string) => {
+    onUpdate('detailBlocks', detailBlocks.map((block) => (
+      block.id === blockId ? { ...block, content } : block
+    )));
+  };
+
+  const addDetailBlock = () => {
+    onUpdate('detailBlocks', [...detailBlocks, createTrainingRecordDetailBlock()]);
+  };
+
+  const deleteDetailBlock = (blockId: string) => {
+    onUpdate('detailBlocks', detailBlocks.filter((block) => block.id !== blockId));
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">日期</label>
+        <input
+          type="date"
+          value={item.date}
+          onChange={(e) => onUpdate('date', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+        />
+      </div>
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={item.isNew || false}
+            onChange={(e) => onUpdate('isNew', e.target.checked)}
+            className="rounded"
+          />
+          顯示 NEW
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={item.isPinned || false}
+            onChange={(e) => onUpdate('isPinned', e.target.checked)}
+            className="rounded"
+          />
+          置頂
+        </label>
+      </div>
+      <div className="md:col-span-2">
+        <label className="block text-xs text-gray-500 mb-1">Master 標題</label>
+        <input
+          type="text"
+          value={item.title}
+          onChange={(e) => onUpdate('title', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        />
+      </div>
+      <div className="md:col-span-2">
+        <label className="block text-xs text-gray-500 mb-1">Master 摘要</label>
+        <RichTextEditor
+          value={item.description || ''}
+          onChange={(content) => onUpdate('description', content)}
+          onImageUploaded={onImageUploaded}
+        />
+        <p className="mt-1 text-xs text-gray-400">這一段會顯示在訓練紀錄卡片摘要，也會顯示在 detail 頁開頭。</p>
+      </div>
+      <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-bold text-slate-800">Detail 內容區塊</h4>
+            <p className="mt-1 text-xs text-slate-500">前台點選卡片後會進入 detail 頁，以下內容會依序顯示，可新增多筆富文字區塊。</p>
+          </div>
+          <button
+            type="button"
+            onClick={addDetailBlock}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            新增 Detail 區塊
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-4">
+          {detailBlocks.length ? detailBlocks.map((block, index) => (
+            <div key={block.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-slate-700">內容 {index + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => deleteDetailBlock(block.id)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  刪除
+                </button>
+              </div>
+              <RichTextEditor
+                value={block.content}
+                onChange={(content) => updateDetailBlock(block.id, content)}
+                onImageUploaded={onImageUploaded}
+              />
+            </div>
+          )) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center text-sm text-slate-500">
+              尚未新增 detail 內容，請按上方「新增 Detail 區塊」。
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

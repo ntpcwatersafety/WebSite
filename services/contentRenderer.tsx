@@ -1,7 +1,8 @@
 import React from 'react';
-import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem } from '../types';
+import { Link } from 'react-router-dom';
+import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem, TrainingRecordItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
-import { sortCourseItems, sortGalleryItems } from './cmsData';
+import { sortCourseItems, sortGalleryItems, sortTrainingRecords } from './cmsData';
 
 /**
  * =================================================================
@@ -262,10 +263,8 @@ export const renderTestimonialItems = (items: TestimonialItem[]) => {
   );
 };
 
-const ResultsNewsCards: React.FC<{ items: NewsItem[] }> = ({ items }) => {
-  const sortedItems = React.useMemo(() => (
-    [...items].sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
-  ), [items]);
+const ResultsNewsCards: React.FC<{ items: TrainingRecordItem[] }> = ({ items }) => {
+  const sortedItems = React.useMemo(() => sortTrainingRecords(items), [items]);
   const [visibleCount, setVisibleCount] = React.useState(RESULTS_INITIAL_COUNT);
 
   React.useEffect(() => {
@@ -283,7 +282,8 @@ const ResultsNewsCards: React.FC<{ items: NewsItem[] }> = ({ items }) => {
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleItems.map((item) => (
-          <article key={item.id} className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+          <Link key={item.id} to={`/results/${item.id}`} className="block h-full">
+          <article className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md">
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-wide text-primary">
                 {item.date}
@@ -300,17 +300,11 @@ const ResultsNewsCards: React.FC<{ items: NewsItem[] }> = ({ items }) => {
             ) : (
               <div className="mt-3 flex-1 text-sm leading-7 text-slate-400">尚無補充說明。</div>
             )}
-            {item.link ? (
-              <a
-                href={item.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700 hover:text-blue-900"
-              >
-                查看詳情 <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            ) : null}
+            <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700">
+              查看詳情 <ExternalLink className="h-3.5 w-3.5" />
+            </div>
           </article>
+          </Link>
         ))}
       </div>
       {canLoadMore ? (
@@ -603,7 +597,7 @@ export const renderSectionContent = (section: SectionContent): React.ReactNode =
     case 'news':
       if (section.newsItems) {
         if (section.id === 'recent_graduates') {
-          return <ResultsNewsCards items={section.newsItems} />;
+          return <ResultsNewsCards items={section.newsItems as TrainingRecordItem[]} />;
         }
         return renderNewsItems(section.newsItems);
       }

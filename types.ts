@@ -17,6 +17,15 @@ export interface NewsItem {
   isPinned?: boolean;   // 是否置頂
 }
 
+export interface TrainingRecordDetailBlock {
+  id: string;
+  content: string;
+}
+
+export interface TrainingRecordItem extends NewsItem {
+  detailBlocks?: TrainingRecordDetailBlock[];
+}
+
 export interface GalleryPhoto {
   id: string;
   imageUrl: string;
@@ -108,7 +117,7 @@ export interface CmsData {
   mediaReports: MediaItem[];
   awards: AwardItem[];
   testimonials: TestimonialItem[];
-  trainingRecords: NewsItem[];
+  trainingRecords: TrainingRecordItem[];
   galleryItems: GalleryItem[];
   introContent?: string;
   thankYouItems?: ThankYouItem[];
@@ -120,7 +129,7 @@ export interface CmsCollectionMap {
   mediaReports: MediaItem;
   awards: AwardItem;
   testimonials: TestimonialItem;
-  trainingRecords: NewsItem;
+  trainingRecords: TrainingRecordItem;
   galleryItems: GalleryItem;
   thankYouItems: ThankYouItem;
 }

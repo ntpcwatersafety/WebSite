@@ -1,4 +1,4 @@
-import { AwardItem, CmsData, CourseItem, GalleryItem, MediaItem, NewsItem, TestimonialItem, ThankYouItem } from '../types';
+import { AwardItem, CmsData, CourseItem, GalleryItem, MediaItem, NewsItem, TestimonialItem, ThankYouItem, TrainingRecordDetailBlock, TrainingRecordItem } from '../types';
 
 const toComparableTimestamp = (value?: string): number => {
   if (!value) return Number.NEGATIVE_INFINITY;
@@ -9,6 +9,45 @@ const toComparableTimestamp = (value?: string): number => {
 const toComparableSortOrder = (value?: number): number => (
   typeof value === 'number' && Number.isFinite(value) ? value : Number.POSITIVE_INFINITY
 );
+
+const normalizeTrainingRecordDetailBlocks = (value: unknown): TrainingRecordDetailBlock[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((block, index) => {
+        const rawBlock = block as Record<string, unknown>;
+        const content = typeof rawBlock?.content === 'string' ? rawBlock.content : '';
+        if (!content.trim()) return null;
+
+        return {
+          id: typeof rawBlock.id === 'string' ? rawBlock.id : `training-record-detail-${index + 1}`,
+          content
+        };
+      })
+      .filter(Boolean) as TrainingRecordDetailBlock[];
+  }
+
+  return [];
+};
+
+const normalizeTrainingRecords = (items: unknown): TrainingRecordItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item, index) => {
+    const rawItem = item as Record<string, unknown>;
+    const description = typeof rawItem.description === 'string' ? rawItem.description : '';
+
+    return {
+      id: typeof rawItem.id === 'string' ? rawItem.id : `training-record-${index + 1}`,
+      date: typeof rawItem.date === 'string' ? rawItem.date : '',
+      title: typeof rawItem.title === 'string' ? rawItem.title : `未命名訓練紀錄 ${index + 1}`,
+      description,
+      link: typeof rawItem.link === 'string' ? rawItem.link : '',
+      isNew: Boolean(rawItem.isNew),
+      isPinned: Boolean(rawItem.isPinned),
+      detailBlocks: normalizeTrainingRecordDetailBlocks(rawItem.detailBlocks)
+    };
+  });
+};
 
 const normalizeGalleryItems = (items: unknown): GalleryItem[] => {
   if (!Array.isArray(items)) return [];
@@ -111,7 +150,7 @@ export interface CmsMediaData {
 export interface CmsResultsData {
   lastUpdated: string;
   testimonials: TestimonialItem[];
-  trainingRecords: NewsItem[];
+  trainingRecords: TrainingRecordItem[];
 }
 
 export interface CmsGalleryData {
@@ -204,7 +243,7 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
     results: {
       lastUpdated: typeof raw?.results?.lastUpdated === 'string' ? raw.results.lastUpdated : empty.results.lastUpdated,
       testimonials: Array.isArray(raw?.results?.testimonials) ? raw.results.testimonials : empty.results.testimonials,
-      trainingRecords: Array.isArray(raw?.results?.trainingRecords) ? raw.results.trainingRecords : empty.results.trainingRecords
+      trainingRecords: normalizeTrainingRecords(raw?.results?.trainingRecords)
     },
     gallery: {
       lastUpdated: typeof raw?.gallery?.lastUpdated === 'string' ? raw.gallery.lastUpdated : empty.gallery.lastUpdated,
@@ -227,7 +266,7 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
     mediaReports: Array.isArray(raw?.mediaReports) ? raw.mediaReports : empty.mediaReports,
     awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
     testimonials: Array.isArray(raw?.testimonials) ? raw.testimonials : empty.testimonials,
-    trainingRecords: Array.isArray(raw?.trainingRecords) ? raw.trainingRecords : empty.trainingRecords,
+    trainingRecords: normalizeTrainingRecords(raw?.trainingRecords),
     galleryItems: normalizeGalleryItems(raw?.galleryItems),
     introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
     thankYouItems: Array.isArray(raw?.thankYouItems) ? raw.thankYouItems : empty.thankYouItems
@@ -318,6 +357,21 @@ export const sortGalleryItems = (items: GalleryItem[] | null | undefined): Galle
   return [...items].sort((left, right) => {
     const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
     if (sortOrderDiff !== 0) return sortOrderDiff;
+
+    const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
+    if (dateDiff !== 0) return dateDiff;
+
+    return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
+  });
+};
+
+export const sortTrainingRecords = (items: TrainingRecordItem[] | null | undefined): TrainingRecordItem[] => {
+  if (!Array.isArray(items)) return [];
+
+  return [...items].sort((left, right) => {
+    if ((left.isPinned ?? false) !== (right.isPinned ?? false)) {
+      return left.isPinned ? -1 : 1;
+    }
 
     const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
     if (dateDiff !== 0) return dateDiff;

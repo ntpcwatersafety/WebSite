@@ -9,6 +9,7 @@ import Gallery from './pages/Gallery';
 import Admin from './pages/Admin';
 import { PAGE_CONTENT, ACTIVITIES_SECTIONS, RESULTS_SECTIONS, MEDIA_SECTIONS } from './services/cms';
 import ThankYou from './pages/ThankYou';
+import TrainingRecordDetail from './pages/TrainingRecordDetail';
 
 // 包裝元件：根據路徑決定是否顯示 Navbar 和 Footer
 const AppContent: React.FC = () => {
@@ -24,6 +25,7 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/activities" element={<GenericPage data={PAGE_CONTENT.activities} sections={ACTIVITIES_SECTIONS} />} />
+          <Route path="/results/:recordId" element={<TrainingRecordDetail />} />
           <Route path="/results" element={<GenericPage data={PAGE_CONTENT.results} sections={RESULTS_SECTIONS} />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />
