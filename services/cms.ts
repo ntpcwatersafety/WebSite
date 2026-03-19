@@ -104,7 +104,7 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
       title: '感恩有您',
       type: 'thankyou',
       thankYouItems: cmsData?.thankYouItems || [],
-      isOpenDefault: false,
+      isOpenDefault: (cmsData?.thankYouItems?.length || 0) > 0,
     },
   ];
 };

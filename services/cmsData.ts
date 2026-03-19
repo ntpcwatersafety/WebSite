@@ -77,6 +77,7 @@ const normalizeThankYouItems = (items: unknown): ThankYouItem[] => {
         id: typeof rawItem.id === 'string' ? rawItem.id : `thank-you-${index + 1}`,
         name,
         year: normalizeThankYouYear(rawItem.year),
+        sortOrder: typeof rawItem.sortOrder === 'number' && Number.isFinite(rawItem.sortOrder) ? rawItem.sortOrder : undefined,
         description: typeof rawItem.description === 'string' ? rawItem.description : ''
       };
     })
@@ -422,6 +423,9 @@ export const sortThankYouItems = (items: ThankYouItem[] | null | undefined): Tha
     const leftYear = Number.parseInt(left.year || '', 10);
     const yearDiff = (Number.isFinite(rightYear) ? rightYear : Number.NEGATIVE_INFINITY) - (Number.isFinite(leftYear) ? leftYear : Number.NEGATIVE_INFINITY);
     if (yearDiff !== 0) return yearDiff;
+
+    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+    if (sortOrderDiff !== 0) return sortOrderDiff;
 
     return String(left.name || '').localeCompare(String(right.name || ''), 'zh-Hant');
   });

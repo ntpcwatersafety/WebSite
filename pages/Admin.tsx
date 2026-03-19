@@ -84,13 +84,13 @@ import {
   LogIn, LogOut, Save, Plus, Trash2, Edit3, 
   Settings, Home, Newspaper, Award, MessageSquare,
   ChevronDown, ChevronUp, AlertCircle, CheckCircle,
-  Key, RefreshCw, Download, Eye
+  Key, RefreshCw, Download, Eye, GripVertical
 } from 'lucide-react';
 import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { loadCmsData } from '../services/cmsLoader';
 import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem, TrainingRecordItem, TrainingRecordDetailBlock } from '../types';
-import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems } from '../services/cmsData';
+import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems, sortThankYouItems } from '../services/cmsData';
 import AdminFeedbackToast from '../components/AdminFeedbackToast';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
@@ -485,6 +485,25 @@ const createTrainingRecordDetailBlock = (): TrainingRecordDetailBlock => ({
 });
 
 const getCurrentRocYear = (): string => String(new Date().getFullYear() - 1911);
+
+const normalizeThankYouAdminItems = (items: ThankYouItem[] | null | undefined): ThankYouItem[] => {
+  const sortedItems = sortThankYouItems(items || []).map((item) => ({
+    ...item,
+    year: item.year?.trim().replace(/年$/, '') || ''
+  }));
+
+  const counters = new Map<string, number>();
+  return sortedItems.map((item) => {
+    const yearKey = item.year || '';
+    const nextOrder = (counters.get(yearKey) || 0) + 1;
+    counters.set(yearKey, nextOrder);
+
+    return {
+      ...item,
+      sortOrder: nextOrder * 10
+    };
+  });
+};
 
 const CourseItemEditor: React.FC<{
   item: CourseItem;
@@ -1193,7 +1212,11 @@ const Admin: React.FC = () => {
       try {
         const result = await getFileContent();
         if (result && result.content) {
-          setCmsData(normalizeCmsData(result.content as Partial<CmsData>));
+          const normalizedData = normalizeCmsData(result.content as Partial<CmsData>);
+          setCmsData({
+            ...normalizedData,
+            thankYouItems: normalizeThankYouAdminItems(normalizedData.thankYouItems || [])
+          });
           setCmsShas(result.shas || null);
           await loadEditorImageLibrary();
           setLoading(false);
@@ -1203,7 +1226,11 @@ const Admin: React.FC = () => {
         console.warn('從後端 GitHub 代理載入失敗，回退至本地 cms/*.json', ghErr);
       }
 
-      setCmsData(await loadCmsData());
+      const localCmsData = await loadCmsData();
+      setCmsData({
+        ...localCmsData,
+        thankYouItems: normalizeThankYouAdminItems(localCmsData.thankYouItems || [])
+      });
       setCmsShas(null);
       await loadEditorImageLibrary();
     } catch (error) {
@@ -1456,6 +1483,82 @@ const Admin: React.FC = () => {
     });
   };
 
+  const moveThankYouItem = (draggedId: string, targetId: string) => {
+    if (!cmsData) return;
+
+    const orderedItems = normalizeThankYouAdminItems(cmsData.thankYouItems || []);
+    const draggedIndex = orderedItems.findIndex((item) => item.id === draggedId);
+    const targetIndex = orderedItems.findIndex((item) => item.id === targetId);
+    if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return;
+
+    const draggedItem = orderedItems[draggedIndex];
+    const targetItem = orderedItems[targetIndex];
+    if ((draggedItem.year || '') !== (targetItem.year || '')) {
+      showMessage('error', '拖曳排序僅支援同年度內調整，跨年度請直接修改年度欄位。');
+      return;
+    }
+
+    const nextOrderedItems = [...orderedItems];
+    const [movedItem] = nextOrderedItems.splice(draggedIndex, 1);
+    nextOrderedItems.splice(targetIndex, 0, movedItem);
+
+    setCmsData({
+      ...cmsData,
+      thankYouItems: normalizeThankYouAdminItems(nextOrderedItems)
+    });
+  };
+
+  const deleteThankYouItem = (itemId: string) => {
+    if (!cmsData) return;
+
+    requestConfirmation({
+      title: '確定要刪除此項目嗎？',
+      description: '刪除後會在本次編輯中立即生效，需按右上角「發布更新」才會正式送出。',
+      confirmLabel: '刪除項目',
+      tone: 'danger',
+      onConfirm: () => {
+        setCmsData({
+          ...cmsData,
+          thankYouItems: normalizeThankYouAdminItems((cmsData.thankYouItems || []).filter((item) => item.id !== itemId))
+        });
+      }
+    });
+  };
+
+  const updateThankYouItemField = (itemId: string, field: string, value: any) => {
+    if (!cmsData) return;
+
+    const nextItems = (cmsData.thankYouItems || []).map((item) => (
+      item.id === itemId ? { ...item, [field]: value } : item
+    ));
+
+    setCmsData({
+      ...cmsData,
+      thankYouItems: normalizeThankYouAdminItems(nextItems)
+    });
+  };
+
+  const moveThankYouItemByDirection = (itemId: string, direction: 'up' | 'down') => {
+    if (!cmsData) return;
+
+    const orderedItems = normalizeThankYouAdminItems(cmsData.thankYouItems || []);
+    const currentIndex = orderedItems.findIndex((item) => item.id === itemId);
+    if (currentIndex === -1) return;
+
+    const currentItem = orderedItems[currentIndex];
+    const sameYearIndexes = orderedItems
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => (item.year || '') === (currentItem.year || ''));
+
+    const sameYearPosition = sameYearIndexes.findIndex(({ item }) => item.id === itemId);
+    if (sameYearPosition === -1) return;
+
+    const targetPosition = direction === 'up' ? sameYearPosition - 1 : sameYearPosition + 1;
+    if (targetPosition < 0 || targetPosition >= sameYearIndexes.length) return;
+
+    moveThankYouItem(itemId, sameYearIndexes[targetPosition].item.id);
+  };
+
   const handleSave = async () => {
     if (!cmsData) return;
     if (!cmsShas) {
@@ -1613,6 +1716,7 @@ const Admin: React.FC = () => {
         newItem = {
           id: newId,
           year: getCurrentRocYear(),
+          sortOrder: (normalizeThankYouAdminItems(cmsData.thankYouItems || []).filter((item) => item.year === getCurrentRocYear()).length + 1) * 10,
           name: '請輸入姓名或單位',
           description: ''
         };
@@ -1620,6 +1724,15 @@ const Admin: React.FC = () => {
       default:
         return;
     }
+
+    if (section === 'thankYouItems') {
+      setCmsData({
+        ...cmsData,
+        thankYouItems: normalizeThankYouAdminItems([newItem as ThankYouItem, ...(cmsData.thankYouItems || [])])
+      });
+      return;
+    }
+
     setCmsData({
       ...cmsData,
       [section]: [newItem, ...cmsData[section]]
@@ -2367,25 +2480,19 @@ const Admin: React.FC = () => {
               route="/#/thankyou"
               description="這一組主要對應前台感恩有您頁；目前首頁下方也會同步顯示這份名單。"
             >
-              <SectionEditor
+              <ThankYouSectionEditor
                 sectionId="section-thankYouItems"
                 title="感恩有您 / 名單內容"
                 pageLabel="感恩有您頁 / 首頁下方名單"
-                description="對應前台感恩有您頁，並同步顯示於首頁下方感恩名單。"
+                description="對應前台感恩有您頁，並同步顯示於首頁下方感恩名單；系統會依民國年度自動分組。"
                 icon={<CheckCircle className="w-5 h-5" />}
                 items={cmsData.thankYouItems || []}
-                sectionKey="thankYouItems"
                 expanded={expandedSection === 'thankYouItems'}
                 onToggle={() => setExpandedSection(expandedSection === 'thankYouItems' ? '' : 'thankYouItems')}
                 onAdd={() => addItem('thankYouItems')}
-                onDelete={(index) => deleteItem('thankYouItems', index)}
-                onUpdate={(index, field, value) => updateItemField('thankYouItems', index, field, value)}
-                renderItem={(item, index) => (
-                  <ThankYouItemEditor
-                    item={item}
-                    onUpdate={(field, value) => updateItemField('thankYouItems', index, field, value)}
-                  />
-                )}
+                onDelete={deleteThankYouItem}
+                onUpdate={updateThankYouItemField}
+                onMove={moveThankYouItem}
               />
             </PageGroup>
           </div>
@@ -2717,6 +2824,170 @@ const TrainingRecordEditor: React.FC<TrainingRecordEditorProps> = ({ item, onUpd
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+interface ThankYouSectionEditorProps {
+  sectionId?: string;
+  title: string;
+  pageLabel?: string;
+  description?: string;
+  icon: React.ReactNode;
+  items: ThankYouItem[];
+  expanded: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
+  onDelete: (itemId: string) => void;
+  onUpdate: (itemId: string, field: string, value: any) => void;
+  onMove: (draggedId: string, targetId: string) => void;
+}
+
+const ThankYouSectionEditor: React.FC<ThankYouSectionEditorProps> = ({
+  sectionId,
+  title,
+  pageLabel,
+  description,
+  icon,
+  items,
+  expanded,
+  onToggle,
+  onAdd,
+  onDelete,
+  onUpdate,
+  onMove
+}) => {
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+
+  const groups = React.useMemo(() => {
+    const grouped = new Map<string, ThankYouItem[]>();
+
+    normalizeThankYouAdminItems(items).forEach((item) => {
+      const year = item.year || '未分類';
+      const bucket = grouped.get(year);
+      if (bucket) {
+        bucket.push(item);
+      } else {
+        grouped.set(year, [item]);
+      }
+    });
+
+    return Array.from(grouped.entries()).map(([year, entries]) => ({ year, entries }));
+  }, [items]);
+
+  return (
+    <div id={sectionId} className="bg-white rounded-xl shadow-sm overflow-hidden scroll-mt-24">
+      <button
+        onClick={onToggle}
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+      >
+        <div className="flex items-center gap-3 text-left">
+          <span className="text-blue-600 self-start mt-0.5">{icon}</span>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-gray-800">{title}</span>
+              {pageLabel ? (
+                <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
+                  前台：{pageLabel}
+                </span>
+              ) : null}
+              <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
+                {items.length} 項
+              </span>
+            </div>
+            {description ? <p className="text-sm text-gray-500 mt-1">{description}</p> : null}
+          </div>
+        </div>
+        {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+      </button>
+
+      {expanded ? (
+        <div className="px-6 pb-6">
+          <button
+            onClick={onAdd}
+            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 mb-4"
+          >
+            <Plus className="w-5 h-5" />
+            新增項目
+          </button>
+
+          <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+            載入時會依民國年度自動聚合；拖曳排序只會調整同年度內的順序，跨年度請直接修改年度欄位。
+          </div>
+
+          <div className="space-y-5">
+            {groups.map((group, groupIndex) => (
+              <section
+                key={group.year}
+                className={`overflow-hidden rounded-2xl border ${groupIndex % 2 === 0 ? 'border-sky-200 bg-sky-50/70' : 'border-amber-200 bg-amber-50/80'}`}
+              >
+                <div className={`flex items-center justify-between gap-3 px-4 py-3 ${groupIndex % 2 === 0 ? 'bg-sky-100/80' : 'bg-amber-100/90'}`}>
+                  <div className="text-lg font-bold text-slate-800">{group.year === '未分類' ? group.year : `${group.year}年`}</div>
+                  <div className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">{group.entries.length} 項</div>
+                </div>
+
+                <div className="space-y-3 p-4">
+                  {group.entries.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className={`group relative rounded-xl border bg-white p-4 transition ${draggingItemId === item.id ? 'border-blue-300 shadow-md' : 'border-gray-200'}`}
+                      draggable
+                      onDragStart={() => setDraggingItemId(item.id)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => {
+                        if (draggingItemId && draggingItemId !== item.id) {
+                          onMove(draggingItemId, item.id);
+                        }
+                        setDraggingItemId(null);
+                      }}
+                      onDragEnd={() => setDraggingItemId(null)}
+                    >
+                      <button
+                        onClick={() => onDelete(item.id)}
+                        className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition"
+                        title="刪除"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+
+                      <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
+                        <GripVertical className="h-4 w-4 text-slate-400" />
+                        拖曳調整同年度排序
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">排序 {item.sortOrder ?? '未設定'}</span>
+                        <div className="ml-auto flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => moveThankYouItemByDirection(item.id, 'up')}
+                            disabled={index === 0}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            title="往前移一格"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveThankYouItemByDirection(item.id, 'down')}
+                            disabled={index === group.entries.length - 1}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            title="往後移一格"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <ThankYouItemEditor
+                        item={item}
+                        onUpdate={(field, value) => onUpdate(item.id, field, value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };

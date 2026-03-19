@@ -105,6 +105,7 @@ export interface ThankYouItem {
   id: string;
   name: string;
   year?: string;
+  sortOrder?: number;
   description?: string;
 }
 
