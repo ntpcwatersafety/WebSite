@@ -276,6 +276,19 @@ const openImagePicker = (callback: (file: File) => void) => {
   input.click();
 };
 
+const scheduleEditorAutoResize = (editor: any) => {
+  if (!editor || typeof window === 'undefined') return;
+
+  window.requestAnimationFrame(() => {
+    try {
+      editor.execCommand('mceAutoResize');
+      editor.dispatch('ResizeEditor');
+    } catch (error) {
+      console.warn('編輯器自動調整高度失敗', error);
+    }
+  });
+};
+
 const buildRichTextEditorInit = (height: number) => {
   const minEditorHeight = Math.min(height, 160);
   const plugins = [
@@ -324,6 +337,13 @@ const buildRichTextEditorInit = (height: number) => {
       { title: '紅字重點', inline: 'span', classes: 'highlight-text' },
       { title: '細字說明', inline: 'small' }
     ],
+    setup: (editor: any) => {
+      const handleResize = () => scheduleEditorAutoResize(editor);
+      editor.on('init SetContent change input undo redo keyup ObjectResized', handleResize);
+    },
+    init_instance_callback: (editor: any) => {
+      scheduleEditorAutoResize(editor);
+    },
     templates: [
       {
         title: '公告區塊',
@@ -367,6 +387,10 @@ const RichTextEditor: React.FC<{
   const editorRef = useRef<any>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageHint, setImageHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    scheduleEditorAutoResize(editorRef.current);
+  }, [value]);
 
   const handleInsertImage = () => {
     if (uploadingImage) return;
@@ -425,8 +449,12 @@ const RichTextEditor: React.FC<{
         }}
         onInit={(_evt, editor) => {
           editorRef.current = editor;
+          scheduleEditorAutoResize(editor);
         }}
-        onEditorChange={onChange}
+        onEditorChange={(nextValue) => {
+          onChange(nextValue);
+          scheduleEditorAutoResize(editorRef.current);
+        }}
       />
       <p className="mt-2 text-xs text-gray-500">
         可直接插入、拖曳或貼上單張圖片，系統會自動上傳到網站圖庫並插入網址；目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB，較大的 JPG、PNG、WEBP 會先自動壓縮後再上傳。
