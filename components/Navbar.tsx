@@ -36,7 +36,7 @@ const Navbar: React.FC = () => {
           <Waves className="h-7 w-7 flex-shrink-0 md:h-8 md:w-8" />
         )}
         <div className="min-w-0 text-left">
-          <span className="block text-[13px] font-bold leading-tight tracking-[0.01em] sm:text-sm md:text-2xl md:leading-none md:tracking-normal">新北市水上安全協會</span>
+          <span className="block text-[15px] font-bold leading-tight tracking-[0.01em] sm:text-base md:text-2xl md:leading-none md:tracking-normal">新北市水上安全協會</span>
         </div>
       </Link>
 
