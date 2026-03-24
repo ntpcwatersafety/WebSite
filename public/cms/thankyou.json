@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-19T09:44:08.423Z",
+  "lastUpdated": "2026-03-24T05:25:07.518Z",
   "thankYouItems": [
     {
       "id": "thankYouItems-1773907077867",
@@ -14,6 +14,13 @@
       "year": "115",
       "sortOrder": 20,
       "description": "協助製作官網"
+    },
+    {
+      "id": "thankYouItems-1774329878628",
+      "year": "115",
+      "sortOrder": 30,
+      "name": "115年教練班培訓",
+      "description": "劉俊澔總教練"
     },
     {
       "id": "thankYouItems-1773908354380",

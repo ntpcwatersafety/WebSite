@@ -1,6 +1,42 @@
 {
-  "lastUpdated": "2026-03-19T09:44:08.423Z",
+  "lastUpdated": "2026-03-24T05:25:07.518Z",
   "galleryItems": [
+    {
+      "id": "galleryItems-1774329667804",
+      "title": "115年災害防救工作民間志願組織訓練計畫",
+      "description": "政府力量有限，民間資源無窮；為有效運用民間志願組織力量，配合政府機制，致力投入緊急災害救援工作，特依據「災害防救法」，將有意願協助執行消防救災工作之民間救難團體及救難志願組織透過基本訓練，強化專業救災知能，並對參加訓練合格之人員予以編組（隊），並核發救災識別證，以有效將民力納入政府救災體系，達到災害防救工作全民化，協助政府從事救災工作，特辦理本次訓練。",
+      "date": "2026-03-21",
+      "category": "訓練",
+      "isActive": true,
+      "sortOrder": 10,
+      "coverPhotoId": "galleryItems-1774329667804-photo-1774329832781-0",
+      "photos": [
+        {
+          "id": "galleryItems-1774329667804-photo-1774329832781-0",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/266886_0-jpg-1774329829178-z4f92b.jpg",
+          "title": "266886_0",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1774329667804-photo-1774329836896-1",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/266994-jpg-1774329832975-dbu3dy.jpg",
+          "title": "266994",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1774329667804-photo-1774329840155-2",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/267602_0-jpg-1774329836996-2j9157.jpg",
+          "title": "267602_0",
+          "description": ""
+        },
+        {
+          "id": "galleryItems-1774329667804-photo-1774329843600-3",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/267604_0-jpg-1774329840271-1kna5p.jpg",
+          "title": "267604_0",
+          "description": ""
+        }
+      ]
+    },
     {
       "id": "galleryItems-1773306517013",
       "title": "新春團拜",
