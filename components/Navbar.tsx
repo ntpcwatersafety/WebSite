@@ -14,7 +14,7 @@ const Navbar: React.FC = () => {
   }, [location]);
 
   return (
-    <nav className="fixed left-0 top-0 z-50 flex h-[70px] w-full items-center justify-center bg-white/95 px-4 shadow-md backdrop-blur-sm md:justify-between md:px-[5%]">
+    <nav className="fixed left-0 top-0 z-50 flex h-[78px] w-full items-center justify-center bg-white/95 px-4 shadow-md backdrop-blur-sm md:h-[70px] md:justify-between md:px-[5%]">
       <button 
         type="button"
         aria-label={isMenuOpen ? '關閉選單' : '開啟選單'}
@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
         {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
 
-      <Link to="/" className="z-[52] mx-auto flex min-w-0 max-w-[calc(100%-96px)] items-center justify-center gap-2 text-primary md:mx-0 md:max-w-none md:justify-start">
+      <Link to="/" className="z-[52] mx-auto flex min-w-0 max-w-[calc(100%-88px)] items-center justify-center gap-2 text-primary md:mx-0 md:max-w-none md:justify-start">
         {!logoError ? (
           <img 
             src="https://lh3.googleusercontent.com/d/17JcUzZwnqsetUO7m-RVOelb1IFKqtN3F"
@@ -36,8 +36,7 @@ const Navbar: React.FC = () => {
           <Waves className="h-7 w-7 flex-shrink-0 md:h-8 md:w-8" />
         )}
         <div className="min-w-0 text-left">
-          <span className="block truncate text-base font-bold leading-none tracking-[0.08em] md:hidden">水安協會</span>
-          <span className="hidden text-2xl font-bold md:block">新北市水上安全協會</span>
+          <span className="block text-[13px] font-bold leading-tight tracking-[0.01em] sm:text-sm md:text-2xl md:leading-none md:tracking-normal">新北市水上安全協會</span>
         </div>
       </Link>
 
@@ -59,7 +58,7 @@ const Navbar: React.FC = () => {
       </ul>
 
       <div 
-        className={`fixed left-0 top-[70px] flex h-[calc(100vh-70px)] w-full flex-col items-center gap-0 bg-white pt-6 shadow-xl transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed left-0 top-[78px] flex h-[calc(100vh-78px)] w-full flex-col items-center gap-0 bg-white pt-6 shadow-xl transition-transform duration-300 ease-in-out md:top-[70px] md:h-[calc(100vh-70px)] md:hidden ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
