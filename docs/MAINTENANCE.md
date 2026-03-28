@@ -39,6 +39,14 @@
 - public/cms/gallery.json
 - public/cms/thankyou.json
 
+其中與前台輪播直接對應的欄位如下：
+
+- public/cms/activities.json -> activityGalleryItems
+- public/cms/results.json -> resultGalleryItems
+- public/cms/gallery.json -> galleryItems
+
+補充：自 2026-03-28 起，訓練與活動、訓練成果都已改成和活動剪影相同的相簿輪播架構；舊的 courseItems、trainingRecords、testimonials 已不再使用。
+
 ## 日常更新內容
 
 建議優先使用正式站後台更新，不要直接在正式環境手改 JSON。

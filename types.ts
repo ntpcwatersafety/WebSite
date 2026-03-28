@@ -114,24 +114,22 @@ export interface ThankYouItem {
  */
 export interface CmsData {
   lastUpdated: string;
-  courseItems: CourseItem[];
+  activityGalleryItems: GalleryItem[];
   homeNews: NewsItem[];
   mediaReports: MediaItem[];
   awards: AwardItem[];
-  testimonials: TestimonialItem[];
-  trainingRecords: TrainingRecordItem[];
+  resultGalleryItems: GalleryItem[];
   galleryItems: GalleryItem[];
   introContent?: string;
   thankYouItems?: ThankYouItem[];
 }
 
 export interface CmsCollectionMap {
-  courseItems: CourseItem;
+  activityGalleryItems: GalleryItem;
   homeNews: NewsItem;
   mediaReports: MediaItem;
   awards: AwardItem;
-  testimonials: TestimonialItem;
-  trainingRecords: TrainingRecordItem;
+  resultGalleryItems: GalleryItem;
   galleryItems: GalleryItem;
   thankYouItems: ThankYouItem;
 }

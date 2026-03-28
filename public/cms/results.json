@@ -1,31 +1,4 @@
 {
   "lastUpdated": "2026-03-28T14:18:17.235Z",
-  "testimonials": [],
-  "trainingRecords": [
-    {
-      "id": "trainingRecords-1774705936250",
-      "date": "",
-      "title": "114 基礎泳訓班",
-      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250519-_260328_3-jpg-1774705953202-oesjgl.jpg\" alt=\"LINE_ALBUM_20250519基礎泳訓班_260328_3.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250519-_260328_2-jpg-1774705983817-tpsl43.jpg\" alt=\"LINE_ALBUM_20250519基礎泳訓班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250602-_260328_1-jpg-1774705992930-4bzr4b.jpg\" alt=\"LINE_ALBUM_20250602基礎泳訓班_260328_1.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250602-_260328_2-jpg-1774706001221-9ut9ir.jpg\" alt=\"LINE_ALBUM_20250602基礎泳訓班_260328_2.jpg\"></p>",
-      "link": "",
-      "isNew": false,
-      "isPinned": false,
-      "detailBlocks": []
-    },
-    {
-      "id": "trainingRecords-1773729049386",
-      "date": "",
-      "title": "114 蛙式泳訓班",
-      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_4-jpg-1774705709764-818mhv.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_4.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_2-jpg-1774705724099-ys0wbx.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_3-jpg-1774705734032-6ega66.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_3.jpg\"></p>",
-      "link": "",
-      "isNew": false,
-      "isPinned": false,
-      "detailBlocks": [
-        {
-          "id": "training-record-detail-1",
-          "content": "<p>請輸入詳細內容。</p>"
-        }
-      ]
-    }
-  ]
+  "resultGalleryItems": []
 }

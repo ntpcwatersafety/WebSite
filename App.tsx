@@ -7,9 +7,9 @@ import Contact from './pages/Contact';
 import GenericPage from './pages/GenericPage';
 import Gallery from './pages/Gallery';
 import Admin from './pages/Admin';
-import { PAGE_CONTENT, ACTIVITIES_SECTIONS, RESULTS_SECTIONS, MEDIA_SECTIONS } from './services/cms';
+import { PAGE_CONTENT, MEDIA_SECTIONS } from './services/cms';
 import ThankYou from './pages/ThankYou';
-import TrainingRecordDetail from './pages/TrainingRecordDetail';
+import { getActivityGalleryItems, getGalleryItems, getResultGalleryItems } from './services/cmsLoader';
 
 // 包裝元件：根據路徑決定是否顯示 Navbar 和 Footer
 const AppContent: React.FC = () => {
@@ -21,13 +21,12 @@ const AppContent: React.FC = () => {
       {!isAdminPage && <Navbar />}
       
       {/* Main Content Area */}
-      <div className={`flex-grow ${!isAdminPage ? 'mt-[70px]' : ''}`}>
+      <div className={`flex-grow ${!isAdminPage ? 'mt-[78px] md:mt-[70px]' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/activities" element={<GenericPage data={PAGE_CONTENT.activities} sections={ACTIVITIES_SECTIONS} />} />
-          <Route path="/results/:recordId" element={<TrainingRecordDetail />} />
-          <Route path="/results" element={<GenericPage data={PAGE_CONTENT.results} sections={RESULTS_SECTIONS} />} />
-          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/activities" element={<Gallery pageKey="activities" loadItems={getActivityGalleryItems} emptyMessage="目前尚無訓練與活動內容。" itemLabel="活動" />} />
+          <Route path="/results" element={<Gallery pageKey="results" loadItems={getResultGalleryItems} emptyMessage="目前尚無訓練成果內容。" itemLabel="成果" />} />
+          <Route path="/gallery" element={<Gallery pageKey="gallery" loadItems={getGalleryItems} emptyMessage="目前尚無活動剪影內容。" itemLabel="活動" />} />
           <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />
           <Route path="/thankyou" element={<ThankYou />} />
           {/* <Route path="/about" element={<GenericPage data={PAGE_CONTENT.about} />} /> */}

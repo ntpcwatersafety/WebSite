@@ -90,7 +90,7 @@ import { login, logout, isAuthenticated } from '../services/adminAuth';
 import { cleanupEditorImages, EditorImageAsset, getFileContent, listEditorImages, updateCmsData, uploadEditorImage, validateToken } from '../services/githubApi';
 import { loadCmsData } from '../services/cmsLoader';
 import { CmsCollectionKey, CmsData, CourseItem, MediaItem, NewsItem, AwardItem, TestimonialItem, GalleryItem, GalleryPhoto, ThankYouItem, TrainingRecordItem, TrainingRecordDetailBlock } from '../types';
-import { CmsFileShas, normalizeCmsData, sortCourseItems, sortGalleryItems, sortThankYouItems } from '../services/cmsData';
+import { CmsFileShas, normalizeCmsData, sortGalleryItems, sortThankYouItems } from '../services/cmsData';
 import AdminFeedbackToast from '../components/AdminFeedbackToast';
 import AdminConfirmDialog from '../components/AdminConfirmDialog';
 
@@ -677,8 +677,14 @@ interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
+type GalleryCollectionKey = 'activityGalleryItems' | 'resultGalleryItems' | 'galleryItems';
+
 interface GalleryActivitiesEditorProps {
   sectionId?: string;
+  title: string;
+  pageLabel: string;
+  description: string;
+  addButtonLabel?: string;
   items: GalleryItem[];
   expanded: boolean;
   onToggle: () => void;
@@ -690,11 +696,16 @@ interface GalleryActivitiesEditorProps {
   onDeletePhoto: (activityId: string, photoId: string) => void;
   onMoveActivity: (draggedId: string, targetId: string) => void;
   onMovePhoto: (activityId: string, draggedId: string, targetId: string) => void;
+  uploadingKeyPrefix: string;
   uploadingActivityId: string | null;
 }
 
 const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
   sectionId,
+  title,
+  pageLabel,
+  description,
+  addButtonLabel = '新增項目',
   items,
   expanded,
   onToggle,
@@ -706,6 +717,7 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
   onDeletePhoto,
   onMoveActivity,
   onMovePhoto,
+  uploadingKeyPrefix,
   uploadingActivityId
 }) => {
   const sortedActivities = sortGalleryItems(items);
@@ -725,15 +737,15 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
           <span className="text-blue-600 self-start mt-0.5"><Eye className="w-5 h-5" /></span>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-gray-800">活動剪影 / 活動相簿</span>
+              <span className="font-bold text-gray-800">{title}</span>
               <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-100">
-                前台：活動剪影 / 活動輪播
+                前台：{pageLabel}
               </span>
               <span className="bg-gray-100 text-gray-600 text-sm px-2 py-0.5 rounded-full">
-                {sortedActivities.length} 個活動
+                {sortedActivities.length} 個項目
               </span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">每個活動可上傳多張照片、拖拉調整活動順序與照片順序，前台會以活動為單位輪播顯示。</p>
+            <p className="text-sm text-gray-500 mt-1">{description}</p>
           </div>
         </div>
         {expanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
@@ -746,7 +758,7 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
             className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 text-gray-500 hover:border-blue-400 hover:text-blue-600 transition flex items-center justify-center gap-2 mb-4"
           >
             <Plus className="w-5 h-5" />
-            新增活動
+            {addButtonLabel}
           </button>
 
           <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 mb-4 text-sm text-blue-800">
@@ -874,13 +886,13 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
                       <h4 className="font-bold text-slate-800">活動照片</h4>
                       <p className="mt-1 text-xs text-slate-500">可多選檔案一次上傳；縮圖可直接拖拉改順序，也可指定其中一張作為活動封面。</p>
                     </div>
-                    <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${uploadingActivityId === activity.id ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                    <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white ${uploadingActivityId === `${uploadingKeyPrefix}:${activity.id}` ? 'bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
                       <input
                         type="file"
                         accept="image/*"
                         multiple
                         className="hidden"
-                        disabled={uploadingActivityId === activity.id}
+                        disabled={uploadingActivityId === `${uploadingKeyPrefix}:${activity.id}`}
                         onChange={(event) => {
                           if (event.target.files?.length) {
                             onUploadPhotos(activity.id, event.target.files);
@@ -888,7 +900,7 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
                           }
                         }}
                       />
-                      {uploadingActivityId === activity.id ? '上傳中...' : '新增多張照片'}
+                      {uploadingActivityId === `${uploadingKeyPrefix}:${activity.id}` ? '上傳中...' : '新增多張照片'}
                     </label>
                   </div>
 
@@ -1002,14 +1014,14 @@ const Admin: React.FC = () => {
     {
       page: '訓練與活動',
       route: '/#/activities',
-      sections: '課程與活動項目',
-      note: '前台活動頁會直接顯示這份課程清單與招生狀態'
+      sections: '訓練與活動相簿',
+      note: '前台以輪播方式顯示這組相簿資料'
     },
     {
       page: '訓練成果',
       route: '/#/results',
-      sections: '訓練紀錄、學員心得',
-      note: '同一頁面由兩個後台區塊共同組成'
+      sections: '訓練成果相簿',
+      note: '前台以輪播方式顯示這組成果相簿資料'
     },
     {
       page: '媒體報導',
@@ -1073,18 +1085,18 @@ const Admin: React.FC = () => {
     {
       id: 'quick-results',
       title: '編輯訓練成果',
-      description: '快速前往訓練紀錄與學員心得區塊。',
-      sectionId: 'section-trainingRecords',
-      expandedKey: 'trainingRecords',
+      description: '快速前往訓練成果相簿區塊。',
+      sectionId: 'section-resultGalleryItems',
+      expandedKey: 'resultGalleryItems',
       icon: MessageSquare,
       tone: 'bg-emerald-50 text-emerald-700 border-emerald-100'
     },
     {
       id: 'quick-activities',
       title: '編輯訓練與活動',
-      description: '快速前往課程與活動項目區塊。',
-      sectionId: 'section-courseItems',
-      expandedKey: 'courseItems',
+      description: '快速前往訓練與活動相簿區塊。',
+      sectionId: 'section-activityGalleryItems',
+      expandedKey: 'activityGalleryItems',
       icon: Edit3,
       tone: 'bg-lime-50 text-lime-700 border-lime-100'
     },
@@ -1118,8 +1130,6 @@ const Admin: React.FC = () => {
 
     return [image.name, image.path, image.url].some((value) => value.toLowerCase().includes(keyword));
   });
-
-  const sortedCoursePreview = sortCourseItems(cmsData?.courseItems || []);
 
   // 檢查登入狀態
   useEffect(() => {
@@ -1360,10 +1370,10 @@ const Admin: React.FC = () => {
     action();
   };
 
-  const moveGalleryActivity = (draggedId: string, targetId: string) => {
+  const moveGalleryActivity = (section: GalleryCollectionKey, draggedId: string, targetId: string) => {
     if (!cmsData) return;
 
-    const orderedItems = sortGalleryItems(cmsData.galleryItems || []);
+    const orderedItems = sortGalleryItems(cmsData[section] || []);
     const draggedIndex = orderedItems.findIndex((item) => item.id === draggedId);
     const targetIndex = orderedItems.findIndex((item) => item.id === targetId);
     if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) return;
@@ -1378,33 +1388,33 @@ const Admin: React.FC = () => {
 
     setCmsData({
       ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).map((item) => reorderedMap.get(item.id) || item)
+      [section]: (cmsData[section] || []).map((item) => reorderedMap.get(item.id) || item)
     });
   };
 
-  const updateGalleryActivityField = (activityId: string, field: keyof GalleryItem, value: any) => {
+  const updateGalleryActivityField = (section: GalleryCollectionKey, activityId: string, field: keyof GalleryItem, value: any) => {
     if (!cmsData) return;
 
     setCmsData({
       ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).map((item) => (
+      [section]: (cmsData[section] || []).map((item) => (
         item.id === activityId ? { ...item, [field]: value } : item
       ))
     });
   };
 
-  const setGalleryCoverPhoto = (activityId: string, photoId: string) => {
+  const setGalleryCoverPhoto = (section: GalleryCollectionKey, activityId: string, photoId: string) => {
     if (!cmsData) return;
 
     setCmsData({
       ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).map((item) => (
+      [section]: (cmsData[section] || []).map((item) => (
         item.id === activityId ? { ...item, coverPhotoId: photoId } : item
       ))
     });
   };
 
-  const deleteGalleryActivity = (activityId: string) => {
+  const deleteGalleryActivity = (section: GalleryCollectionKey, activityId: string) => {
     if (!cmsData) return;
 
     requestConfirmation({
@@ -1415,18 +1425,18 @@ const Admin: React.FC = () => {
       onConfirm: () => {
         setCmsData({
           ...cmsData,
-          galleryItems: (cmsData.galleryItems || []).filter((item) => item.id !== activityId)
+          [section]: (cmsData[section] || []).filter((item) => item.id !== activityId)
         });
       }
     });
   };
 
-  const moveGalleryPhoto = (activityId: string, draggedPhotoId: string, targetPhotoId: string) => {
+  const moveGalleryPhoto = (section: GalleryCollectionKey, activityId: string, draggedPhotoId: string, targetPhotoId: string) => {
     if (!cmsData) return;
 
     setCmsData({
       ...cmsData,
-      galleryItems: (cmsData.galleryItems || []).map((item) => {
+      [section]: (cmsData[section] || []).map((item) => {
         if (item.id !== activityId) return item;
 
         const photos = [...(item.photos || [])];
@@ -1441,7 +1451,7 @@ const Admin: React.FC = () => {
     });
   };
 
-  const deleteGalleryPhoto = (activityId: string, photoId: string) => {
+  const deleteGalleryPhoto = (section: GalleryCollectionKey, activityId: string, photoId: string) => {
     if (!cmsData) return;
 
     requestConfirmation({
@@ -1452,7 +1462,7 @@ const Admin: React.FC = () => {
       onConfirm: () => {
         setCmsData({
           ...cmsData,
-          galleryItems: (cmsData.galleryItems || []).map((item) => {
+          [section]: (cmsData[section] || []).map((item) => {
             if (item.id !== activityId) return item;
 
             const nextPhotos = (item.photos || []).filter((photo) => photo.id !== photoId);
@@ -1465,10 +1475,10 @@ const Admin: React.FC = () => {
     });
   };
 
-  const uploadGalleryPhotos = async (activityId: string, files: FileList) => {
+  const uploadGalleryPhotos = async (section: GalleryCollectionKey, activityId: string, files: FileList) => {
     if (!cmsData) return;
 
-    setUploadingGalleryActivityId(activityId);
+    setUploadingGalleryActivityId(`${section}:${activityId}`);
     try {
       const uploadedPhotos: GalleryPhoto[] = [];
       const selectedFiles = Array.from(files);
@@ -1488,7 +1498,7 @@ const Admin: React.FC = () => {
         if (!previous) return previous;
         return {
           ...previous,
-          galleryItems: (previous.galleryItems || []).map((item) => (
+          [section]: (previous[section] || []).map((item) => (
             item.id === activityId
               ? {
                   ...item,
@@ -1506,36 +1516,6 @@ const Admin: React.FC = () => {
       showMessage('error', `活動照片上傳失敗：${errorMessage}`);
     }
     setUploadingGalleryActivityId(null);
-  };
-
-  const moveCourseItemByPreview = (courseId: string, direction: 'up' | 'down') => {
-    if (!cmsData) return;
-
-    const orderedItems = sortCourseItems(cmsData.courseItems || []);
-    const currentIndex = orderedItems.findIndex((item) => item.id === courseId);
-    if (currentIndex === -1) return;
-
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= orderedItems.length) return;
-
-    const nextOrderedItems = [...orderedItems];
-    const [movedItem] = nextOrderedItems.splice(currentIndex, 1);
-    nextOrderedItems.splice(targetIndex, 0, movedItem);
-
-    const reorderedMap = new Map(
-      nextOrderedItems.map((item, index) => [
-        item.id,
-        {
-          ...item,
-          sortOrder: (index + 1) * 10
-        }
-      ])
-    );
-
-    setCmsData({
-      ...cmsData,
-      courseItems: (cmsData.courseItems || []).map((item) => reorderedMap.get(item.id) || item)
-    });
   };
 
   const moveThankYouItem = (draggedId: string, targetId: string) => {
@@ -1682,24 +1662,25 @@ const Admin: React.FC = () => {
     const newId = `${section}-${Date.now()}`;
     let newItem: CourseItem | NewsItem | TrainingRecordItem | MediaItem | AwardItem | TestimonialItem | GalleryItem | ThankYouItem;
     switch (section) {
-      case 'courseItems':
-        const nextCourseItems = sortCourseItems(cmsData.courseItems || []);
-        const nextSortOrder = nextCourseItems.reduce((maxOrder, item) => (
+      case 'activityGalleryItems':
+      case 'resultGalleryItems':
+      case 'galleryItems':
+        const nextGalleryItems = sortGalleryItems(cmsData[section] || []);
+        const nextGallerySortOrder = nextGalleryItems.reduce((maxOrder, item) => (
           typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
             ? Math.max(maxOrder, item.sortOrder)
             : maxOrder
         ), 0) + 10;
         newItem = {
           id: newId,
-          title: '新課程名稱',
-          description: '<p>請輸入課程說明。</p>',
+          title: section === 'resultGalleryItems' ? '新成果名稱' : '新活動名稱',
+          description: '',
           date: new Date().toISOString().split('T')[0],
-          sortOrder: nextSortOrder,
-          schedule: '',
-          location: '',
-          price: '',
-          features: [],
-          isRecruiting: true
+          category: '',
+          isActive: true,
+          sortOrder: nextGallerySortOrder,
+          coverPhotoId: undefined,
+          photos: []
         };
         break;
       case 'homeNews':
@@ -1709,16 +1690,6 @@ const Admin: React.FC = () => {
           title: '新消息標題',
           description: '請輸入說明文字',
           isNew: true
-        };
-        break;
-      case 'trainingRecords':
-        newItem = {
-          id: newId,
-          date: new Date().toISOString().split('T')[0],
-          title: '新訓練紀錄標題',
-          description: '<p>請輸入卡片摘要。</p>',
-          isNew: true,
-          detailBlocks: [createTrainingRecordDetailBlock()]
         };
         break;
       case 'mediaReports':
@@ -1738,33 +1709,6 @@ const Admin: React.FC = () => {
           title: '新獎項名稱',
           description: '請輸入說明',
           icon: '🏆'
-        };
-        break;
-      case 'testimonials':
-        newItem = {
-          id: newId,
-          content: '請輸入心得內容...',
-          author: '姓名',
-          role: '學員身份'
-        };
-        break;
-      case 'galleryItems':
-        const nextGalleryItems = sortGalleryItems(cmsData.galleryItems || []);
-        const nextGallerySortOrder = nextGalleryItems.reduce((maxOrder, item) => (
-          typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
-            ? Math.max(maxOrder, item.sortOrder)
-            : maxOrder
-        ), 0) + 10;
-        newItem = {
-          id: newId,
-          title: '新活動名稱',
-          description: '',
-          date: new Date().toISOString().split('T')[0],
-          category: '',
-          isActive: true,
-          sortOrder: nextGallerySortOrder,
-          coverPhotoId: undefined,
-          photos: []
         };
         break;
       case 'thankYouItems':
@@ -2319,90 +2263,27 @@ const Admin: React.FC = () => {
               sectionId="page-group-activities"
               title="訓練與活動"
               route="/#/activities"
-              description="這一組對應前台訓練與活動頁的課程與活動內容。"
+              description="這一組對應前台訓練與活動頁的輪播相簿內容。"
             >
-              <SectionEditor
-                sectionId="section-courseItems"
-                title="訓練與活動 / 課程與活動項目"
-                pageLabel="訓練與活動 / 課程清單"
-                description="對應前台訓練與活動頁中的課程卡片、特色與招生狀態。"
-                icon={<Edit3 className="w-5 h-5" />}
-                items={cmsData.courseItems || []}
-                sectionKey="courseItems"
-                expanded={expandedSection === 'courseItems'}
-                onToggle={() => setExpandedSection(expandedSection === 'courseItems' ? '' : 'courseItems')}
-                onAdd={() => addItem('courseItems')}
-                onDelete={(index) => deleteItem('courseItems', index)}
-                onUpdate={(index, field, value) => updateItemField('courseItems', index, field, value)}
-                helperContent={(
-                  <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h4 className="text-sm font-bold text-blue-900">前台排序預覽</h4>
-                        <p className="mt-1 text-xs text-blue-700">前台會依「自訂排序」由小到大，再依「排序日期」由新到舊顯示。未填自訂排序時，會自動排到後面再比日期，也可直接用右側上下按鈕快速調整。</p>
-                      </div>
-                      <span className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-700">
-                        共 {sortedCoursePreview.length} 筆
-                      </span>
-                    </div>
-                    {sortedCoursePreview.length ? (
-                      <div className="mt-3 space-y-2">
-                        {sortedCoursePreview.map((course, index) => (
-                          <div key={course.id} className="flex flex-col gap-2 rounded-lg border border-blue-100 bg-white px-3 py-2 md:flex-row md:items-center md:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-blue-600 px-2 text-xs font-bold text-white">
-                                  {index + 1}
-                                </span>
-                                <span className="font-medium text-slate-800">{course.title}</span>
-                                {course.isRecruiting === false ? (
-                                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">未招生</span>
-                                ) : null}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                                排序：{typeof course.sortOrder === 'number' ? course.sortOrder : '未設定'}
-                              </span>
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5">
-                                日期：{course.date || '未設定'}
-                              </span>
-                              <div className="ml-0 flex items-center gap-1 md:ml-2">
-                                <button
-                                  type="button"
-                                  onClick={() => moveCourseItemByPreview(course.id, 'up')}
-                                  disabled={index === 0}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                                  title="往前移一格"
-                                >
-                                  <ChevronUp className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => moveCourseItemByPreview(course.id, 'down')}
-                                  disabled={index === sortedCoursePreview.length - 1}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                                  title="往後移一格"
-                                >
-                                  <ChevronDown className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-sm text-blue-700">目前尚無課程資料。</p>
-                    )}
-                  </div>
-                )}
-                renderItem={(item, index) => (
-                  <CourseItemEditor
-                    item={item}
-                    onUpdate={(field, value) => updateItemField('courseItems', index, field, value)}
-                    onImageUploaded={trackUploadedEditorImage}
-                  />
-                )}
+              <GalleryActivitiesEditor
+                sectionId="section-activityGalleryItems"
+                title="訓練與活動 / 輪播相簿"
+                pageLabel="訓練與活動 / 輪播"
+                description="每個項目可上傳多張照片、拖拉調整順序與封面，前台會用和活動剪影相同的輪播方式顯示。"
+                addButtonLabel="新增訓練與活動項目"
+                items={cmsData.activityGalleryItems || []}
+                expanded={expandedSection === 'activityGalleryItems'}
+                onToggle={() => setExpandedSection(expandedSection === 'activityGalleryItems' ? '' : 'activityGalleryItems')}
+                onAdd={() => addItem('activityGalleryItems')}
+                onDeleteActivity={(activityId) => deleteGalleryActivity('activityGalleryItems', activityId)}
+                onUpdateActivity={(activityId, field, value) => updateGalleryActivityField('activityGalleryItems', activityId, field, value)}
+                onSetCoverPhoto={(activityId, photoId) => setGalleryCoverPhoto('activityGalleryItems', activityId, photoId)}
+                onUploadPhotos={(activityId, files) => uploadGalleryPhotos('activityGalleryItems', activityId, files)}
+                onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('activityGalleryItems', activityId, photoId)}
+                onMoveActivity={(draggedId, targetId) => moveGalleryActivity('activityGalleryItems', draggedId, targetId)}
+                onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('activityGalleryItems', activityId, draggedId, targetId)}
+                uploadingKeyPrefix="activityGalleryItems"
+                uploadingActivityId={uploadingGalleryActivityId}
               />
             </PageGroup>
 
@@ -2410,49 +2291,27 @@ const Admin: React.FC = () => {
               sectionId="page-group-results"
               title="訓練成果"
               route="/#/results"
-              description="前台訓練成果頁目前由兩個後台區塊組成：訓練紀錄與學員心得。"
+              description="這一組對應前台訓練成果頁的輪播相簿內容。"
             >
-              <SectionEditor
-                sectionId="section-trainingRecords"
-                title="訓練成果 / 訓練紀錄"
-                pageLabel="訓練成果 / 訓練紀錄"
-                description="對應前台訓練成果頁中的訓練紀錄列表。"
-                icon={<Newspaper className="w-5 h-5" />}
-                items={cmsData.trainingRecords}
-                sectionKey="trainingRecords"
-                expanded={expandedSection === 'trainingRecords'}
-                onToggle={() => setExpandedSection(expandedSection === 'trainingRecords' ? '' : 'trainingRecords')}
-                onAdd={() => addItem('trainingRecords')}
-                onDelete={(index) => deleteItem('trainingRecords', index)}
-                onUpdate={(index, field, value) => updateItemField('trainingRecords', index, field, value)}
-                renderItem={(item, index) => (
-                  <TrainingRecordEditor
-                    item={item}
-                    onUpdate={(field, value) => updateItemField('trainingRecords', index, field, value)}
-                    onImageUploaded={trackUploadedEditorImage}
-                  />
-                )}
-              />
-
-              <SectionEditor
-                sectionId="section-testimonials"
-                title="訓練成果 / 學員心得"
-                pageLabel="訓練成果 / 學員心得"
-                description="對應前台訓練成果頁中的學員心得區塊。"
-                icon={<MessageSquare className="w-5 h-5" />}
-                items={cmsData.testimonials}
-                sectionKey="testimonials"
-                expanded={expandedSection === 'testimonials'}
-                onToggle={() => setExpandedSection(expandedSection === 'testimonials' ? '' : 'testimonials')}
-                onAdd={() => addItem('testimonials')}
-                onDelete={(index) => deleteItem('testimonials', index)}
-                onUpdate={(index, field, value) => updateItemField('testimonials', index, field, value)}
-                renderItem={(item, index) => (
-                  <TestimonialItemEditor
-                    item={item}
-                    onUpdate={(field, value) => updateItemField('testimonials', index, field, value)}
-                  />
-                )}
+              <GalleryActivitiesEditor
+                sectionId="section-resultGalleryItems"
+                title="訓練成果 / 輪播相簿"
+                pageLabel="訓練成果 / 輪播"
+                description="每個成果項目可上傳多張照片、拖拉調整順序與封面，前台會用和活動剪影相同的輪播方式顯示。"
+                addButtonLabel="新增訓練成果項目"
+                items={cmsData.resultGalleryItems || []}
+                expanded={expandedSection === 'resultGalleryItems'}
+                onToggle={() => setExpandedSection(expandedSection === 'resultGalleryItems' ? '' : 'resultGalleryItems')}
+                onAdd={() => addItem('resultGalleryItems')}
+                onDeleteActivity={(activityId) => deleteGalleryActivity('resultGalleryItems', activityId)}
+                onUpdateActivity={(activityId, field, value) => updateGalleryActivityField('resultGalleryItems', activityId, field, value)}
+                onSetCoverPhoto={(activityId, photoId) => setGalleryCoverPhoto('resultGalleryItems', activityId, photoId)}
+                onUploadPhotos={(activityId, files) => uploadGalleryPhotos('resultGalleryItems', activityId, files)}
+                onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('resultGalleryItems', activityId, photoId)}
+                onMoveActivity={(draggedId, targetId) => moveGalleryActivity('resultGalleryItems', draggedId, targetId)}
+                onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('resultGalleryItems', activityId, draggedId, targetId)}
+                uploadingKeyPrefix="resultGalleryItems"
+                uploadingActivityId={uploadingGalleryActivityId}
               />
             </PageGroup>
 
@@ -2514,17 +2373,22 @@ const Admin: React.FC = () => {
             >
               <GalleryActivitiesEditor
                 sectionId="section-galleryItems"
+                title="活動剪影 / 活動相簿"
+                pageLabel="活動剪影 / 活動輪播"
+                description="每個活動可上傳多張照片、拖拉調整活動順序與照片順序，前台會以活動為單位輪播顯示。"
+                addButtonLabel="新增活動"
                 items={cmsData.galleryItems || []}
                 expanded={expandedSection === 'galleryItems'}
                 onToggle={() => setExpandedSection(expandedSection === 'galleryItems' ? '' : 'galleryItems')}
                 onAdd={() => addItem('galleryItems')}
-                onDeleteActivity={deleteGalleryActivity}
-                onUpdateActivity={updateGalleryActivityField}
-                onSetCoverPhoto={setGalleryCoverPhoto}
-                onUploadPhotos={uploadGalleryPhotos}
-                onDeletePhoto={deleteGalleryPhoto}
-                onMoveActivity={moveGalleryActivity}
-                onMovePhoto={moveGalleryPhoto}
+                onDeleteActivity={(activityId) => deleteGalleryActivity('galleryItems', activityId)}
+                onUpdateActivity={(activityId, field, value) => updateGalleryActivityField('galleryItems', activityId, field, value)}
+                onSetCoverPhoto={(activityId, photoId) => setGalleryCoverPhoto('galleryItems', activityId, photoId)}
+                onUploadPhotos={(activityId, files) => uploadGalleryPhotos('galleryItems', activityId, files)}
+                onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('galleryItems', activityId, photoId)}
+                onMoveActivity={(draggedId, targetId) => moveGalleryActivity('galleryItems', draggedId, targetId)}
+                onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('galleryItems', activityId, draggedId, targetId)}
+                uploadingKeyPrefix="galleryItems"
                 uploadingActivityId={uploadingGalleryActivityId}
               />
             </PageGroup>

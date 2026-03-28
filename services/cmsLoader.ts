@@ -1,4 +1,4 @@
-import { CmsData, ThankYouItem, NewsItem, AwardItem, TestimonialItem, MediaItem, GalleryItem, CourseItem } from '../types';
+import { CmsData, ThankYouItem, NewsItem, AwardItem, MediaItem, GalleryItem } from '../types';
 import { getFileContent, validateToken } from './githubApi';
 import { CMS_SECTION_FILE_NAMES, CmsSectionFileKey, mergeCmsSplitData, normalizeCmsData } from './cmsData';
 
@@ -32,9 +32,14 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   return data?.galleryItems || [];
 };
 
-export const getCourseItems = async (): Promise<CourseItem[]> => {
+export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   const data = await loadCmsData();
-  return data?.courseItems || [];
+  return data?.activityGalleryItems || [];
+};
+
+export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
+  const data = await loadCmsData();
+  return data?.resultGalleryItems || [];
 };
 
 let cachedData: CmsData | null = null;
@@ -122,18 +127,3 @@ export const getAwards = async (): Promise<AwardItem[]> => {
   return data?.awards || [];
 };
 
-/**
- * 取得學員心得
- */
-export const getTestimonials = async (): Promise<TestimonialItem[]> => {
-  const data = await loadCmsData();
-  return data?.testimonials || [];
-};
-
-/**
- * 取得訓練紀錄
- */
-export const getTrainingRecords = async (): Promise<NewsItem[]> => {
-  const data = await loadCmsData();
-  return data?.trainingRecords || [];
-};

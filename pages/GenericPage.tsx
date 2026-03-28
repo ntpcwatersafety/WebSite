@@ -16,10 +16,6 @@ const shouldDisplaySection = (section: SectionContent): boolean => {
     return Boolean(section.awardItems?.length);
   }
 
-  if (section.id === 'testimonials') {
-    return Boolean(section.testimonialItems?.length);
-  }
-
   return true;
 };
 
@@ -33,36 +29,13 @@ const GenericPage: React.FC<GenericPageProps> = ({ data, sections }) => {
       try {
         const cmsData = await loadCmsData();
         if (cmsData) {
-          // 用動態資料替換靜態資料
           const updatedSections = sections.map(section => {
-            if (section.id === 'courses' && cmsData.courseItems) {
-              return {
-                ...section,
-                courseItems: cmsData.courseItems
-              };
-            }
-            // 訓練成果頁面 - 近期結訓學員
-            if (section.id === 'recent_graduates' && cmsData.trainingRecords) {
-              return {
-                ...section,
-                newsItems: cmsData.trainingRecords
-              };
-            }
-            // 訓練成果頁面 - 學員心得
-            if (section.id === 'testimonials' && cmsData.testimonials) {
-              return {
-                ...section,
-                testimonialItems: cmsData.testimonials
-              };
-            }
-            // 媒體報導頁面 - 新聞報導
             if (section.id === 'news_reports' && cmsData.mediaReports) {
               return {
                 ...section,
                 mediaItems: cmsData.mediaReports
               };
             }
-            // 媒體報導頁面 - 獲獎紀錄
             if (section.id === 'awards' && cmsData.awards) {
               return {
                 ...section,

@@ -172,22 +172,21 @@ const githubHeaders = (config) => {
 
 const createEmptyCmsData = () => ({
   lastUpdated: '',
-  courseItems: [],
+  activityGalleryItems: [],
   homeNews: [],
   mediaReports: [],
   awards: [],
-  testimonials: [],
-  trainingRecords: [],
+  resultGalleryItems: [],
   galleryItems: [],
   introContent: '',
   thankYouItems: []
 });
 
 const createEmptyCmsSplitData = () => ({
-  activities: { lastUpdated: '', courseItems: [] },
+  activities: { lastUpdated: '', activityGalleryItems: [] },
   home: { lastUpdated: '', introContent: '', homeNews: [] },
   media: { lastUpdated: '', mediaReports: [], awards: [] },
-  results: { lastUpdated: '', testimonials: [], trainingRecords: [] },
+  results: { lastUpdated: '', resultGalleryItems: [] },
   gallery: { lastUpdated: '', galleryItems: [] },
   thankyou: { lastUpdated: '', thankYouItems: [] }
 });
@@ -197,12 +196,11 @@ const normalizeCmsData = (raw) => {
 
   return {
     lastUpdated: typeof raw?.lastUpdated === 'string' ? raw.lastUpdated : empty.lastUpdated,
-    courseItems: Array.isArray(raw?.courseItems) ? raw.courseItems : empty.courseItems,
+    activityGalleryItems: Array.isArray(raw?.activityGalleryItems) ? raw.activityGalleryItems : empty.activityGalleryItems,
     homeNews: Array.isArray(raw?.homeNews) ? raw.homeNews : empty.homeNews,
     mediaReports: Array.isArray(raw?.mediaReports) ? raw.mediaReports : empty.mediaReports,
     awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
-    testimonials: Array.isArray(raw?.testimonials) ? raw.testimonials : empty.testimonials,
-    trainingRecords: Array.isArray(raw?.trainingRecords) ? raw.trainingRecords : empty.trainingRecords,
+    resultGalleryItems: Array.isArray(raw?.resultGalleryItems) ? raw.resultGalleryItems : empty.resultGalleryItems,
     galleryItems: Array.isArray(raw?.galleryItems) ? raw.galleryItems : empty.galleryItems,
     introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
     thankYouItems: Array.isArray(raw?.thankYouItems) ? raw.thankYouItems : empty.thankYouItems
@@ -215,7 +213,7 @@ const normalizeCmsSplitData = (raw) => {
   return {
     activities: {
       lastUpdated: typeof raw?.activities?.lastUpdated === 'string' ? raw.activities.lastUpdated : empty.activities.lastUpdated,
-      courseItems: Array.isArray(raw?.activities?.courseItems) ? raw.activities.courseItems : empty.activities.courseItems
+      activityGalleryItems: Array.isArray(raw?.activities?.activityGalleryItems) ? raw.activities.activityGalleryItems : empty.activities.activityGalleryItems
     },
     home: {
       lastUpdated: typeof raw?.home?.lastUpdated === 'string' ? raw.home.lastUpdated : empty.home.lastUpdated,
@@ -229,8 +227,7 @@ const normalizeCmsSplitData = (raw) => {
     },
     results: {
       lastUpdated: typeof raw?.results?.lastUpdated === 'string' ? raw.results.lastUpdated : empty.results.lastUpdated,
-      testimonials: Array.isArray(raw?.results?.testimonials) ? raw.results.testimonials : empty.results.testimonials,
-      trainingRecords: Array.isArray(raw?.results?.trainingRecords) ? raw.results.trainingRecords : empty.results.trainingRecords
+      resultGalleryItems: Array.isArray(raw?.results?.resultGalleryItems) ? raw.results.resultGalleryItems : empty.results.resultGalleryItems
     },
     gallery: {
       lastUpdated: typeof raw?.gallery?.lastUpdated === 'string' ? raw.gallery.lastUpdated : empty.gallery.lastUpdated,
@@ -256,13 +253,12 @@ const mergeCmsSplitData = (raw) => {
 
   return normalizeCmsData({
     lastUpdated: timestamps.sort().at(-1) || '',
-    courseItems: normalized.activities.courseItems,
+    activityGalleryItems: normalized.activities.activityGalleryItems,
     introContent: normalized.home.introContent,
     homeNews: normalized.home.homeNews,
     mediaReports: normalized.media.mediaReports,
     awards: normalized.media.awards,
-    testimonials: normalized.results.testimonials,
-    trainingRecords: normalized.results.trainingRecords,
+    resultGalleryItems: normalized.results.resultGalleryItems,
     galleryItems: normalized.gallery.galleryItems,
     thankYouItems: normalized.thankyou.thankYouItems
   });
@@ -275,7 +271,7 @@ const splitCmsData = (raw) => {
   return normalizeCmsSplitData({
     activities: {
       lastUpdated: timestamp,
-      courseItems: normalized.courseItems
+      activityGalleryItems: normalized.activityGalleryItems
     },
     home: {
       lastUpdated: timestamp,
@@ -289,8 +285,7 @@ const splitCmsData = (raw) => {
     },
     results: {
       lastUpdated: timestamp,
-      testimonials: normalized.testimonials,
-      trainingRecords: normalized.trainingRecords
+      resultGalleryItems: normalized.resultGalleryItems
     },
     gallery: {
       lastUpdated: timestamp,

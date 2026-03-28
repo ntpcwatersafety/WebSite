@@ -173,7 +173,7 @@ export interface CmsHomeData {
 
 export interface CmsActivitiesData {
   lastUpdated: string;
-  courseItems: CourseItem[];
+  activityGalleryItems: GalleryItem[];
 }
 
 export interface CmsMediaData {
@@ -184,8 +184,7 @@ export interface CmsMediaData {
 
 export interface CmsResultsData {
   lastUpdated: string;
-  testimonials: TestimonialItem[];
-  trainingRecords: TrainingRecordItem[];
+  resultGalleryItems: GalleryItem[];
 }
 
 export interface CmsGalleryData {
@@ -217,7 +216,7 @@ export const getRepoCmsFilePath = (repoRoot: string, fileKey: CmsSectionFileKey)
 export const createEmptyCmsSplitData = (): CmsSplitData => ({
   activities: {
     lastUpdated: '',
-    courseItems: []
+    activityGalleryItems: []
   },
   home: {
     lastUpdated: '',
@@ -231,8 +230,7 @@ export const createEmptyCmsSplitData = (): CmsSplitData => ({
   },
   results: {
     lastUpdated: '',
-    testimonials: [],
-    trainingRecords: []
+    resultGalleryItems: []
   },
   gallery: {
     lastUpdated: '',
@@ -246,12 +244,11 @@ export const createEmptyCmsSplitData = (): CmsSplitData => ({
 
 export const createEmptyCmsData = (): CmsData => ({
   lastUpdated: '',
-  courseItems: [],
+  activityGalleryItems: [],
   homeNews: [],
   mediaReports: [],
   awards: [],
-  testimonials: [],
-  trainingRecords: [],
+  resultGalleryItems: [],
   galleryItems: [],
   introContent: '',
   thankYouItems: []
@@ -263,7 +260,7 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
   return {
     activities: {
       lastUpdated: typeof raw?.activities?.lastUpdated === 'string' ? raw.activities.lastUpdated : empty.activities.lastUpdated,
-      courseItems: Array.isArray(raw?.activities?.courseItems) ? raw.activities.courseItems : empty.activities.courseItems
+      activityGalleryItems: normalizeGalleryItems(raw?.activities?.activityGalleryItems)
     },
     home: {
       lastUpdated: typeof raw?.home?.lastUpdated === 'string' ? raw.home.lastUpdated : empty.home.lastUpdated,
@@ -277,8 +274,7 @@ export const normalizeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefi
     },
     results: {
       lastUpdated: typeof raw?.results?.lastUpdated === 'string' ? raw.results.lastUpdated : empty.results.lastUpdated,
-      testimonials: Array.isArray(raw?.results?.testimonials) ? raw.results.testimonials : empty.results.testimonials,
-      trainingRecords: normalizeTrainingRecords(raw?.results?.trainingRecords)
+      resultGalleryItems: normalizeGalleryItems(raw?.results?.resultGalleryItems)
     },
     gallery: {
       lastUpdated: typeof raw?.gallery?.lastUpdated === 'string' ? raw.gallery.lastUpdated : empty.gallery.lastUpdated,
@@ -296,12 +292,11 @@ export const normalizeCmsData = (raw: Partial<CmsData> | null | undefined): CmsD
 
   return {
     lastUpdated: typeof raw?.lastUpdated === 'string' ? raw.lastUpdated : empty.lastUpdated,
-    courseItems: Array.isArray(raw?.courseItems) ? raw.courseItems : empty.courseItems,
+    activityGalleryItems: normalizeGalleryItems(raw?.activityGalleryItems),
     homeNews: Array.isArray(raw?.homeNews) ? raw.homeNews : empty.homeNews,
     mediaReports: Array.isArray(raw?.mediaReports) ? raw.mediaReports : empty.mediaReports,
     awards: Array.isArray(raw?.awards) ? raw.awards : empty.awards,
-    testimonials: Array.isArray(raw?.testimonials) ? raw.testimonials : empty.testimonials,
-    trainingRecords: normalizeTrainingRecords(raw?.trainingRecords),
+    resultGalleryItems: normalizeGalleryItems(raw?.resultGalleryItems),
     galleryItems: normalizeGalleryItems(raw?.galleryItems),
     introContent: typeof raw?.introContent === 'string' ? raw.introContent : empty.introContent,
     thankYouItems: normalizeThankYouItems(raw?.thankYouItems)
@@ -321,13 +316,12 @@ export const mergeCmsSplitData = (raw: Partial<CmsSplitData> | null | undefined)
 
   return normalizeCmsData({
     lastUpdated: timestamps.sort().at(-1) || '',
-    courseItems: normalized.activities.courseItems,
+    activityGalleryItems: normalized.activities.activityGalleryItems,
     introContent: normalized.home.introContent,
     homeNews: normalized.home.homeNews,
     mediaReports: normalized.media.mediaReports,
     awards: normalized.media.awards,
-    testimonials: normalized.results.testimonials,
-    trainingRecords: normalized.results.trainingRecords,
+    resultGalleryItems: normalized.results.resultGalleryItems,
     galleryItems: normalized.gallery.galleryItems,
     thankYouItems: normalized.thankyou.thankYouItems
   });
@@ -340,7 +334,7 @@ export const splitCmsData = (raw: Partial<CmsData> | null | undefined): CmsSplit
   return normalizeCmsSplitData({
     activities: {
       lastUpdated: timestamp,
-      courseItems: normalized.courseItems
+      activityGalleryItems: normalized.activityGalleryItems
     },
     home: {
       lastUpdated: timestamp,
@@ -354,8 +348,7 @@ export const splitCmsData = (raw: Partial<CmsData> | null | undefined): CmsSplit
     },
     results: {
       lastUpdated: timestamp,
-      testimonials: normalized.testimonials,
-      trainingRecords: normalized.trainingRecords
+      resultGalleryItems: normalized.resultGalleryItems
     },
     gallery: {
       lastUpdated: timestamp,

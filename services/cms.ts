@@ -110,47 +110,14 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
 };
 
 // ===============================
-// 5. 訓練與活動頁面內容
-// ===============================
-export const ACTIVITIES_SECTIONS: SectionContent[] = [
-  {
-    id: 'courses',
-    title: '訓練與活動',
-    type: 'courses',
-    courseItems: [],
-    isOpenDefault: true,
-  },
-];
-
-// ===============================
-// 6. 訓練成果頁面內容
-// ===============================
-export const RESULTS_SECTIONS: SectionContent[] = [
-  {
-    id: 'recent_graduates',
-    title: '訓練紀錄',
-    type: 'news',
-    newsItems: [],
-    isOpenDefault: true,
-  },
-  {
-    id: 'testimonials',
-    title: '學員心得',
-    type: 'testimonials',
-    testimonialItems: [],
-    isOpenDefault: true,
-  },
-];
-
-// ===============================
-// 7. 活動剪影（相簿）說明
+// 5. 活動剪影（相簿）說明
 // ===============================
 // 活動剪影（galleryItems）已由後台管理系統維護，資料來源為 public/cms/*.json
 // 欄位說明：id, imageUrl, title, description, isActive
 // 請勿直接於此編輯，請至後台管理介面操作。
 
 // ===============================
-// 8. 媒體報導頁面內容
+// 6. 媒體報導頁面內容
 // ===============================
 export const MEDIA_SECTIONS: SectionContent[] = [
   {
@@ -170,7 +137,7 @@ export const MEDIA_SECTIONS: SectionContent[] = [
 ];
 
 // ===============================
-// 9. 聯絡表單發送
+// 7. 聯絡表單發送
 // ===============================
 export const sendContactEmail = async (data: { name: string; email: string; subject: string; message: string }): Promise<boolean> => {
   if (EMAILJS_CONFIG.SERVICE_ID === 'YOUR_SERVICE_ID') {
