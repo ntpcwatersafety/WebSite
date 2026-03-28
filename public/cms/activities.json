@@ -1,18 +1,6 @@
 {
-  "lastUpdated": "2026-03-28T13:48:58.572Z",
+  "lastUpdated": "2026-03-28T13:50:02.696Z",
   "courseItems": [
-    {
-      "id": "courseItems-1774704918832",
-      "title": "蛙式泳訓班",
-      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_4-jpg-1774705012042-8w8jz5.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_4.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_2-jpg-1774705027308-wlpc3s.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_3-jpg-1774705096867-n09txs.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_3.jpg\">請輸入課程說明。</p>",
-      "date": "",
-      "sortOrder": 30,
-      "schedule": "",
-      "location": "",
-      "price": "",
-      "features": [],
-      "isRecruiting": false
-    },
     {
       "id": "courseItems-activity-safety-01",
       "title": "急救課程宣導",
