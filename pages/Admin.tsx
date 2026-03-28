@@ -696,6 +696,7 @@ interface GalleryActivitiesEditorProps {
   onDeletePhoto: (activityId: string, photoId: string) => void;
   onMoveActivity: (draggedId: string, targetId: string) => void;
   onMovePhoto: (activityId: string, draggedId: string, targetId: string) => void;
+  onImageUploaded?: (url: string) => void;
   uploadingKeyPrefix: string;
   uploadingActivityId: string | null;
 }
@@ -717,6 +718,7 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
   onDeletePhoto,
   onMoveActivity,
   onMovePhoto,
+  onImageUploaded,
   uploadingKeyPrefix,
   uploadingActivityId
 }) => {
@@ -850,11 +852,11 @@ const GalleryActivitiesEditor: React.FC<GalleryActivitiesEditorProps> = ({
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs text-gray-500 mb-1">活動描述（選填）</label>
-                    <textarea
+                    <RichTextEditor
                       value={activity.description || ''}
-                      onChange={(event) => onUpdateActivity(activity.id, 'description', event.target.value)}
-                      rows={3}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      height={220}
+                      onChange={(content) => onUpdateActivity(activity.id, 'description', content)}
+                      onImageUploaded={onImageUploaded}
                     />
                   </div>
                 </div>
@@ -2282,6 +2284,7 @@ const Admin: React.FC = () => {
                 onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('activityGalleryItems', activityId, photoId)}
                 onMoveActivity={(draggedId, targetId) => moveGalleryActivity('activityGalleryItems', draggedId, targetId)}
                 onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('activityGalleryItems', activityId, draggedId, targetId)}
+                onImageUploaded={trackUploadedEditorImage}
                 uploadingKeyPrefix="activityGalleryItems"
                 uploadingActivityId={uploadingGalleryActivityId}
               />
@@ -2310,6 +2313,7 @@ const Admin: React.FC = () => {
                 onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('resultGalleryItems', activityId, photoId)}
                 onMoveActivity={(draggedId, targetId) => moveGalleryActivity('resultGalleryItems', draggedId, targetId)}
                 onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('resultGalleryItems', activityId, draggedId, targetId)}
+                onImageUploaded={trackUploadedEditorImage}
                 uploadingKeyPrefix="resultGalleryItems"
                 uploadingActivityId={uploadingGalleryActivityId}
               />
@@ -2388,6 +2392,7 @@ const Admin: React.FC = () => {
                 onDeletePhoto={(activityId, photoId) => deleteGalleryPhoto('galleryItems', activityId, photoId)}
                 onMoveActivity={(draggedId, targetId) => moveGalleryActivity('galleryItems', draggedId, targetId)}
                 onMovePhoto={(activityId, draggedId, targetId) => moveGalleryPhoto('galleryItems', activityId, draggedId, targetId)}
+                onImageUploaded={trackUploadedEditorImage}
                 uploadingKeyPrefix="galleryItems"
                 uploadingActivityId={uploadingGalleryActivityId}
               />
@@ -2965,9 +2970,10 @@ const AwardItemEditor: React.FC<AwardItemEditorProps> = ({ item, onUpdate, onIma
 interface TestimonialItemEditorProps {
   item: TestimonialItem;
   onUpdate: (field: string, value: any) => void;
+  onImageUploaded?: (url: string) => void;
 }
 
-const TestimonialItemEditor: React.FC<TestimonialItemEditorProps> = ({ item, onUpdate }) => {
+const TestimonialItemEditor: React.FC<TestimonialItemEditorProps> = ({ item, onUpdate, onImageUploaded }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -2990,11 +2996,11 @@ const TestimonialItemEditor: React.FC<TestimonialItemEditorProps> = ({ item, onU
       </div>
       <div className="md:col-span-2">
         <label className="block text-xs text-gray-500 mb-1">心得內容</label>
-        <textarea
+        <RichTextEditor
           value={item.content}
-          onChange={(e) => onUpdate('content', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-          rows={3}
+          height={220}
+          onChange={(content) => onUpdate('content', content)}
+          onImageUploaded={onImageUploaded}
         />
       </div>
     </div>
