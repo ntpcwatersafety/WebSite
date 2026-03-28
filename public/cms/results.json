@@ -1,7 +1,20 @@
 {
-  "lastUpdated": "2026-03-28T13:50:02.696Z",
+  "lastUpdated": "2026-03-28T13:54:00.807Z",
   "testimonials": [],
   "trainingRecords": [
+    {
+      "id": "trainingRecords-1774705936250",
+      "date": "",
+      "title": "基礎泳訓班",
+      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250519-_260328_3-jpg-1774705953202-oesjgl.jpg\" alt=\"LINE_ALBUM_20250519基礎泳訓班_260328_3.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250519-_260328_2-jpg-1774705983817-tpsl43.jpg\" alt=\"LINE_ALBUM_20250519基礎泳訓班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250602-_260328_1-jpg-1774705992930-4bzr4b.jpg\" alt=\"LINE_ALBUM_20250602基礎泳訓班_260328_1.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250602-_260328_2-jpg-1774706001221-9ut9ir.jpg\" alt=\"LINE_ALBUM_20250602基礎泳訓班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_20250602-_260328_2-jpg-1774706028606-54cldi.jpg\" alt=\"LINE_ALBUM_20250602基礎泳訓班_260328_2.jpg\"></p>",
+      "isNew": true,
+      "detailBlocks": [
+        {
+          "id": "training-record-detail-1774705936250-87",
+          "content": "<p>基礎泳訓班</p>"
+        }
+      ]
+    },
     {
       "id": "trainingRecords-1773729049386",
       "date": "",
