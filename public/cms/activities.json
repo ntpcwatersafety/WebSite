@@ -1,4 +1,23 @@
 {
-  "lastUpdated": "2026-03-28T14:18:17.235Z",
-  "activityGalleryItems": []
+  "lastUpdated": "2026-03-28T18:11:52.443Z",
+  "activityGalleryItems": [
+    {
+      "id": "activityGalleryItems-1774721127113",
+      "title": "115年教練班",
+      "description": "隊上為了培育更多人才,特別開設教練班,進行紮實的訓練,學員皆有參加救生員班及四式班、十式班,充滿熱忱,願意付出回饋,手\n推廣水上安全活動,特別感謝劉俊澔教練擔任總教練規劃活動",
+      "date": "2026-03-03",
+      "category": "訓練",
+      "isActive": true,
+      "sortOrder": 10,
+      "coverPhotoId": "activityGalleryItems-1774721127113-photo-1774721457495-0",
+      "photos": [
+        {
+          "id": "activityGalleryItems-1774721127113-photo-1774721457495-0",
+          "imageUrl": "https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/514260_1-jpg-1774721454546-tb0c05.jpg",
+          "title": "514260_1",
+          "description": ""
+        }
+      ]
+    }
+  ]
 }
