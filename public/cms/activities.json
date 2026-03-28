@@ -1,12 +1,12 @@
 {
-  "lastUpdated": "2026-03-28T13:38:39.905Z",
+  "lastUpdated": "2026-03-28T13:42:18.733Z",
   "courseItems": [
     {
       "id": "courseItems-1774704918832",
       "title": "蛙式泳訓班",
-      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_4-jpg-1774705012042-8w8jz5.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_4.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_2-jpg-1774705027308-wlpc3s.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_1-jpg-1774705044494-656tte.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_1.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_3-jpg-1774705096867-n09txs.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_3.jpg\">請輸入課程說明。</p>",
-      "date": "2025-05-12",
-      "sortOrder": 10,
+      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_4-jpg-1774705012042-8w8jz5.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_4.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_2-jpg-1774705027308-wlpc3s.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_3-jpg-1774705096867-n09txs.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_3.jpg\">請輸入課程說明。</p>",
+      "date": "",
+      "sortOrder": 30,
       "schedule": "",
       "location": "",
       "price": "",
@@ -26,7 +26,7 @@
         "可配合團體客製安排"
       ],
       "isRecruiting": true,
-      "sortOrder": 20
+      "sortOrder": 10
     },
     {
       "id": "courseItems-lifesaving-02",
@@ -41,7 +41,7 @@
         "適合有志參與救生服務者"
       ],
       "isRecruiting": true,
-      "sortOrder": 30
+      "sortOrder": 20
     }
   ]
 }
