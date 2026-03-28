@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-03-28T13:55:49.079Z",
+  "lastUpdated": "2026-03-28T14:00:52.387Z",
   "testimonials": [],
   "trainingRecords": [
     {
@@ -10,12 +10,7 @@
       "link": "",
       "isNew": false,
       "isPinned": false,
-      "detailBlocks": [
-        {
-          "id": "training-record-detail-1774705936250-87",
-          "content": ""
-        }
-      ]
+      "detailBlocks": []
     },
     {
       "id": "trainingRecords-1773729049386",
