@@ -1,14 +1,14 @@
 {
-  "lastUpdated": "2026-03-28T13:42:18.733Z",
+  "lastUpdated": "2026-03-28T13:48:58.572Z",
   "testimonials": [],
   "trainingRecords": [
     {
       "id": "trainingRecords-1773729049386",
-      "date": "2026-03-17",
-      "title": "新消息標題",
-      "description": "<p>請輸入說明文字</p>",
+      "date": "",
+      "title": "蛙式泳訓班",
+      "description": "<p><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_4-jpg-1774705709764-818mhv.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_4.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_2-jpg-1774705724099-ys0wbx.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_2.jpg\"><img src=\"https://raw.githubusercontent.com/ntpcwatersafety/WebSite/main/public/images/editor/2026/03/line_album_-_260328_3-jpg-1774705734032-6ega66.jpg\" alt=\"LINE_ALBUM_蛙式游泳班_260328_3.jpg\"></p>",
       "link": "",
-      "isNew": true,
+      "isNew": false,
       "isPinned": false,
       "detailBlocks": [
         {
