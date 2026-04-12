@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GalleryItem } from '../types';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { sortGalleryItems } from '../services/cmsData';
@@ -114,7 +115,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
         })}
       </div>
 
-      {isModalOpen ? (
+      {isModalOpen ? createPortal(
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 px-4 py-6"
           role="dialog"
@@ -224,7 +225,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
             </div>
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
     </div>
   );
 };
