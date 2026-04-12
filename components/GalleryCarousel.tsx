@@ -140,7 +140,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
             <div className="grid max-h-[85vh] overflow-y-auto md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_420px] md:h-[85vh] md:max-h-none md:overflow-hidden">
 
               {/* 左側：圖片區 */}
-              <div className="relative flex min-h-[260px] flex-col bg-black md:min-h-0 md:overflow-hidden">
+              <div className="relative flex min-h-[260px] flex-col bg-black overflow-hidden md:min-h-0">
                 <div className="relative flex flex-1 items-center justify-center overflow-hidden">
                   <img
                     src={currentPhoto?.imageUrl}
