@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GalleryItem } from '../types';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { sortGalleryItems } from '../services/cmsData';
 
 interface GalleryCarouselProps {
@@ -17,6 +17,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   const activeItems = sortGalleryItems(items).filter((item) => item.isActive !== false && item.photos?.length);
   const [itemIndex, setItemIndex] = useState(0);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (activeItems.length === 0) return <div className="text-gray-400">{emptyMessage}</div>;
 
@@ -30,7 +31,36 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   const selectItem = (index: number) => {
     setItemIndex(index);
     setPhotoIndex(0);
+    setIsModalOpen(true);
   };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+      if (event.key === 'ArrowLeft') {
+        goPrev();
+      }
+      if (event.key === 'ArrowRight') {
+        goNext();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeydown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [isModalOpen, photoIndex, itemIndex]);
 
   const goPrev = () => {
     if (photoIndex > 0) {
@@ -144,6 +174,66 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
           );
         })}
       </div>
+
+      {isModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label="活動相簿播放視窗"
+          onClick={closeModal}
+        >
+          <div
+            className="relative w-full max-w-6xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeModal}
+              className="absolute right-3 top-3 z-10 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+              aria-label="關閉播放視窗"
+            >
+              <X size={22} />
+            </button>
+
+            <div className="relative flex min-h-[320px] items-center justify-center bg-black md:min-h-[72vh]">
+              <img
+                src={currentPhoto?.imageUrl}
+                alt={currentItem.title || itemLabel}
+                className="max-h-[72vh] w-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={goPrev}
+                className="absolute left-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+                aria-label="上一張"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                className="absolute right-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+                aria-label="下一張"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </div>
+
+            <div className="border-t border-white/10 bg-slate-900/95 p-4 text-white md:p-5">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
+                <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
+                {currentItem.date ? <span>{currentItem.date}</span> : null}
+              </div>
+              <h4 className="mt-2 text-lg font-bold md:text-xl">{currentItem.title || `（無標題${itemLabel}）`}</h4>
+              {currentPhoto?.description ? (
+                <p className="mt-2 text-sm leading-6 text-slate-200">{currentPhoto.description}</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
