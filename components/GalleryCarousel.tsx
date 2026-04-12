@@ -135,14 +135,16 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
               <X size={22} />
             </button>
 
-            <div className="flex max-h-[85vh] flex-col overflow-y-auto md:flex-row md:h-[85vh] md:overflow-hidden">
-              {/* RWD: flex-col (mobile) = 上圖下文, md:flex-row (桌機) = 左圖右文 */}
-              <div className="relative w-full md:flex-1 bg-black md:h-full flex flex-col">
-                <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden md:h-0 md:flex-1">
+            {/* Grid: 手機單欄捲動，桌機雙欄固定高度 */}
+            <div className="grid max-h-[85vh] overflow-y-auto md:grid-cols-[1fr_360px] lg:grid-cols-[1fr_420px] md:h-[85vh] md:max-h-none md:overflow-hidden">
+
+              {/* 左側：圖片區 */}
+              <div className="relative flex min-h-[260px] flex-col bg-black md:min-h-0 md:overflow-hidden">
+                <div className="relative flex flex-1 items-center justify-center overflow-hidden">
                   <img
                     src={currentPhoto?.imageUrl}
                     alt={currentItem.title || itemLabel}
-                    className="max-h-[50vh] w-full object-contain md:absolute md:inset-0 md:h-full md:w-full md:max-h-none"
+                    className="max-h-[50vh] w-full object-contain md:absolute md:inset-0 md:h-full md:max-h-none md:w-full"
                   />
                   <button
                     type="button"
@@ -178,9 +180,9 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                 ) : null}
               </div>
 
-              <aside className="relative w-full shrink-0 border-t border-white/10 bg-slate-950/95 text-white md:w-[360px] md:border-l md:border-t-0 lg:w-[420px] md:h-full">
-                {/* 桌機: absolute 填滿 aside 後 overflow-y-auto 捲動；手機: 靜態高度由外層捲動 */}
-                <div className="p-5 md:p-6 md:absolute md:inset-0 md:overflow-y-auto pr-2">
+              {/* 右側：資訊欄，桌機 grid item 自動撐滿 row 高度，overflow-y-auto 捲動 */}
+              <aside className="border-t border-white/10 bg-slate-950/95 text-white md:border-l md:border-t-0 md:overflow-y-auto">
+                <div className="p-5 md:p-6">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
                     <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
                     <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
@@ -204,8 +206,8 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                   <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
                     <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">活動說明</p>
                     <h4 className="mt-2 text-xl font-bold leading-snug">{currentItem.title || `（無標題${itemLabel}）`}</h4>
-                  {currentItem.description ? (
-                    <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-200">{currentItem.description}</p>
+                    {currentItem.description ? (
+                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-200">{currentItem.description}</p>
                     ) : (
                       <p className="mt-3 text-sm text-slate-400">目前尚無活動說明。</p>
                     )}
