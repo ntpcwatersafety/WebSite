@@ -87,67 +87,6 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
 
   return (
     <div className="space-y-5">
-      <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
-        <div className="flex flex-col md:flex-row">
-          <div className="md:w-3/5 bg-slate-100">
-            <div className="relative flex min-h-[320px] items-center justify-center bg-slate-100 md:min-h-[420px]">
-              <img
-                src={currentPhoto?.imageUrl}
-                alt={currentItem.title || itemLabel}
-                className="h-full max-h-[520px] w-full object-contain"
-              />
-              <button onClick={goPrev} className="absolute left-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65">
-                <ChevronLeft size={28} />
-              </button>
-              <button onClick={goNext} className="absolute right-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65">
-                <ChevronRight size={28} />
-              </button>
-            </div>
-            {currentPhotos.length > 1 ? (
-              <div className="flex gap-3 overflow-x-auto border-t border-slate-200 bg-slate-50 px-4 py-4">
-                {currentPhotos.map((photo, index) => (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    onClick={() => setPhotoIndex(index)}
-                    className={`h-16 w-24 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${index === photoIndex ? 'border-primary shadow-sm' : 'border-transparent opacity-75 hover:opacity-100'}`}
-                  >
-                    <img src={photo.imageUrl} alt={currentItem.title || `${itemLabel}縮圖`} className="h-full w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          <div className="md:w-2/5 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-gray-400">{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
-              <span className="text-sm text-gray-400">照片 {photoIndex + 1} / {currentPhotos.length}</span>
-            </div>
-            {(currentItem.category || currentItem.date) && (
-              <div className="mb-3 flex flex-wrap gap-2 text-xs">
-                {currentItem.category ? (
-                  <span className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 font-medium text-cyan-700">
-                    {currentItem.category}
-                  </span>
-                ) : null}
-                {currentItem.date ? (
-                  <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 font-medium text-slate-600">
-                    {currentItem.date}
-                  </span>
-                ) : null}
-              </div>
-            )}
-            <h3 className="text-2xl font-bold text-primary">{currentItem.title || `（無標題${itemLabel}）`}</h3>
-            {currentItem.description ? <div className="mt-3 whitespace-pre-line text-gray-700">{currentItem.description}</div> : null}
-            {currentPhoto?.description ? (
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm leading-6 text-slate-600">{currentPhoto.description}</p>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {activeItems.map((item, index) => {
           const coverPhoto = getCoverPhoto(item);
@@ -190,46 +129,94 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
             <button
               type="button"
               onClick={closeModal}
-              className="absolute right-3 top-3 z-10 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+              className="absolute right-3 top-3 z-20 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
               aria-label="關閉播放視窗"
             >
               <X size={22} />
             </button>
 
-            <div className="relative flex min-h-[320px] items-center justify-center bg-black md:min-h-[72vh]">
-              <img
-                src={currentPhoto?.imageUrl}
-                alt={currentItem.title || itemLabel}
-                className="max-h-[72vh] w-full object-contain"
-              />
-              <button
-                type="button"
-                onClick={goPrev}
-                className="absolute left-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
-                aria-label="上一張"
-              >
-                <ChevronLeft size={28} />
-              </button>
-              <button
-                type="button"
-                onClick={goNext}
-                className="absolute right-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
-                aria-label="下一張"
-              >
-                <ChevronRight size={28} />
-              </button>
-            </div>
+            <div className="flex max-h-[85vh] flex-col md:flex-row">
+              <div className="relative flex-1 bg-black">
+                <div className="relative flex min-h-[320px] items-center justify-center md:h-[70vh]">
+                  <img
+                    src={currentPhoto?.imageUrl}
+                    alt={currentItem.title || itemLabel}
+                    className="max-h-[70vh] w-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="absolute left-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+                    aria-label="上一張"
+                  >
+                    <ChevronLeft size={28} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="absolute right-3 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/65"
+                    aria-label="下一張"
+                  >
+                    <ChevronRight size={28} />
+                  </button>
+                </div>
 
-            <div className="border-t border-white/10 bg-slate-900/95 p-4 text-white md:p-5">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
-                <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
-                {currentItem.date ? <span>{currentItem.date}</span> : null}
+                {currentPhotos.length > 1 ? (
+                  <div className="flex gap-3 overflow-x-auto border-t border-white/10 bg-slate-900/90 px-4 py-4">
+                    {currentPhotos.map((photo, index) => (
+                      <button
+                        key={photo.id}
+                        type="button"
+                        onClick={() => setPhotoIndex(index)}
+                        className={`h-16 w-24 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${index === photoIndex ? 'border-cyan-300 shadow-sm' : 'border-transparent opacity-75 hover:opacity-100'}`}
+                      >
+                        <img src={photo.imageUrl} alt={currentItem.title || `${itemLabel}縮圖`} className="h-full w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-              <h4 className="mt-2 text-lg font-bold md:text-xl">{currentItem.title || `（無標題${itemLabel}）`}</h4>
-              {currentPhoto?.description ? (
-                <p className="mt-2 text-sm leading-6 text-slate-200">{currentPhoto.description}</p>
-              ) : null}
+
+              <aside className="w-full shrink-0 border-t border-white/10 bg-slate-950/95 p-5 text-white md:w-[360px] md:border-l md:border-t-0 md:p-6 lg:w-[420px]">
+                <div className="h-full overflow-y-auto pr-1">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                    <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
+                    <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">活動資訊</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      {currentItem.category ? (
+                        <span className="rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 font-medium text-cyan-200">
+                          {currentItem.category}
+                        </span>
+                      ) : null}
+                      {currentItem.date ? (
+                        <span className="rounded-full border border-slate-600 bg-slate-800 px-3 py-1 font-medium text-slate-200">
+                          {currentItem.date}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">活動說明</p>
+                    <h4 className="mt-2 text-xl font-bold leading-snug">{currentItem.title || `（無標題${itemLabel}）`}</h4>
+                  {currentItem.description ? (
+                    <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-200">{currentItem.description}</p>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-400">目前尚無活動說明。</p>
+                    )}
+                  </div>
+
+                  {currentPhoto?.description ? (
+                    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                      <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">照片說明</p>
+                      <p className="text-sm leading-6 text-slate-100">{currentPhoto.description}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </aside>
             </div>
           </div>
         </div>
