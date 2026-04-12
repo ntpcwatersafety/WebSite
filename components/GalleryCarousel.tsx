@@ -135,7 +135,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
               <X size={22} />
             </button>
 
-            <div className="flex max-h-[85vh] flex-col md:flex-row md:h-[85vh]">
+            <div className="flex max-h-[85vh] flex-col-reverse md:flex-row md:h-[85vh]">
               {/* RWD: flex-col (mobile) = 上圖下文, md:flex-row (桌機) = 左圖右文 */}
               <div className="relative w-full md:flex-1 bg-black md:h-full flex flex-col">
                 <div className="relative flex min-h-[320px] items-center justify-center md:h-0 md:flex-1">
