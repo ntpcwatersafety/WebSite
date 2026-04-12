@@ -136,7 +136,8 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
             </button>
 
             <div className="flex max-h-[85vh] flex-col md:flex-row">
-              <div className="relative flex-1 bg-black">
+              {/* RWD: flex-col (mobile) = 上圖下文, md:flex-row (桌機) = 左圖右文 */}
+              <div className="relative w-full md:flex-1 bg-black">
                 <div className="relative flex min-h-[320px] items-center justify-center md:h-[70vh]">
                   <img
                     src={currentPhoto?.imageUrl}
@@ -178,7 +179,8 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
               </div>
 
               <aside className="w-full shrink-0 border-t border-white/10 bg-slate-950/95 p-5 text-white md:w-[360px] md:border-l md:border-t-0 md:p-6 lg:w-[420px]">
-                <div className="h-full overflow-y-auto pr-1">
+                {/* RWD: 右側說明欄在桌機為側欄，手機為下方，皆可捲動 */}
+                <div className="h-full max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
                     <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
                     <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
