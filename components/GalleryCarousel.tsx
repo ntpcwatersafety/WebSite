@@ -178,9 +178,9 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                 ) : null}
               </div>
 
-              <aside className="w-full shrink-0 border-t border-white/10 bg-slate-950/95 p-5 text-white md:w-[360px] md:border-l md:border-t-0 md:p-6 lg:w-[420px] md:h-full md:flex md:flex-col">
-                {/* 桌機: 右側說明欄自動填滿剩餘高度且可捲動，手機: 不限高(外層容器整體捲動) */}
-                <div className="min-h-0 md:flex-1 md:overflow-y-auto pr-1">
+              <aside className="relative w-full shrink-0 border-t border-white/10 bg-slate-950/95 text-white md:w-[360px] md:border-l md:border-t-0 lg:w-[420px] md:h-full">
+                {/* 桌機: absolute 填滿 aside 後 overflow-y-auto 捲動；手機: 靜態高度由外層捲動 */}
+                <div className="p-5 md:p-6 md:absolute md:inset-0 md:overflow-y-auto pr-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
                     <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
                     <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
