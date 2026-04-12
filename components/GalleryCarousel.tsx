@@ -20,10 +20,8 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (activeItems.length === 0) return <div className="text-gray-400">{emptyMessage}</div>;
-
   const currentItem = activeItems[itemIndex] || activeItems[0];
-  const currentPhotos = currentItem.photos || [];
+  const currentPhotos = currentItem?.photos || [];
   const currentPhoto = currentPhotos[photoIndex] || currentPhotos[0];
   const getCoverPhoto = (item: GalleryItem) => (
     item.photos.find((photo) => photo.id === item.coverPhotoId) || item.photos[0]
@@ -37,6 +35,29 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
 
   const closeModal = () => {
     setIsModalOpen(false);
+  };
+
+  const goPrev = () => {
+    if (photoIndex > 0) {
+      setPhotoIndex((prev) => prev - 1);
+      return;
+    }
+
+    const nextItemIndex = itemIndex === 0 ? activeItems.length - 1 : itemIndex - 1;
+    const nextPhotos = activeItems[nextItemIndex]?.photos || [];
+    setItemIndex(nextItemIndex);
+    setPhotoIndex(Math.max(nextPhotos.length - 1, 0));
+  };
+
+  const goNext = () => {
+    if (photoIndex < currentPhotos.length - 1) {
+      setPhotoIndex((prev) => prev + 1);
+      return;
+    }
+
+    const nextItemIndex = itemIndex === activeItems.length - 1 ? 0 : itemIndex + 1;
+    setItemIndex(nextItemIndex);
+    setPhotoIndex(0);
   };
 
   useEffect(() => {
@@ -63,28 +84,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
     };
   }, [isModalOpen, photoIndex, itemIndex]);
 
-  const goPrev = () => {
-    if (photoIndex > 0) {
-      setPhotoIndex((prev) => prev - 1);
-      return;
-    }
-
-    const nextItemIndex = itemIndex === 0 ? activeItems.length - 1 : itemIndex - 1;
-    const nextPhotos = activeItems[nextItemIndex]?.photos || [];
-    setItemIndex(nextItemIndex);
-    setPhotoIndex(Math.max(nextPhotos.length - 1, 0));
-  };
-
-  const goNext = () => {
-    if (photoIndex < currentPhotos.length - 1) {
-      setPhotoIndex((prev) => prev + 1);
-      return;
-    }
-
-    const nextItemIndex = itemIndex === activeItems.length - 1 ? 0 : itemIndex + 1;
-    setItemIndex(nextItemIndex);
-    setPhotoIndex(0);
-  };
+  if (activeItems.length === 0) return <div className="text-gray-400">{emptyMessage}</div>;
 
   return (
     <div className="space-y-5">
