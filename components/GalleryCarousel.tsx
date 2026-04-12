@@ -135,10 +135,10 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
               <X size={22} />
             </button>
 
-            <div className="flex max-h-[85vh] flex-col md:flex-row">
+            <div className="flex max-h-[85vh] flex-col md:flex-row md:h-[85vh]">
               {/* RWD: flex-col (mobile) = 上圖下文, md:flex-row (桌機) = 左圖右文 */}
-              <div className="relative w-full md:flex-1 bg-black">
-                <div className="relative flex min-h-[320px] items-center justify-center md:h-[70vh]">
+              <div className="relative w-full md:flex-1 bg-black md:h-full flex flex-col">
+                <div className="relative flex min-h-[320px] items-center justify-center md:h-0 md:flex-1">
                   <img
                     src={currentPhoto?.imageUrl}
                     alt={currentItem.title || itemLabel}
@@ -178,9 +178,9 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                 ) : null}
               </div>
 
-              <aside className="w-full shrink-0 border-t border-white/10 bg-slate-950/95 p-5 text-white md:w-[360px] md:border-l md:border-t-0 md:p-6 lg:w-[420px]">
-                {/* RWD: 右側說明欄在桌機為側欄，手機為下方，皆可捲動 */}
-                <div className="h-full max-h-[40vh] md:max-h-none overflow-y-auto pr-1">
+              <aside className="w-full shrink-0 border-t border-white/10 bg-slate-950/95 p-5 text-white md:w-[360px] md:border-l md:border-t-0 md:p-6 lg:w-[420px] md:h-full md:flex md:flex-col">
+                {/* 桌機: 右側說明欄自動填滿剩餘高度且可捲動，手機: 不限高可捲動 */}
+                <div className="h-auto md:h-0 md:flex-1 overflow-y-auto pr-1">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
                     <span>{itemLabel} {itemIndex + 1} / {activeItems.length}</span>
                     <span>照片 {photoIndex + 1} / {currentPhotos.length}</span>
