@@ -142,7 +142,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                   <img
                     src={currentPhoto?.imageUrl}
                     alt={currentItem.title || itemLabel}
-                    className="max-h-[50vh] w-full object-contain md:h-full md:max-h-full"
+                    className="max-h-[50vh] w-full object-contain md:absolute md:inset-0 md:h-full md:w-full md:max-h-none"
                   />
                   <button
                     type="button"
