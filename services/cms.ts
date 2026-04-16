@@ -16,7 +16,7 @@ export const EMAILJS_CONFIG = {
 // ===============================
 export const NAV_ITEMS: NavItem[] = [
   { label: '首頁', path: '/' },
-  { label: '訓練與活動', path: '/activities' },
+  { label: '報名資訊', path: '/activities' },
   { label: '訓練成果', path: '/results' },
   { label: '活動剪影', path: '/gallery' },
   { label: '媒體報導', path: '/media' },
@@ -36,7 +36,7 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
   },
   activities: {
     id: 'activities',
-    title: '訓練與活動',
+    title: '報名資訊',
     subtitle: '專業救生訓練 • 水上安全推廣 • 自救求生技能',
     imageUrl: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80'
   },

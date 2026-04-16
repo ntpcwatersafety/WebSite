@@ -24,7 +24,7 @@ const AppContent: React.FC = () => {
       <div className={`flex-grow ${!isAdminPage ? 'mt-[78px] md:mt-[70px]' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/activities" element={<Gallery key="activities" pageKey="activities" loadItems={getActivityGalleryItems} emptyMessage="目前尚無訓練與活動內容。" itemLabel="活動" />} />
+          <Route path="/activities" element={<Gallery key="activities" pageKey="activities" loadItems={getActivityGalleryItems} emptyMessage="目前尚無報名資訊內容。" itemLabel="活動" />} />
           <Route path="/results" element={<Gallery key="results" pageKey="results" loadItems={getResultGalleryItems} emptyMessage="目前尚無訓練成果內容。" itemLabel="成果" />} />
           <Route path="/gallery" element={<Gallery key="gallery" pageKey="gallery" loadItems={getGalleryItems} emptyMessage="目前尚無活動剪影內容。" itemLabel="活動" />} />
           <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />

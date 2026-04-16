@@ -1014,9 +1014,9 @@ const Admin: React.FC = () => {
       note: '首頁下方感恩名單同步使用「感恩有您」資料'
     },
     {
-      page: '訓練與活動',
+      page: '報名資訊',
       route: '/#/activities',
-      sections: '訓練與活動相簿',
+      sections: '報名資訊相簿',
       note: '前台以輪播方式顯示這組相簿資料'
     },
     {
@@ -1095,8 +1095,8 @@ const Admin: React.FC = () => {
     },
     {
       id: 'quick-activities',
-      title: '編輯訓練與活動',
-      description: '快速前往訓練與活動相簿區塊。',
+      title: '編輯報名資訊',
+      description: '快速前往報名資訊相簿區塊。',
       sectionId: 'section-activityGalleryItems',
       expandedKey: 'activityGalleryItems',
       icon: Edit3,
@@ -2051,7 +2051,7 @@ const Admin: React.FC = () => {
                   onClick={() => jumpToSection('page-group-activities')}
                   className="px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
                 >
-                  查看訓練與活動全部區塊
+                  查看報名資訊全部區塊
                 </button>
                 <button
                   type="button"
@@ -2263,16 +2263,16 @@ const Admin: React.FC = () => {
 
             <PageGroup
               sectionId="page-group-activities"
-              title="訓練與活動"
+              title="報名資訊"
               route="/#/activities"
-              description="這一組對應前台訓練與活動頁的輪播相簿內容。"
+              description="這一組對應前台報名資訊頁的輪播相簿內容。"
             >
               <GalleryActivitiesEditor
                 sectionId="section-activityGalleryItems"
-                title="訓練與活動 / 輪播相簿"
-                pageLabel="訓練與活動 / 輪播"
+                title="報名資訊 / 輪播相簿"
+                pageLabel="報名資訊 / 輪播"
                 description="每個項目可上傳多張照片、拖拉調整順序與封面，前台會用和活動剪影相同的輪播方式顯示。"
-                addButtonLabel="新增訓練與活動項目"
+                addButtonLabel="新增報名資訊項目"
                 items={cmsData.activityGalleryItems || []}
                 expanded={expandedSection === 'activityGalleryItems'}
                 onToggle={() => setExpandedSection(expandedSection === 'activityGalleryItems' ? '' : 'activityGalleryItems')}
