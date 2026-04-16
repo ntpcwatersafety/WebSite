@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(gh run:*)",
+      "Bash(cat tailwind.config.js)",
+      "Bash(cat tailwind.config.ts)",
+      "Bash(start http://localhost:5173)",
+      "Bash(cat tailwind.config.mjs)",
+      "Bash(node -e \"const p=require\\('./node_modules/tailwindcss/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(npx playwright:*)",
+      "Bash(node -e \"require\\('@playwright/test'\\)\")",
+      "Bash(pkill -f \"vite\")",
+      "Read(//tmp/**)",
+      "Bash(node -e ':*)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

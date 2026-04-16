@@ -1,97 +1,229 @@
-import { CmsData, ThankYouItem, NewsItem, AwardItem, MediaItem, GalleryItem } from '../types';
-import { getFileContent, validateToken } from './githubApi';
-import { CMS_SECTION_FILE_NAMES, CmsSectionFileKey, mergeCmsSplitData, normalizeCmsData } from './cmsData';
+import { ThankYouItem, NewsItem, AwardItem, MediaItem, GalleryItem } from '../types';
+import { supabase } from './supabaseClient';
+import { sortGalleryItems, sortThankYouItems } from './cmsData';
+
+// ==================== 快取機制 ====================
+
+interface CacheData {
+  introContent?: string;
+  homeNews?: NewsItem[];
+  galleryItems?: GalleryItem[];
+  activityGalleryItems?: GalleryItem[];
+  resultGalleryItems?: GalleryItem[];
+  mediaReports?: MediaItem[];
+  awards?: AwardItem[];
+  thankYouItems?: ThankYouItem[];
+}
+
+let cachedData: CacheData | null = null;
+let cacheTime: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 分鐘快取
+
+// ==================== 欄位轉換工具 ====================
 
 /**
- * =================================================================
- *  【CMS 資料載入服務】
- *  從 Worker API 或 public/cms/*.json 載入動態內容
- * =================================================================
+ * 轉換資料庫欄位（snake_case → camelCase）
  */
+const convertNewsItem = (row: any): NewsItem => ({
+  id: row.id,
+  date: row.date,
+  title: row.title,
+  description: row.description,
+  link: row.link,
+  isNew: row.is_new,
+  isPinned: row.is_pinned,
+});
+
+const convertMediaItem = (row: any): MediaItem => ({
+  id: row.id,
+  date: row.date,
+  title: row.title,
+  source: row.source,
+  link: row.link,
+  type: row.type,
+});
+
+const convertAwardItem = (row: any): AwardItem => ({
+  id: row.id,
+  year: row.year,
+  title: row.title,
+  description: row.description,
+  icon: row.icon,
+});
+
+const convertThankYouItem = (row: any): ThankYouItem => ({
+  id: row.id,
+  name: row.name,
+  year: row.year,
+  sortOrder: row.sort_order,
+  description: row.description,
+});
+
+const convertGalleryAlbum = (row: any): GalleryItem => ({
+  id: row.id,
+  title: row.title,
+  description: row.description,
+  isActive: row.is_active,
+  date: row.date,
+  category: row.category,
+  sortOrder: row.sort_order,
+  coverPhotoId: row.cover_photo_id,
+  photos: (row.water_gallery_photos || []).map((photo: any) => ({
+    id: photo.id,
+    imageUrl: photo.image_url,
+    title: photo.title,
+    description: photo.description,
+  })),
+});
+
+// ==================== 查詢函式 ====================
+
+/**
+ * 取得協會簡介
+ */
+export const getIntroContent = async (): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_site_settings')
+      .select('value')
+      .eq('key', 'introContent')
+      .single();
+    if (error) throw error;
+    return data?.value || '';
+  } catch (error) {
+    console.error('取得協會簡介失敗:', error);
+    return '';
+  }
+};
+
+/**
+ * 取得首頁最新消息
+ */
+export const getHomeNews = async (): Promise<NewsItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_home_news')
+      .select('*')
+      .order('is_pinned', { ascending: false })
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(convertNewsItem);
+  } catch (error) {
+    console.error('取得最新消息失敗:', error);
+    return [];
+  }
+};
+
+/**
+ * 取得報名資訊相簿
+ */
+export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_gallery_albums')
+      .select('*, water_gallery_photos(*)')
+      .eq('type', 'activities')
+      .eq('is_active', true)
+      .order('date', { ascending: false });
+    if (error) throw error;
+    const items = (data || []).map(convertGalleryAlbum);
+    return sortGalleryItems(items);
+  } catch (error) {
+    console.error('取得報名資訊相簿失敗:', error);
+    return [];
+  }
+};
+
+/**
+ * 取得訓練成果相簿
+ */
+export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_gallery_albums')
+      .select('*, water_gallery_photos(*)')
+      .eq('type', 'results')
+      .eq('is_active', true)
+      .order('date', { ascending: false });
+    if (error) throw error;
+    const items = (data || []).map(convertGalleryAlbum);
+    return sortGalleryItems(items);
+  } catch (error) {
+    console.error('取得訓練成果相簿失敗:', error);
+    return [];
+  }
+};
+
+/**
+ * 取得活動剪影相簿
+ */
+export const getGalleryItems = async (): Promise<GalleryItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_gallery_albums')
+      .select('*, water_gallery_photos(*)')
+      .eq('type', 'gallery')
+      .eq('is_active', true)
+      .order('date', { ascending: false });
+    if (error) throw error;
+    const items = (data || []).map(convertGalleryAlbum);
+    return sortGalleryItems(items);
+  } catch (error) {
+    console.error('取得活動剪影相簿失敗:', error);
+    return [];
+  }
+};
+
+/**
+ * 取得媒體報導
+ */
+export const getMediaReports = async (): Promise<MediaItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_media_reports')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(convertMediaItem);
+  } catch (error) {
+    console.error('取得媒體報導失敗:', error);
+    return [];
+  }
+};
+
+/**
+ * 取得獲獎紀錄
+ */
+export const getAwards = async (): Promise<AwardItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_awards')
+      .select('*')
+      .order('year', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(convertAwardItem);
+  } catch (error) {
+    console.error('取得獲獎紀錄失敗:', error);
+    return [];
+  }
+};
+
 /**
  * 取得感恩有您
  */
 export const getThankYouItems = async (): Promise<ThankYouItem[]> => {
-  const data = await loadCmsData();
-  return data?.thankYouItems || [];
-};
-
-/**
- * 取得協會簡介內容
- */
-export const getIntroContent = async (): Promise<string> => {
-  const data = await loadCmsData();
-  return data?.introContent || '';
-};
-/**
- * 取得活動剪影（相簿）
- */
-
-export const getGalleryItems = async (): Promise<GalleryItem[]> => {
-  const data = await loadCmsData();
-  return data?.galleryItems || [];
-};
-
-export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
-  const data = await loadCmsData();
-  return data?.activityGalleryItems || [];
-};
-
-export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
-  const data = await loadCmsData();
-  return data?.resultGalleryItems || [];
-};
-
-let cachedData: CmsData | null = null;
-let cacheTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 分鐘快取
-
-const loadLocalCmsData = async (): Promise<CmsData> => {
-  const sectionEntries = await Promise.all(
-    (Object.keys(CMS_SECTION_FILE_NAMES) as CmsSectionFileKey[]).map(async (fileKey) => {
-      const response = await fetch(`${import.meta.env.BASE_URL}cms/${CMS_SECTION_FILE_NAMES[fileKey]}?t=${Date.now()}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load local CMS section: ${fileKey}`);
-      }
-      return [fileKey, await response.json()] as const;
-    })
-  );
-
-  return mergeCmsSplitData(Object.fromEntries(sectionEntries));
-};
-
-/**
- * 載入 CMS 資料
- */
-export const loadCmsData = async (): Promise<CmsData | null> => {
-  // 檢查快取
-  if (cachedData && Date.now() - cacheTime < CACHE_DURATION) {
-    return cachedData;
-  }
-  // 以 GitHub 為主要資料來源：若伺服器端有設定 Token 且驗證成功，嘗試從 Worker 取得整合後的 CMS 資料
   try {
-    try {
-      const valid = await validateToken();
-      if (valid) {
-        const result = await getFileContent();
-        if (result && result.content) {
-          cachedData = normalizeCmsData(result.content as Partial<CmsData>);
-          cacheTime = Date.now();
-          return cachedData;
-        }
-      }
-    } catch (ghCheckErr) {
-      console.warn('從後端 GitHub 代理載入失敗，將回退至本地：', ghCheckErr);
-    }
-
-    // 回退：從本地 public/cms/*.json 載入
-    cachedData = await loadLocalCmsData();
-    cacheTime = Date.now();
-
-    return cachedData;
+    const { data, error } = await supabase
+      .from('water_thank_you_items')
+      .select('*')
+      .order('year', { ascending: false })
+      .order('sort_order', { ascending: true, nullsFirst: false });
+    if (error) throw error;
+    const items = (data || []).map(convertThankYouItem);
+    return sortThankYouItems(items);
   } catch (error) {
-    console.error('載入 CMS 資料失敗:', error);
-    return null;
+    console.error('取得感恩有您失敗:', error);
+    return [];
   }
 };
 
@@ -104,26 +236,37 @@ export const clearCmsCache = (): void => {
 };
 
 /**
- * 取得首頁最新消息
+ * 載入所有 CMS 資料（用於 GenericPage 動態載入）
  */
-export const getHomeNews = async (): Promise<NewsItem[]> => {
-  const data = await loadCmsData();
-  return data?.homeNews || [];
-};
+export const loadCmsData = async (): Promise<CacheData | null> => {
+  try {
+    const now = Date.now();
 
-/**
- * 取得媒體報導
- */
-export const getMediaReports = async (): Promise<MediaItem[]> => {
-  const data = await loadCmsData();
-  return data?.mediaReports || [];
-};
+    // 檢查快取是否有效
+    if (cachedData && (now - cacheTime) < CACHE_DURATION) {
+      return cachedData;
+    }
 
-/**
- * 取得獲獎紀錄
- */
-export const getAwards = async (): Promise<AwardItem[]> => {
-  const data = await loadCmsData();
-  return data?.awards || [];
+    // 載入所有資料
+    const [introContent, homeNews, mediaReports, awards] = await Promise.all([
+      getIntroContent(),
+      getHomeNews(),
+      getMediaReports(),
+      getAwards(),
+    ]);
+
+    cachedData = {
+      introContent,
+      homeNews,
+      mediaReports,
+      awards,
+    };
+    cacheTime = now;
+
+    return cachedData;
+  } catch (error) {
+    console.error('載入 CMS 資料失敗:', error);
+    return null;
+  }
 };
 

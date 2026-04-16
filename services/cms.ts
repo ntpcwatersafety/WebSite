@@ -1,6 +1,5 @@
 import { SectionContent, NavItem, PageConfig } from '../types';
 import emailjs from '@emailjs/browser';
-import { loadCmsData } from './cmsLoader';
 
 // ===============================
 // 1. EmailJS 設定
