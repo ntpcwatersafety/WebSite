@@ -383,11 +383,12 @@ export const sortGalleryItems = (items: GalleryItem[] | null | undefined): Galle
   if (!Array.isArray(items)) return [];
 
   return [...items].sort((left, right) => {
-    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
-    if (sortOrderDiff !== 0) return sortOrderDiff;
-
+    // 優先按日期降序排列（最新優先），無日期則使用 sortOrder
     const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
     if (dateDiff !== 0) return dateDiff;
+
+    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+    if (sortOrderDiff !== 0) return sortOrderDiff;
 
     return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
   });

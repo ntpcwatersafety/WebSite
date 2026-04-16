@@ -34,17 +34,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
 
 export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   const data = await loadCmsData();
-  const items = data?.activityGalleryItems || [];
-  // 按日期降序排列（最新的在前），若無日期則使用 sortOrder
-  return items.sort((a, b) => {
-    if (a.date && b.date) {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    }
-    if (a.sortOrder !== undefined && b.sortOrder !== undefined) {
-      return a.sortOrder - b.sortOrder;
-    }
-    return 0;
-  });
+  return data?.activityGalleryItems || [];
 };
 
 export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
