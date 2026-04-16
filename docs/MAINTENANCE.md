@@ -1,206 +1,587 @@
-# 維運文件
+# 維護指南
 
-## 用途
+本文檔說明如何維護現有 Supabase 架構下的網站。
 
-這份文件給後續維護者快速了解：
+## 當前架構
 
-- 正式站目前如何運作
-- 內容要怎麼更新
-- Cloudflare 與 GitHub 要檢查哪些點
-- 出問題時先從哪裡查
-- 圖片上傳、圖片庫與清理機制目前怎麼運作
+```
+前台：GitHub Pages
+  ↓
+Supabase（認證 + 數據庫 + 存儲）
+  ↓
+後台管理：後台 UI 組件
+```
 
-## 目前正式架構
+### 數據流
 
-- 前台：GitHub Pages
-- 後台頁面：正式站 /#/admin
-- 後台轉址入口：正式站 /admin 會自動導向 /#/admin
-- 後台 API：Cloudflare Worker
-- CMS 儲存：GitHub repo 的 public/cms/*.json
-- 編輯器圖片：GitHub repo 的 public/images/editor/*
+```
+前台讀取流程：
+  src/pages/Home.tsx (等)
+  → services/cmsLoader.ts (getHomeNews, getGalleryItems 等)
+  → Supabase 表格 (SELECT 查詢)
+  → RLS 策略允許匿名讀取
+  → 數據返回前台顯示
 
-後台目前的 API 端點如下：
+後台編輯流程：
+  src/pages/admin/AdminNews.tsx (等)
+  → services/supabaseAdmin.ts (updateNewsItem, deleteNewsItem 等)
+  → Supabase Auth 驗證
+  → INSERT/UPDATE/DELETE 操作
+  → RLS 策略允許認證用戶修改
+  → 數據保存到資料表
+```
 
-- POST /api/login
-- GET /api/verify-token
-- GET /api/github/status
-- GET /api/cms
-- PUT /api/cms
-- POST /api/upload-image
-- GET /api/editor-images
-- POST /api/cleanup-images
+## Supabase 專案配置
 
-目前使用的是 split CMS 架構，檔案如下：
+### Project Details
 
-- public/cms/activities.json
-- public/cms/home.json
-- public/cms/media.json
-- public/cms/results.json
-- public/cms/gallery.json
-- public/cms/thankyou.json
+- **Project Name**: 新北市水上安全協會
+- **URL**: https://nixptyjwehqcwkfwluna.supabase.co
+- **Region**: (east-asia/或其他)
+- **Organization**: (您的組織)
 
-其中與前台輪播直接對應的欄位如下：
+### 環境變數
 
-- public/cms/activities.json -> activityGalleryItems
-- public/cms/results.json -> resultGalleryItems
-- public/cms/gallery.json -> galleryItems
+位於 `.env.local`（本機開發）和 GitHub Secrets（部署）：
 
-補充：自 2026-03-28 起，訓練與活動、訓練成果都已改成和活動剪影相同的相簿輪播架構；舊的 courseItems、trainingRecords、testimonials 已不再使用。
+```env
+VITE_SUPABASE_URL=https://nixptyjwehqcwkfwluna.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
-## 日常更新內容
+**重要**：不要將 ANON_KEY 提交到 git。已在 `.gitignore` 中排除 `.env.local`。
 
-建議優先使用正式站後台更新，不要直接在正式環境手改 JSON。
+## 資料表管理
 
-操作順序：
+### 檢查表格
 
-1. 開啟正式站 /#/admin
-2. 若有人打 /admin，確認頁面有自動跳到 /#/admin
-3. 使用管理員帳密登入
-4. 修改內容後按儲存
-5. 等待 GitHub Pages 與快取更新
-6. 回前台確認畫面
+在 Supabase 控制台 → SQL Editor：
 
-如果只是大量內容整理或要做版本比對，也可以直接修改 public/cms/*.json 後再 push。
+```sql
+-- 列出所有 water_* 表格
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public' AND table_name LIKE 'water_%';
+```
 
-補充：後台讀取內容時，會優先走 /api/cms 讀 GitHub 上的正式資料；如果 Worker 或 GitHub Token 暫時不可用，前台與後台讀取會回退到本地 public/cms/*.json。只有儲存仍必須依賴可用的 Worker 與 GitHub Token。
+### 常用 SQL 操作
 
-補充：
+**查看表格結構**
 
-- 文字編輯器可直接上傳圖片
-- 圖片上傳後會寫到 public/images/editor/YYYY/MM/*
-- 文章內只保存圖片網址，不再把圖片 base64 直接塞進 JSON
-- 後台目前插入文章時，會直接保存 GitHub raw URL；Worker 與後台清理邏輯仍會把這些網址正規化回 public/images/editor/* 路徑處理
-- 若圖片已上傳但文章最後沒儲存，系統會在重新載入、登出、離開頁面或成功儲存後，盡量自動清理本次編輯產生但未引用的圖片
-- 目前支援 JPG、PNG、WEBP、GIF，單張上限 8 MB
-- 大於約 2 MB 的 JPG、PNG、WEBP 會先在瀏覽器端自動壓縮後再上傳
-- 後台目前提供「編輯器圖片庫」區塊，資料來源是 /api/editor-images，可人工檢查 editor 圖片並刪除未被內容引用的檔案
-- /api/cleanup-images 會直接在 GitHub main 建立清理 commit；若本地有未同步分支，後續推送前要先 rebase 或同步最新 main
+```sql
+\d water_home_news;
+```
 
-## 正式站驗證清單
+**查看現有數據**
 
-每次調整後，建議至少確認以下網址：
+```sql
+SELECT * FROM water_home_news
+ORDER BY date DESC LIMIT 10;
+```
 
-1. workers.dev 的 /api/github/status
-2. 正式網域的 /api/github/status
-3. 正式網域的 /api/cms
-4. /#/admin
-5. /admin
-6. 後台插入圖片是否成功
-7. 編輯器圖片庫是否可載入
-8. 前台實際頁面
+**新增測試數據**
 
-預期結果：
+```sql
+INSERT INTO water_home_news (id, date, title, description, is_pinned)
+VALUES ('test-1', '2026-04-16', '測試消息', '這是測試', false);
+```
 
-- workers.dev 的 /api/github/status 會回 Worker JSON，而不是前台 HTML
-- 正式網域的 /api/github/status 會回 hasToken、authConfigured、missingAuthEnvVars、backend
-- /api/cms 會回 content 與 shas
-- /#/admin 可登入、可載入、可儲存
-- /admin 會自動導向 /#/admin
-- 編輯器插入圖片後，內容中通常會出現 raw.githubusercontent.com/.../public/images/editor/... 圖片網址
-- 圖片庫可列出 public/images/editor/* 內現有檔案
-- 前台能讀到更新後內容
+**刪除所有數據**
 
-## Cloudflare 需要保留的關鍵設定
+```sql
+TRUNCATE TABLE water_home_news;
+```
 
-Worker 設定檔在 worker/wrangler.toml，目前應維持：
+**檢查 RLS 策略**
 
-- name = ntpcwsa-cms-api
-- DATA_ROOT = public/cms
-- route = ntpcwsa.org/api/*
-- main = index.js
+```sql
+SELECT * FROM pg_policies
+WHERE tablename = 'water_home_news';
+```
 
-Cloudflare Git 連動部署應確認：
+## 認證管理
 
-1. Repository 是 ntpcwatersafety/WebSite
-2. Branch 是 main
-3. Root directory 是 worker
-4. Route 是 ntpcwsa.org/api/*
+### Supabase Auth Users
 
-Secrets：
+前往 **Supabase 控制台 → Authentication → Users**
 
-- ADMIN_USER
-- ADMIN_PASS
-- JWT_SECRET
-- GITHUB_TOKEN
+#### 新增後台管理員
 
-Vars：
+1. 點擊「Add user」
+2. 選擇「Invite with email」
+3. 輸入電郵地址
+4. 設定暫時密碼（或自動發送邀請）
+5. 用戶收到邀請後可自行設定密碼
 
-- OWNER = ntpcwatersafety
-- REPO = WebSite
-- BRANCH = main
-- DATA_ROOT = public/cms
-- IMAGE_UPLOAD_ROOT = public/images/editor（若沒設，Worker 會使用這個預設值）
-- JWT_EXPIRES_IN = 8h
+#### 刪除用戶
 
-## 常見問題先查哪裡
+1. 在用戶列表中找到用戶
+2. 點選用戶
+3. 點擊「Delete user」確認
 
-### 1. 後台打不開或登入失敗
+#### 重設密碼
 
-先查：
+用戶在登入頁面點擊「忘記密碼」可自助重設。或管理員也可以：
 
-- /admin 是否有自動導向 /#/admin
-- /api/github/status
-- /api/verify-token 是否異常回 401 / 503
-- Cloudflare Worker 是否成功部署
-- ADMIN_USER、ADMIN_PASS、JWT_SECRET 是否還在
+1. 進入用戶詳情
+2. 找到「Reset password」選項
+3. 自動發送重設連結給用戶
 
-### 2. /api 打到前台 HTML
+### 前台登入流程
 
-先查：
+1. 訪問 `/#/admin`
+2. 顯示 `AdminLogin` 元件
+3. 輸入 email 和密碼
+4. 呼叫 `supabase.auth.signInWithPassword()`
+5. 成功 → 進入 `AdminDashboard`
+6. 失敗 → 顯示錯誤訊息
 
-- Cloudflare Route 是否仍是 ntpcwsa.org/api/*
-- Git 部署 Root directory 是否誤設成 repo 根目錄
-- 先用 workers.dev /api/github/status 驗證 Worker 本體是否正常
+**代碼位置**：`src/services/supabaseAuth.ts`
 
-### 3. 可以登入但不能儲存
+## 後台管理功能
 
-先查：
+### 協會簡介（AdminIntro）
 
-- GITHUB_TOKEN 是否有效
-- /api/cms 是否回傳 shas
-- 使用者是否拿舊頁面操作，碰到版本衝突
+- **編輯器**：TinyMCE（Rich Text）
+- **數據存儲**：`water_site_settings` 表的 `key='introContent'`
+- **圖片上傳**：上傳至 Supabase Storage `editor-images` bucket
+- **返回 URL**：`https://nixptyjwehqcwkfwluna.supabase.co/storage/v1/object/public/editor-images/...`
 
-### 4. 圖片上傳失敗
+### 最新消息（AdminNews）
 
-先查：
+- **操作**：新增、編輯、刪除
+- **即存**：編輯後自動保存
+- **特殊欄位**：
+  - `is_pinned`: 釘選（首頁會優先顯示）
+  - `is_new`: 標記為新（前台會顯示「新」標籤）
+- **排序**：按 `is_pinned DESC` 再 `date DESC`
 
-- 是否已登入後台
-- /api/upload-image 是否回 200
-- 回傳內容中的 url 是否為 raw.githubusercontent.com/.../public/images/editor/...
-- GITHUB_TOKEN 是否仍可寫入 repo
-- 單張圖片是否過大
+**代碼位置**：
+- 前台讀取：`src/services/cmsLoader.ts` → `getHomeNews()`
+- 後台編輯：`src/services/supabaseAdmin.ts` → `createNewsItem()` / `updateNewsItem()` / `deleteNewsItem()`
+- 後台 UI：`src/pages/admin/AdminNews.tsx`
 
-### 5. 圖片庫可開但刪不掉圖片
+### 活動相簿（AdminGallery）
 
-先查：
+支援三種類型：
 
-- /api/editor-images 是否能正常列出檔案
-- /api/cleanup-images 是否回 200
-- 要刪的網址是否仍對應到 public/images/editor/*
-- 該圖片是否已被其他內容引用，或實際上已不存在於 repo
+1. **報名資訊** (`type='activities'`)
+2. **訓練成果** (`type='results'`)
+3. **活動剪影** (`type='gallery'`)
 
-### 6. 前台沒更新
+**功能**：
 
-先查：
+- 新增 / 編輯相簿（標題、描述、日期、啟用狀態）
+- 上傳照片（拖拽或點擊）
+- 刪除照片
+- 設定封面照片（`cover_photo_id`）
+- 重新排序（目前手動調整 `sort_order`）
 
-- GitHub 上 public/cms/*.json 是否已更新
-- GitHub 上 public/images/editor/* 是否已新增或刪除對應檔案
-- GitHub Pages 是否已完成部署
-- 瀏覽器或 Cloudflare 是否有快取
+**數據表**：
 
-## Repo 現況
+```
+water_gallery_albums
+├── id (PK)
+├── type ('activities' | 'results' | 'gallery')
+├── title
+├── description
+├── is_active
+├── date
+├── sort_order
+└── cover_photo_id (FK → water_gallery_photos.id)
 
-截至 2026-03-13，repo 狀態如下：
+water_gallery_photos
+├── id (PK)
+├── album_id (FK → water_gallery_albums.id)
+├── image_url
+├── title
+├── sort_order
+└── ...
+```
 
-- 舊的本機 Node 管理代理已移除
-- CMS 單一檔 cms-data.json 已移除
-- 目前唯一維護中的後台 API 是 worker/index.js
-- worker/index.js 內保留少量舊環境變數 fallback，屬於相容設計，可保留
-- 後台圖片流程目前以 GitHub raw URL 對外顯示，但內部清理與引用追蹤仍以 public/images/editor/* repo 路徑為準
+**代碼位置**：
+- 後台 CRUD：`src/services/supabaseAdmin.ts` → `createAlbum()` / `uploadAlbumPhoto()` / `deleteAlbumPhoto()` 等
+- 後台 UI：`src/pages/admin/AdminGallery.tsx`
 
-## 建議維護原則
+### 媒體報導（AdminMedia）
 
-1. 日常內容更新優先走正式站後台
-2. 架構變更先在本機測 npm run build
-3. 動到 Worker 設定時，同步檢查 Cloudflare Route 與 Root directory
-4. 不要把正式流程再改回單一 cms-data.json
+- **類型**：news / video / article
+- **特殊功能**：YouTube 連結自動偵測
+  - 若 URL 是 YouTube 連結，前台會自動嵌入影片預覽
+  - 偵測邏輯：`isYouTubeLink()` 函式
+- **排序**：按 `date DESC`
+
+**代碼位置**：
+- 後台 CRUD：`src/services/supabaseAdmin.ts` → `createMediaReport()` 等
+- 後台 UI：`src/pages/admin/AdminMedia.tsx`
+
+### 獲獎紀錄（AdminAwards）
+
+- **欄位**：年份、獎項名稱、說明、圖示（Emoji）
+- **排序**：按 `year DESC`
+- **圖示**：支援 Emoji（如 🏆）或文字
+
+**代碼位置**：
+- 後台 CRUD：`src/services/supabaseAdmin.ts` → `createAward()` 等
+- 後台 UI：`src/pages/admin/AdminAwards.tsx`
+
+### 感恩有您（AdminThankYou）
+
+- **欄位**：名稱、年份、說明、排序順序
+- **排序**：按 `year DESC` 再 `sort_order ASC`
+- **排序順序**：手動編輯 `sort_order` 欄位調整
+
+**代碼位置**：
+- 後台 CRUD：`src/services/supabaseAdmin.ts` → `createThankYouItem()` 等
+- 後台 UI：`src/pages/admin/AdminThankYou.tsx`
+
+## 圖片管理
+
+### 儲存位置
+
+圖片存儲在 Supabase Storage 中的兩個 bucket：
+
+| Bucket | 用途 | 上傳來源 | 公開 |
+|--------|------|---------|------|
+| `editor-images` | TinyMCE 編輯器圖片 | 協會簡介編輯 | ✓ 公開 |
+| `gallery-images` | 相簿照片 | 相簿管理上傳 | ✓ 公開 |
+
+### 檢查圖片
+
+在 Supabase 控制台 → Storage：
+
+1. 點擊 `editor-images` bucket
+2. 查看所有上傳的圖片
+3. 可點擊圖片預覽或複製 URL
+
+### 刪除圖片
+
+**方式一：後台 UI**
+
+1. 進入後台 → 活動相簿
+2. 選擇相簿
+3. 找到要刪除的照片
+4. 點擊刪除
+
+**方式二：Supabase 控制台**
+
+1. 進入 Storage → bucket
+2. 選擇要刪除的檔案
+3. 點擊刪除
+
+### 上傳限制
+
+- **格式**：JPG、PNG、WEBP、GIF
+- **單張上限**：8 MB
+- **自動壓縮**：2 MB 以上會自動在瀏覽器端壓縮
+
+## RLS（Row Level Security）策略
+
+### 檢查現有策略
+
+在 Supabase SQL Editor：
+
+```sql
+SELECT * FROM pg_policies
+WHERE tablename LIKE 'water_%'
+ORDER BY tablename;
+```
+
+### 標準策略
+
+典型的 RLS 設定應為：
+
+```sql
+-- 允許匿名用戶讀取
+ALTER POLICY "Enable read access for all users"
+  ON water_home_news
+  USING (true);
+
+-- 允許認證用戶修改
+ALTER POLICY "Enable write access for authenticated users"
+  ON water_home_news
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+```
+
+### 若 RLS 被意外禁用
+
+1. 進入 Supabase SQL Editor
+2. 執行：
+   ```sql
+   ALTER TABLE water_home_news ENABLE ROW LEVEL SECURITY;
+   ```
+
+## 部署與更新
+
+### 本機測試
+
+```bash
+# 安裝依賴
+npm install
+
+# 啟動開發伺服器
+npm run dev
+
+# 訪問 http://localhost:3003 或類似地址
+```
+
+### 構建
+
+```bash
+# 編譯前台
+npm run build
+
+# 輸出在 dist/ 目錄
+```
+
+### 推送到 GitHub Pages
+
+```bash
+# 檢查 git status
+git status
+
+# 新增變更
+git add .
+
+# 提交
+git commit -m "描述您的變更"
+
+# 推送到 main 分支
+git push origin main
+```
+
+GitHub Actions 會自動：
+
+1. 檢出代碼
+2. 安裝依賴
+3. 執行 `npm run build`
+4. 部署 `dist/` 到 GitHub Pages
+
+約 2-3 分鐘後，ntpcwsa.org 更新完成。
+
+### GitHub Secrets
+
+部署時需要的環境變數應存儲在 GitHub Secrets 中：
+
+1. 進入 GitHub repo → Settings → Secrets and variables → Actions
+2. 新增 Secret：
+   - 名稱：`VITE_SUPABASE_URL`
+   - 值：`https://nixptyjwehqcwkfwluna.supabase.co`
+3. 新增 Secret：
+   - 名稱：`VITE_SUPABASE_ANON_KEY`
+   - 值：（粘貼實際的 ANON_KEY）
+
+## 常見問題排查
+
+### 後台無法登入
+
+**現象**：輸入正確的郵箱和密碼，仍顯示「登入失敗」
+
+**檢查清單**：
+
+1. ✓ `.env.local` 中 `VITE_SUPABASE_URL` 是否正確
+2. ✓ `VITE_SUPABASE_ANON_KEY` 是否正確
+3. ✓ 該用戶是否存在於 Supabase Authentication → Users
+4. ✓ 密碼是否正確
+5. ✓ 該用戶的帳號是否被禁用
+
+**解決**：
+
+- 若用戶不存在，新增用戶（見「認證管理」章節）
+- 若密碼遺忘，在登入頁面點擊「忘記密碼」或重設用戶密碼
+
+### 前台無法讀取數據
+
+**現象**：頁面顯示「目前尚無內容」或載入超時
+
+**檢查清單**：
+
+1. ✓ Supabase 專案是否仍在線
+2. ✓ 相應的表格是否存在（如 `water_home_news`）
+3. ✓ 表格是否有數據
+4. ✓ RLS 是否允許匿名讀取
+
+**解決**：
+
+```sql
+-- 檢查表格是否存在
+SELECT * FROM information_schema.tables
+WHERE table_name = 'water_home_news';
+
+-- 檢查是否有數據
+SELECT COUNT(*) FROM water_home_news;
+
+-- 檢查 RLS 狀態
+SELECT * FROM pg_policies
+WHERE tablename = 'water_home_news';
+```
+
+### 上傳圖片失敗
+
+**現象**：後台上傳照片或編輯圖片時出現錯誤
+
+**檢查清單**：
+
+1. ✓ Supabase Storage bucket 是否存在（`editor-images`, `gallery-images`）
+2. ✓ bucket 是否設為公開（public）
+3. ✓ 圖片檔案大小是否超過 8 MB
+4. ✓ 圖片格式是否支援（JPG, PNG, WEBP, GIF）
+
+**解決**：
+
+進入 Supabase Storage，確認 bucket 設定為公開：
+
+1. 點擊 bucket 名稱
+2. 進入 Settings
+3. 確認「Make bucket public」已啟用
+
+### GitHub Actions 部署失敗
+
+**現象**：推送到 main 後，GitHub Actions 顯示失敗
+
+**檢查清單**：
+
+1. ✓ GitHub Secrets 中的環境變數是否正確設置
+2. ✓ `npm run build` 是否在本機成功
+3. ✓ `src/` 和 `public/` 目錄結構是否完整
+4. ✓ `.github/workflows/deploy.yml` 是否配置正確
+
+**解決**：
+
+1. 進入 GitHub repo → Actions → 找到失敗的 workflow
+2. 點擊檢視日誌
+3. 查看具體的錯誤訊息
+4. 通常是環境變數缺失，確認 GitHub Secrets 已設置
+
+## 版本控制
+
+### Commit Message 格式
+
+建議遵循簡單的格式：
+
+```
+簡要說明，過去式，以「修正」或「新增」開頭
+
+額外詳情（如有）
+```
+
+範例：
+
+```
+修正首頁最新消息排序錯誤
+
+- 按 is_pinned DESC 再按 date DESC 排序
+- 釘選項目會優先顯示在前面
+```
+
+### 常用 Git 指令
+
+```bash
+# 檢查狀態
+git status
+
+# 查看最近提交
+git log --oneline -n 10
+
+# 新增所有變更
+git add .
+
+# 提交
+git commit -m "訊息"
+
+# 推送到遠端
+git push origin main
+
+# 拉取最新變更
+git pull origin main
+```
+
+## 備份與恢復
+
+### Supabase 數據備份
+
+Supabase 提供自動備份。進入控制台 → Project Settings → Backups
+
+- **免費方案**：每日自動備份（保留 7 天）
+- **付費方案**：更長的保留期與多個備份點
+
+### 手動導出數據
+
+在 Supabase SQL Editor：
+
+```sql
+-- 導出 water_home_news 為 JSON
+SELECT json_agg(t) FROM water_home_news t;
+```
+
+將結果複製到本機檔案作為備份。
+
+### 手動導入數據
+
+```sql
+-- 插入備份的數據
+INSERT INTO water_home_news (id, date, title, description, ...)
+VALUES (...), (...), ...;
+```
+
+## 監控與維護
+
+### 定期檢查項目
+
+| 項目 | 頻率 | 檢查方式 |
+|------|------|---------|
+| 前台是否正常 | 每天 | 訪問網站 |
+| 後台是否可登入 | 每周 | 測試登入 |
+| 圖片是否能上傳 | 每月 | 後台新增測試照片 |
+| Supabase 配額 | 每月 | Supabase 控制台 |
+| GitHub Actions 狀態 | 每次提交後 | GitHub Actions 標籤 |
+
+### 配額監控
+
+進入 Supabase 控制台 → Organization Settings → Billing
+
+- **數據庫容量**：PostgreSQL 數據庫大小
+- **儲存容量**：檔案儲存使用量
+- **API 調用**：RESTful API 調用次數
+- **實時連接**：WebSocket 連接數
+
+若接近上限，考慮升級方案或清理舊數據。
+
+## 緊急情況
+
+### 資料庫損壞
+
+若表格結構被意外破壞，從備份恢復：
+
+1. 進入 Supabase 控制台 → Project Settings → Backups
+2. 選擇有效的備份點
+3. 點擊「Restore」
+
+### 遺忘後台密碼
+
+1. 進入 Supabase 控制台 → Authentication → Users
+2. 找到用戶
+3. 點擊用戶，重設密碼
+4. 用戶收到重設連結
+
+### 大量數據遺失
+
+若發現數據被誤刪，可使用 Supabase 備份恢復。但需要時間處理。建議：
+
+1. 暫停所有編輯操作
+2. 聯繫 Supabase 支援
+3. 申請從備份還原
+
+## 相關連結
+
+- [Supabase 官方文檔](https://supabase.com/docs)
+- [Supabase 控制台](https://app.supabase.com)
+- [React 官方文檔](https://react.dev)
+- [Vite 官方文檔](https://vitejs.dev)
+- [GitHub Pages 說明](https://pages.github.com)
+
+## 更新記錄
+
+| 日期 | 變更 | 版本 |
+|------|------|------|
+| 2026-04-16 | 完成 Supabase 遷移，重新編寫維護文檔 | v2.0 |

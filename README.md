@@ -1,324 +1,375 @@
 # 新北市水上安全協會網站
 
-這個專案是 React + Vite 的靜態網站，部署方式是 GitHub Pages。前台內容主要來自 public/cms/*.json；管理後台則是前端介面。若要在正式站使用後台登入與發布，建議搭配 Cloudflare Worker 提供 /api。
+React + Vite 靜態網站，部署於 GitHub Pages，數據存儲於 Supabase（PostgreSQL）。
 
-README 以下內容只描述目前 repo 內程式碼可以直接確認的行為，不額外假設站外基礎設施。
+## 現有架構概述
 
-## 目前狀態
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     GitHub Pages                             │
+│              (前台頁面 + 後台管理 SPA)                        │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+                    ┌────────┴────────┐
+                    │                 │
+        ┌───────────▼──────────┐  ┌──▼──────────────────┐
+        │   Supabase Auth      │  │  Supabase Database   │
+        │  (Email/Password)    │  │  (8 water_* Tables)  │
+        │                      │  │  - news              │
+        │                      │  │  - gallery           │
+        │                      │  │  - awards            │
+        │                      │  │  - media             │
+        │                      │  │  - etc.              │
+        └──────────────────────┘  └─────────────────────┘
+                    │                     │
+        ┌───────────▼──────────────────────▼──────────┐
+        │        Supabase Storage (CDN)               │
+        │  - editor-images (TinyMCE 上傳)             │
+        │  - gallery-images (相簿照片)                │
+        └────────────────────────────────────────────┘
+```
 
-- 2026-03-13 已完成正式站驗證
-- 正式站前台、後台登入、Cloudflare Worker API、CMS 讀取與 CMS 儲存皆可正常運作
-- 正式站 /api/cms 已採用 split CMS 格式，回傳 content + shas
-- 後台文字編輯器已支援直接上傳圖片到 repo 檔案路徑，並提供公告框與提醒框樣板
-- 2026-03-28 起，訓練與活動、訓練成果、活動剪影三頁都改為相同的 gallery 輪播架構；activities.json / results.json 不再使用舊課程、訓練紀錄、學員心得欄位
-- 後續維運建議先閱讀 docs/MAINTENANCE.md
+## 技術棧
 
-## 架構摘要
+| 層級 | 技術 | 說明 |
+|------|------|------|
+| 前台 | React 18 | UI 框架 |
+| 框架 | Vite 6.4 | 打包與開發伺服器 |
+| 路由 | React Router 6 | HashRouter 用於 GitHub Pages |
+| UI | Tailwind CSS | 樣式 |
+| 編輯器 | TinyMCE 7 | 協會簡介 HTML 編輯 |
+| 數據庫 | Supabase (PostgreSQL) | CMS 數據存儲 |
+| 認證 | Supabase Auth | Email/Password 登入 |
+| 儲存 | Supabase Storage | 圖片文件存儲 |
+| 郵件 | EmailJS | 聯絡表單發送 |
+| 部署 | GitHub Actions | 自動構建與部署 |
 
-- 前台是靜態網站，路由使用 HashRouter
-- 前台內容主要讀取 public/cms/*.json
-- 後台入口是 /#/admin
-- 正式站已補上 /admin 轉址入口與 404 fallback，直接開 /admin 或其他深連結時，會自動導回對應的 /#/ 路由
-- worker/index.js 是 Cloudflare Worker 版本，適合正式站免費部署 /api
-- GitHub Actions 會在 push 到 main 後 build 並部署 dist
+## 目錄結構
 
-## 資料來源
+```
+src/
+├── pages/                    # 頁面元件
+│   ├── Home.tsx             # 首頁
+│   ├── Gallery.tsx          # 相簿頁面（報名資訊/訓練成果/活動剪影）
+│   ├── GenericPage.tsx      # 通用頁面（媒體報導/獲獎紀錄）
+│   ├── ThankYou.tsx         # 感恩有您
+│   ├── Contact.tsx          # 聯絡我們
+│   └── Admin.tsx            # 後台管理框架
+│       └── admin/           # 後台子頁面
+│           ├── AdminLogin.tsx       # Supabase Auth 登入
+│           ├── AdminDashboard.tsx   # 標籤頁導航
+│           ├── AdminIntro.tsx       # 協會簡介編輯（TinyMCE）
+│           ├── AdminNews.tsx        # 最新消息 CRUD
+│           ├── AdminGallery.tsx     # 相簿管理（3 種類型）
+│           ├── AdminMedia.tsx       # 媒體報導（YouTube 偵測）
+│           ├── AdminAwards.tsx      # 獲獎紀錄 CRUD
+│           └── AdminThankYou.tsx    # 感恩有您 CRUD
+│
+├── services/                # 服務層
+│   ├── supabaseClient.ts    # Supabase 客戶端單例
+│   ├── supabaseAuth.ts      # 認證服務（登入/登出/Session）
+│   ├── supabaseAdmin.ts     # 後台 CRUD 操作
+│   ├── cmsLoader.ts         # 前台數據加載（Supabase 查詢）
+│   ├── cms.ts               # CMS 常數設定（導航、頁面配置）
+│   ├── contentRenderer.tsx   # 內容渲染助手
+│   └── cmsData.ts           # 數據排序與格式化
+│
+├── components/              # 可復用元件
+│   ├── Navbar.tsx
+│   ├── Footer.tsx
+│   ├── Hero.tsx
+│   ├── CollapsibleCard.tsx
+│   └── ... (其他 UI 元件)
+│
+├── types.ts                 # TypeScript 類型定義
+├── App.tsx                  # 應用根元件
+└── main.tsx                 # 應用入口
+```
 
-前台資料載入邏輯在 services/cmsLoader.ts，流程如下：
+## 數據模型
 
-1. 先呼叫 /api/github/status 檢查是否有可用的後端代理與 GitHub Token
-2. 如果可用，透過 /api/cms 讀取 GitHub Repository 內的 public/cms/*.json 並由 Worker 整合
-3. 如果不可用，回退讀取 public/cms/*.json
+### Supabase 資料表
 
-因此這個專案的實際模式是：
+| 表名 | 說明 | 主鍵 | 特徵 |
+|------|------|------|------|
+| `water_site_settings` | 站點設定（協會簡介） | key | key-value 型 |
+| `water_home_news` | 首頁最新消息 | id | 支援釘選、標記為新 |
+| `water_gallery_albums` | 相簿集合 | id | 支援 3 種類型（活動/成果/剪影） |
+| `water_gallery_photos` | 相簿內的照片 | id | 有序排列，FK 指向相簿 |
+| `water_media_reports` | 媒體報導 | id | 支援新聞/影片/文章類型 |
+| `water_awards` | 獲獎紀錄 | id | 按年份排序 |
+| `water_thank_you_items` | 感恩有您贊助者 | id | 按年份與排序順序排列 |
+| `auth.users` | 認證用戶 | id | Supabase 內建 |
 
-- 沒有後端時，前台仍可用，直接讀本地 JSON
-- 有後端且已設定 GitHub Token 時，後台可以編輯並同步 GitHub 上的多個 JSON 檔
+### 欄位轉換
 
-## 路由
+資料庫採 `snake_case`，前端應用採 `camelCase`：
 
-- /#/ : 首頁
-- /#/activities : 訓練與活動
-- /#/results : 訓練成果
-- /#/gallery : 活動剪影
-- /#/media : 媒體報導
-- /#/thankyou : 感恩有您
-- /#/contact : 聯絡我們
-- /#/admin : 管理後台
-- /admin : 會自動轉到 /#/admin
+```typescript
+// 資料庫 → 前端
+{
+  is_pinned: true,       // → isPinned
+  cover_photo_id: "123", // → coverPhotoId
+  sort_order: 1,         // → sortOrder
+}
+```
+
+轉換邏輯在 `cmsLoader.ts` 的 `convertXxxItem()` 函式中。
+
+## 前台頁面
+
+| 路由 | 頁面 | 數據來源 | 更新方式 |
+|------|------|---------|---------|
+| `/#/` | 首頁 | Supabase | 後台編輯 |
+| `/#/activities` | 報名資訊（相簿） | Supabase | 後台上傳 |
+| `/#/results` | 訓練成果（相簿） | Supabase | 後台上傳 |
+| `/#/gallery` | 活動剪影（相簿） | Supabase | 後台上傳 |
+| `/#/media` | 媒體報導 | Supabase | 後台編輯 |
+| `/#/thankyou` | 感恩有您 | Supabase | 後台編輯 |
+| `/#/contact` | 聯絡我們 | EmailJS | 訪客直接填表 |
+| `/#/admin` | 後台管理 | Supabase + Auth | 認證用戶操作 |
+
+## 後台管理
+
+### 功能概覽
+
+| 模組 | 功能 | 特點 |
+|------|------|------|
+| 協會簡介 | TinyMCE HTML 編輯 | 支援圖片上傳至 editor-images |
+| 最新消息 | CRUD + 釘選 | 逐項即存 |
+| 活動相簿 | 上傳/刪除照片 | 支援 3 種類型，自動轉換類型 |
+| 媒體報導 | CRUD + YouTube 偵測 | YouTube 連結自動嵌入 |
+| 獲獎紀錄 | CRUD + Emoji 圖示 | 按年份排序 |
+| 感恩有您 | CRUD + 排序控制 | 支援自訂排列順序 |
+
+### 認證流程
+
+```
+1. 訪問 /#/admin
+2. 顯示登入頁面
+3. 輸入 email + 密碼
+4. 調用 supabase.auth.signInWithPassword()
+5. 成功 → 進入儀表板
+6. 失敗 → 顯示錯誤訊息
+7. 登出 → 清除 session
+```
+
+認證狀態由 `supabaseAuth.ts` 中的 `onAuthStateChange()` 監控，自動更新 UI。
+
+### 編輯特點
+
+所有編輯都採用**逐項即存**設計：
+
+- ✓ 編輯欄位後自動保存到 Supabase
+- ✓ 無需點擊「發布」按鈕
+- ✓ Toast 通知提示保存狀態
+- ✓ 完整的錯誤處理
+
+範例：編輯消息標題
+
+```typescript
+// 用戶在輸入框輸入 → onChange 事件觸發
+const handleUpdateNews = async (id: string, updates: Partial<NewsItem>) => {
+  try {
+    await updateNewsItem(id, updates); // 直接寫入 Supabase
+    onShowToast('消息已更新', 'success');
+  } catch (error) {
+    onShowToast('更新失敗', 'error');
+  }
+};
+```
+
+## 環境變數
+
+### 本機開發 (.env.local)
+
+```env
+VITE_SUPABASE_URL=https://nixptyjwehqcwkfwluna.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### GitHub Secrets（CD 部署）
+
+GitHub Actions 在構建時注入環境變數：
+
+```yaml
+- name: Build
+  run: npm run build
+  env:
+    VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+    VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+```
+
+### EmailJS 設定 (services/cms.ts)
+
+```typescript
+export const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_hksfuel',
+  TEMPLATE_ID: 'template_ruioo1o',
+  PUBLIC_KEY: 'iHpUlqEoLptEllvz-',
+};
+```
 
 ## 本機開發
 
-### 安裝
+### 安裝與執行
 
 ```bash
+# 安裝依賴
 npm install
-```
 
-### 只跑前台
-
-```bash
+# 啟動開發伺服器（通常在 http://localhost:3003）
 npm run dev
-```
 
-Vite 設定在 3000 port，因此本機通常是：
-
-- http://localhost:3000/
-- http://127.0.0.1:3000/
-
-這個模式下：
-
-- 前台頁面可正常瀏覽
-- 內容會讀取 public/cms/*.json
-- /api 相關功能不保證可用
-
-### 本機與正式站差異
-
-目前 repo 已移除本機 Node 管理代理，正式站統一使用 Cloudflare Worker 提供 /api。
-
-這表示：
-
-- 本機執行 npm run dev 時，前台仍可正常瀏覽
-- 本機內容會直接讀取 public/cms/*.json
-- 本機不提供 /api/login、/api/cms 等管理 API
-- 後台登入與發布請在正式站環境測試
-
-## 內容更新方式
-
-### 方式一：直接改 JSON
-
-直接修改 public/cms/*.json，然後重新部署。
-
-適合：
-
-- 單純更新內容
-- 不需要登入後台
-- 不需要透過 GitHub API 寫回
-
-### 方式二：使用管理後台
-
-管理後台在 /#/admin。
-
-如果使用者直接開 /admin，正式站會自動轉址到 /#/admin。
-
-實際行為如下：
-
-1. 先透過 /api/login 登入
-2. 後台載入資料時，優先嘗試從 /api/cms 讀 GitHub 版本
-3. 如果 GitHub 代理不可用，會回退讀取本地 public/cms/*.json
-4. 按下儲存時，會呼叫 /api/cms 將內容拆分後寫回 GitHub
-
-文字編輯器補充：
-
-- 可直接在編輯器內插入圖片
-- 圖片會先透過 /api/upload-image 上傳到 repo 的 public/images/editor/*
-- 之後內容只會保存圖片網址，不會把整張圖塞進 cms JSON
-- 後台目前會直接把 GitHub raw URL 寫進內容，讓圖片在 GitHub Pages redeploy 前也能先正常顯示
-- 若上傳後沒有儲存文章，系統會在重新載入、登出、離開頁面或成功儲存後，盡量自動清理本次編輯產生但未引用的圖片
-- 後台另提供 /api/editor-images 與 /api/cleanup-images 對應的圖片庫與清理能力
-
-所以後台的「讀取」有 fallback，但「儲存」需要可用的後端代理與 GitHub Token。
-
-目前與前台輪播相關的 split CMS 欄位如下：
-
-- public/cms/activities.json -> activityGalleryItems
-- public/cms/results.json -> resultGalleryItems
-- public/cms/gallery.json -> galleryItems
-
-為避免輪流編輯時用舊頁面覆蓋較新的 GitHub 內容，後台發布更新時會帶上 GitHub 檔案版本 sha；如果版本已變更，系統會要求先重新載入最新內容再儲存。
-
-## GitHub Pages 部署
-
-GitHub Actions 設定在 .github/workflows/deploy.yml。
-
-目前 workflow 會在 push 到 main 時：
-
-1. 安裝相依套件
-2. 執行 npm run build
-3. 上傳 dist
-4. 部署到 GitHub Pages
-
-專案存在 public/CNAME，內容是 ntpcwsa.org，因此 Vite build 時會使用根路徑 /。
-
-## Cloudflare Worker 正式後台方案
-
-如果不打算自行維護 Node 主機，正式站建議使用：
-
-1. GitHub Pages 部署前台
-2. Cloudflare Worker 提供 /api/login、/api/verify-token、/api/github/status、/api/cms
-3. GitHub Repository 儲存 public/cms/*.json 與編輯器上傳的 public/images/editor/*
-
-專案已提供：
-
-- worker/index.js：Cloudflare Worker 版 API
-- worker/wrangler.toml：目前 repo 內正式使用的 Worker 設定
-
-建議部署方式：
-
-1. 以 GitHub Repository 連動建立 Cloudflare Worker
-2. Repository 指向 ntpcwatersafety/WebSite，Branch 使用 main
-3. Root directory 設為 worker
-4. 讓 Cloudflare 讀取 worker/index.js 與 worker/wrangler.toml
-5. 在 Cloudflare 將 ntpcwsa.org/api/* 路由指向該 Worker
-6. 設定下列 secrets / vars：
-	- ADMIN_USER
-	- ADMIN_PASS
-	- JWT_SECRET
-	- GITHUB_TOKEN
-	- OWNER
-	- REPO
-	- BRANCH
-	- DATA_ROOT
-	- IMAGE_UPLOAD_ROOT
-	- JWT_EXPIRES_IN
-
-目前 repo 內的 worker/wrangler.toml 已設定：
-
-- Root script: index.js
-- Route: ntpcwsa.org/api/*
-- OWNER = ntpcwatersafety
-- REPO = WebSite
-- BRANCH = main
-- DATA_ROOT = public/cms
-- IMAGE_UPLOAD_ROOT = public/images/editor
-- JWT_EXPIRES_IN = 8h
-
-如果 Cloudflare Worker 的 workers.dev 網址打開 /api/github/status 時回到前台首頁，通常代表 Git 部署的 Root directory 設錯，應改為 worker，而不是 repo 根目錄。
-
-建議驗證順序：
-
-1. 先測 workers.dev/api/github/status，確認 Worker 程式本體有回 JSON
-2. 再測 ntpcwsa.org/api/github/status，確認正式網域路由已指向 Worker
-3. 再測 ntpcwsa.org/api/cms，確認可從 GitHub 讀取整合後的 CMS 內容
-4. 再測 ntpcwsa.org/admin，確認會自動跳到 ntpcwsa.org/#/admin
-5. 最後登入 ntpcwsa.org/#/admin，確認後台可讀取與發布
-
-Wrangler 常用指令範例：
-
-```bash
-cd worker
-wrangler secret put ADMIN_USER
-wrangler secret put ADMIN_PASS
-wrangler secret put JWT_SECRET
-wrangler secret put GITHUB_TOKEN
-wrangler deploy
-```
-
-這種架構下：
-
-- 網站畫面仍由 GitHub Pages 提供
-- 後台登入與發佈由 Cloudflare Worker 執行
-- 維護人員仍可從正式網址的 /#/admin 進行操作
-
-### Cloudflare 實際部署步驟
-
-以下流程是本專案實際驗證可用的設定方式。
-
-1. 在 Cloudflare Workers 建立新的 Git 連動 Worker
-2. Repository 選 ntpcwatersafety/WebSite
-3. Branch 選 main
-4. Root directory 設為 worker
-5. 完成首次部署後，確認 workers.dev 網址可開啟
-
-接著在 Worker 設定內補上變數與密鑰。
-
-Vars：
-
-- OWNER = ntpcwatersafety
-- REPO = WebSite
-- BRANCH = main
-- DATA_ROOT = public/cms
-- JWT_EXPIRES_IN = 8h
-
-Secrets：
-
-- ADMIN_USER
-- ADMIN_PASS
-- JWT_SECRET
-- GITHUB_TOKEN
-
-之後在 Cloudflare 將 ntpcwsa.org/api/* 設為 Route，指向這個 Worker。
-
-注意：
-
-- 不要把整個 ntpcwsa.org 綁成 Custom Domain 給 Worker
-- workers.dev 與預覽網址可以保留，不需要刪除
-- 若 workers.dev/api/github/status 出現前台首頁，通常代表 Root directory 設錯成 repo 根目錄
-
-### Cloudflare 驗證清單
-
-建議每次調整後依序檢查：
-
-1. workers.dev/api/github/status
-2. ntpcwsa.org/api/github/status
-3. ntpcwsa.org/api/cms
-4. ntpcwsa.org/#/admin
-
-預期結果：
-
-- workers.dev/api/github/status 應回傳 JSON，而不是前台 HTML
-- ntpcwsa.org/api/github/status 應回傳 hasToken、authConfigured、missingAuthEnvVars、backend
-- ntpcwsa.org/api/cms 應回傳整合後的 CMS JSON 內容
-- /#/admin 應可正常登入、重新載入並儲存內容
-
-### Cloudflare 常見問題
-
-1. workers.dev/api/... 回前台首頁
-
-原因通常是 Git 部署的 Root directory 錯誤。請改成 worker，然後重新部署。
-
-2. ntpcwsa.org/api/... 仍回前台首頁
-
-原因通常是正式網域 Route 尚未正確指向 Worker，請確認使用的是 ntpcwsa.org/api/*，不是 Custom Domain。
-
-3. /api/github/status 顯示 hasToken: false 或 authConfigured: false
-
-代表 Worker 尚未讀到密鑰或登入設定。請重新檢查：
-
-- ADMIN_USER
-- ADMIN_PASS
-- JWT_SECRET
-- GITHUB_TOKEN
-
-4. 有修改設定但找不到重新部署按鈕
-
-若是 Git 連動部署，可直接再 push 一次 commit 觸發重新建置。
-
-## 本次檢查結果
-
-依目前本機檢查結果：
-
-- npm run build 可成功完成
-- 前端開發站可正常啟動
-- 已移除本機 Node 管理代理與其相依套件
-- 已移除未使用的 pages/Media.tsx
-- 已移除多餘的 worker/wrangler.toml.example
-
-正式站後續已完成 Cloudflare Worker 佈署驗證，確認：
-
-- ntpcwsa.org/api/github/status 可正常回傳 Cloudflare Worker JSON
-- ntpcwsa.org/api/cms 可正常讀取 GitHub 上的 public/cms/*.json
-- 正式架構已可採用「GitHub Pages 提供前台 + Cloudflare Worker 提供 /api + GitHub 儲存 CMS JSON」的模式運作
-- 正式後台登入與實際儲存已完成人工驗證
-- 未授權請求會被 /api/login 與 /api/cms 正確拒絕
-
-## Repo 現況整理
-
-截至 2026-03-13，本地 repo 與目前正式架構一致，檢查結果如下：
-
-- git worktree 乾淨，沒有未提交變更
-- 主要 CMS 來源已固定為 public/cms/*.json
-- 本機 Node 管理代理已移除，唯一維護中的後台 API 為 worker/index.js
-- 掃描 repo 後，沒有發現仍在使用的舊版 cms-data.json、server/index.js 或 wrangler.toml.example 參照
-- worker/index.js 仍保留 DATA_PATH 舊參數相容邏輯，這是刻意保留的 fallback，不是殘留垃圾碼
-
-若要交接給下一位維護者，建議搭配 docs/MAINTENANCE.md 一起閱讀。
-
-## 常用指令
-
-```bash
-npm install
-npm run dev
+# 構建用於部署
 npm run build
+
+# 預覽構建結果
 npm run preview
 ```
+
+### 本機限制
+
+- ✓ 前台頁面可正常瀏覽，資料來自 Supabase
+- ✓ 後台登入可使用（需 Supabase 專案有效）
+- ✓ CRUD 操作可測試
+- ✓ TinyMCE 編輯器可測試
+
+### 常見開發任務
+
+**修改前台樣式**
+
+```bash
+# 編輯 src/pages/*.tsx 或 src/components/*.tsx
+# Vite 會自動熱更新
+```
+
+**修改後台邏輯**
+
+```bash
+# 編輯 src/pages/admin/*.tsx
+# 重新整理瀏覽器查看變更
+```
+
+**新增頁面路由**
+
+1. 在 `src/pages/` 建立新元件
+2. 在 `App.tsx` Routes 中新增路由
+3. 在 `services/cms.ts` 新增 PAGE_CONTENT 配置
+
+**修改 Supabase 查詢**
+
+```typescript
+// 修改 src/services/cmsLoader.ts
+// 例如新增排序條件
+.order('updated_at', { ascending: false })
+```
+
+## 部署
+
+### GitHub Pages 自動部署
+
+1. 推送到 `main` 分支
+2. GitHub Actions 自動觸發 `.github/workflows/deploy.yml`
+3. 執行 `npm run build` 產生 `dist/`
+4. 上傳至 GitHub Pages
+5. 約 2-3 分鐘後，ntpcwsa.org 更新完成
+
+### 部署前檢查清單
+
+```bash
+# 確保編譯無誤
+npm run build
+
+# 檢查所有 Supabase 環境變數已配置
+grep VITE_SUPABASE .env.local
+
+# 檢查無意外的文件被追蹤
+git status
+
+# 推送
+git push origin main
+```
+
+## 常見問題
+
+### Q: 後台無法登入
+**A**: 確認 `.env.local` 中 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY` 正確無誤。
+
+### Q: 上傳圖片失敗
+**A**: 檢查 Supabase Storage 的 `editor-images` 和 `gallery-images` bucket 是否為公開（public）。
+
+### Q: 前台無法讀取數據
+**A**: 確認 Supabase RLS 策略是否允許匿名用戶讀取。預設應設為：
+- `SELECT` 允許匿名用戶
+- `INSERT/UPDATE/DELETE` 需要認證
+
+### Q: GitHub Actions 部署失敗
+**A**: 檢查 GitHub Secrets 是否正確設置：
+- 前往 Settings → Secrets and variables → Actions
+- 驗證 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_ANON_KEY` 存在且格式無誤
+
+## 維護指南
+
+### 新增功能流程
+
+1. **建立新數據表**（若需要）
+   - 在 Supabase SQL Editor 建立表格
+   - 設定主鍵、欄位、預設值
+   - 設定 RLS 策略
+
+2. **新增服務函式**
+   - 在 `supabaseAdmin.ts` 新增 CRUD 函式
+   - 在 `cmsLoader.ts` 新增查詢函式
+   - 新增 TypeScript 類型（`types.ts`）
+
+3. **建立後台模組**
+   - 在 `pages/admin/` 建立新元件
+   - 在 `AdminDashboard.tsx` 新增標籤頁
+   - 實裝 CRUD UI
+
+4. **測試與部署**
+   - 本機測試通過
+   - 提交 git commit
+   - 推送觸發 GitHub Actions
+
+### 常用 SQL 查詢
+
+**檢查表格結構**
+
+```sql
+\d water_home_news;
+```
+
+**查看現有數據**
+
+```sql
+SELECT * FROM water_home_news ORDER BY date DESC LIMIT 10;
+```
+
+**清除所有數據**
+
+```sql
+TRUNCATE TABLE water_home_news;
+```
+
+**重設主鍵序列**
+
+```sql
+ALTER SEQUENCE water_home_news_id_seq RESTART WITH 1;
+```
+
+## 相關文件
+
+- [維護指南](docs/MAINTENANCE.md) - 詳細維護說明
+- [Supabase 文檔](https://supabase.com/docs) - Supabase 官方文檔
+- [React 文檔](https://react.dev) - React 官方文檔
+- [Vite 文檔](https://vitejs.dev) - Vite 官方文檔
+
+## 貢獻
+
+歡迎提交 Issues 與 Pull Requests。
+
+## License
+
+MIT
