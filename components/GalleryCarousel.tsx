@@ -108,7 +108,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                   <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700">{item.photos.length} 張</span>
                 </div>
                 <h4 className="font-bold text-slate-800">{item.title}</h4>
-                {item.description ? <p className="mt-2 line-clamp-2 text-sm text-slate-600">{item.description}</p> : null}
+                {item.description ? <p className="mt-2 line-clamp-2 text-sm text-slate-600" dangerouslySetInnerHTML={{ __html: item.description }} /> : null}
               </div>
             </button>
           );
@@ -208,7 +208,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                     <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">活動說明</p>
                     <h4 className="mt-2 text-xl font-bold leading-snug">{currentItem.title || `（無標題${itemLabel}）`}</h4>
                     {currentItem.description ? (
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-200">{currentItem.description}</p>
+                      <div className="mt-3 text-sm leading-7 text-slate-200" dangerouslySetInnerHTML={{ __html: currentItem.description }} />
                     ) : (
                       <p className="mt-3 text-sm text-slate-400">目前尚無活動說明。</p>
                     )}
