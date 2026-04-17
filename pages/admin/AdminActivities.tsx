@@ -57,12 +57,14 @@ const AdminActivities: React.FC<AdminActivitiesProps> = ({ onShowToast }) => {
     if (!editingItem) return;
     const updatedTitle = editingItem.title || item.title;
     const updatedDescription = editingItem.description;
+    const updatedDate = editingItem.date;
     try {
       await updateAlbum('activities', item.id, {
         title: updatedTitle,
         description: updatedDescription,
+        date: updatedDate,
       });
-      setItems(prev => prev.map(a => a.id === item.id ? { ...a, title: updatedTitle, description: updatedDescription } : a));
+      setItems(prev => prev.map(a => a.id === item.id ? { ...a, title: updatedTitle, description: updatedDescription, date: updatedDate } : a));
       onShowToast('已保存', 'success');
       setEditingItem(null);
     } catch {
@@ -163,12 +165,26 @@ const AdminActivities: React.FC<AdminActivitiesProps> = ({ onShowToast }) => {
           <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
             {editingItem?.id === item.id ? (
               <div className="space-y-4">
-                <input
-                  type="text"
-                  value={editingItem.title}
-                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">標題</label>
+                    <input
+                      type="text"
+                      value={editingItem.title}
+                      onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">日期</label>
+                    <input
+                      type="date"
+                      value={editingItem.date || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, date: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </div>
                 <RichEditor
                   value={editingItem.description || ''}
                   onChange={(content) => setEditingItem({ ...editingItem, description: content })}
