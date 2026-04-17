@@ -248,11 +248,12 @@ export const loadCmsData = async (): Promise<CacheData | null> => {
     }
 
     // 載入所有資料
-    const [introContent, homeNews, mediaReports, awards] = await Promise.all([
+    const [introContent, homeNews, mediaReports, awards, thankYouItems] = await Promise.all([
       getIntroContent(),
       getHomeNews(),
       getMediaReports(),
       getAwards(),
+      getThankYouItems(),
     ]);
 
     cachedData = {
@@ -260,6 +261,7 @@ export const loadCmsData = async (): Promise<CacheData | null> => {
       homeNews,
       mediaReports,
       awards,
+      thankYouItems,
     };
     cacheTime = now;
 
