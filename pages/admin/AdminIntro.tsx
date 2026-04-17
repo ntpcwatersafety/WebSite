@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Editor } from '@tinymce/tinymce-react';
-import { Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, CheckCircle } from 'lucide-react';
 import { getIntroContent } from '../../services/cmsLoader';
 import { updateIntroContent, uploadEditorImage } from '../../services/supabaseAdmin';
+import RichEditor from '../../components/RichEditor';
 
 interface AdminIntroProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -73,23 +73,11 @@ const AdminIntro: React.FC<AdminIntroProps> = ({ onShowToast }) => {
       </div>
 
       <div className="border border-gray-300 rounded-lg overflow-hidden">
-        <Editor
-          apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+        <RichEditor
           value={content}
-          onEditorChange={setContent}
-          init={{
-            height: 500,
-            menubar: 'file edit view insert format tools table help',
-            plugins: [
-              'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-              'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-              'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-            ],
-            toolbar:
-              'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media | code',
-            image_upload_handler: handleImageUpload,
-            language: 'zh_TW',
-          }}
+          onChange={setContent}
+          height={500}
+          onImageUpload={handleImageUpload}
         />
       </div>
 

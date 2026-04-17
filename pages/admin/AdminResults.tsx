@@ -9,7 +9,7 @@ import {
   uploadAlbumPhoto,
   deleteAlbumPhoto,
 } from '../../services/supabaseAdmin';
-import { Editor } from '@tinymce/tinymce-react';
+import RichEditor from '../../components/RichEditor';
 
 interface AdminResultsProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -141,17 +141,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               描述
             </label>
-            <Editor
-              apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
-              value={newDescription}
-              onEditorChange={setNewDescription}
-              init={{
-                height: 300,
-                menubar: false,
-                plugins: ['link', 'image'],
-                toolbar: 'bold italic underline | bullist numlist | link image',
-              }}
-            />
+            <RichEditor value={newDescription} onChange={setNewDescription} />
           </div>
           <button
             onClick={handleAddAlbum}
@@ -175,16 +165,9 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
                   onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
-                <Editor
-                  apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+                <RichEditor
                   value={editingItem.description}
-                  onEditorChange={(content) => setEditingItem({ ...editingItem, description: content })}
-                  init={{
-                    height: 300,
-                    menubar: false,
-                    plugins: ['link', 'image'],
-                    toolbar: 'bold italic underline | bullist numlist | link image',
-                  }}
+                  onChange={(content) => setEditingItem({ ...editingItem, description: content })}
                 />
                 <div className="flex gap-2">
                   <button
