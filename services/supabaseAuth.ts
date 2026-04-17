@@ -1,6 +1,7 @@
-// 簡單的本地認證方式（帳號密碼）
+import { supabase } from './supabaseClient';
+
+// 本地認證方式（帳號密碼）
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'ntpcwater2025';
 const SESSION_KEY = 'admin_session';
 
 interface AdminSession {
@@ -9,19 +10,61 @@ interface AdminSession {
 }
 
 /**
+ * 取得管理員密碼（從資料庫）
+ */
+const getAdminPassword = async (): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('water_site_settings')
+      .select('value')
+      .eq('key', 'adminPassword')
+      .single();
+
+    if (error || !data?.value) {
+      // 如果不存在，初始化預設密碼
+      console.warn('管理員密碼未設置，使用預設密碼');
+      const defaultPassword = 'ntpcwater2025';
+
+      // 嘗試初始化到資料庫
+      try {
+        await supabase
+          .from('water_site_settings')
+          .upsert({ key: 'adminPassword', value: defaultPassword }, { onConflict: 'key' });
+        console.log('✅ 已初始化管理員密碼到資料庫');
+      } catch (initError) {
+        console.warn('無法保存密碼到資料庫，將使用本地默認值');
+      }
+
+      return defaultPassword;
+    }
+    return data.value;
+  } catch (error) {
+    console.error('取得管理員密碼失敗:', error);
+    // 備用方案：使用預設密碼
+    return 'ntpcwater2025';
+  }
+};
+
+/**
  * 管理員登入（帳號密碼方式）
  */
 export const login = async (username: string, password: string) => {
-  // 簡單的帳號密碼驗證
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-    const session: AdminSession = {
-      username,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return { user: { username } };
+  try {
+    const adminPassword = await getAdminPassword();
+
+    // 帳號密碼驗證
+    if (username === ADMIN_USERNAME && password === adminPassword) {
+      const session: AdminSession = {
+        username,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      return { user: { username } };
+    }
+    throw new Error('帳號或密碼錯誤');
+  } catch (error: any) {
+    throw new Error(error.message || '登入失敗');
   }
-  throw new Error('帳號或密碼錯誤');
 };
 
 /**

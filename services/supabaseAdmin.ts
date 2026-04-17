@@ -1,6 +1,16 @@
 import { supabase } from './supabaseClient';
 import { GalleryItem, NewsItem, MediaItem, AwardItem, ThankYouItem } from '../types';
 
+// ==================== 系統設定 ====================
+
+export const updateAdminPassword = async (password: string) => {
+  const { error } = await supabase
+    .from('water_site_settings')
+    .upsert({ key: 'adminPassword', value: password })
+    .eq('key', 'adminPassword');
+  if (error) throw error;
+};
+
 // ==================== 協會簡介 ====================
 
 export const updateIntroContent = async (html: string) => {
