@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { getResultGalleryItems } from '../../services/cmsLoader';
 import {
   createAlbum,
   updateAlbum,
   deleteAlbum,
+  uploadAlbumPhoto,
+  deleteAlbumPhoto,
 } from '../../services/supabaseAdmin';
 import { Editor } from '@tinymce/tinymce-react';
 
@@ -19,6 +21,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     loadItems();
@@ -85,6 +88,31 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
     }
   };
 
+  const handleUploadPhoto = async (albumId: string, file: File) => {
+    setUploading(albumId);
+    try {
+      await uploadAlbumPhoto('results', albumId, file);
+      onShowToast('照片已上傳', 'success');
+      await loadItems();
+    } catch (error) {
+      onShowToast('上傳失敗', 'error');
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!window.confirm('確定要刪除此照片嗎？')) return;
+
+    try {
+      await deleteAlbumPhoto('results', photoId);
+      onShowToast('照片已刪除', 'success');
+      await loadItems();
+    } catch (error) {
+      onShowToast('刪除失敗', 'error');
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">載入中...</div>;
   }
@@ -136,7 +164,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
       </div>
 
       {/* 現有相簿列表 */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {items.map((item) => (
           <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
             {editingItem?.id === item.id ? (
@@ -174,13 +202,63 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
                 </div>
               </div>
             ) : (
-              <div>
-                <h3 className="text-lg font-semibold">{item.title}</h3>
-                <div
-                  className="text-gray-600 mt-2 text-sm"
-                  dangerouslySetInnerHTML={{ __html: item.description }}
-                />
-                <div className="flex gap-2 mt-4">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
+                  <div
+                    className="text-gray-600 mt-2 text-sm"
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                </div>
+
+                {/* 照片上傳區域 */}
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-4">相簿中的照片 ({item.photos?.length || 0})</h4>
+
+                  <div className="mb-4">
+                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-600 hover:bg-blue-50 transition">
+                      <Upload size={18} className="text-gray-500" />
+                      <span className="text-sm text-gray-600">上傳照片</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadPhoto(item.id, file);
+                        }}
+                        disabled={uploading === item.id}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {item.photos && item.photos.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {item.photos.map((photo) => (
+                        <div key={photo.id} className="relative group">
+                          <img
+                            src={photo.imageUrl}
+                            alt={photo.title}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <button
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition rounded-lg"
+                          >
+                            <Trash2 size={20} className="text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center text-gray-600 text-sm">
+                      <ImageIcon size={32} className="mx-auto mb-2 text-gray-400" />
+                      <p>此相簿尚無照片</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
                   <button
                     onClick={() => setEditingItem(item)}
                     className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
