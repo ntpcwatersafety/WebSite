@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle, Play } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle, Play } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { getMediaReports } from '../../services/cmsLoader';
 import { createMediaReport, updateMediaReport, deleteMediaReport } from '../../services/supabaseAdmin';
@@ -28,10 +28,14 @@ interface MediaRowProps {
 const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
   const [draft, setDraft] = useState({ ...item });
 
-  const save = (field: keyof MediaItem, value: any) => {
-    if (draft[field] !== item[field]) {
-      onUpdate(item.id, { [field]: value });
-    }
+  const handleSave = () => {
+    onUpdate(item.id, {
+      date: draft.date,
+      title: draft.title,
+      source: draft.source,
+      link: draft.link,
+      type: draft.type,
+    });
   };
 
   return (
@@ -49,7 +53,6 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
             type="date"
             value={draft.date || ''}
             onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            onBlur={(e) => save('date', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -57,7 +60,7 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
           <label className="block text-xs text-gray-500 mb-1">類型</label>
           <select
             value={draft.type || 'news'}
-            onChange={(e) => { setDraft({ ...draft, type: e.target.value }); onUpdate(item.id, { type: e.target.value }); }}
+            onChange={(e) => setDraft({ ...draft, type: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           >
             <option value="news">新聞</option>
@@ -71,7 +74,6 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.title || ''}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-            onBlur={(e) => save('title', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -81,7 +83,6 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.source || ''}
             onChange={(e) => setDraft({ ...draft, source: e.target.value })}
-            onBlur={(e) => save('source', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -91,12 +92,18 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
             type="url"
             value={draft.link || ''}
             onChange={(e) => setDraft({ ...draft, link: e.target.value })}
-            onBlur={(e) => save('link', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             placeholder="https://..."
           />
         </div>
-        <div className="flex justify-end">
+        <div className="md:col-span-2 flex justify-end gap-2">
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <Save size={16} />
+            保存
+          </button>
           <button
             onClick={() => onDelete(item.id)}
             className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -114,15 +121,13 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadMedia();
-  }, []);
+  useEffect(() => { loadMedia(); }, []);
 
   const loadMedia = async () => {
     try {
       const data = await getMediaReports();
       setMedia(data);
-    } catch (error) {
+    } catch {
       onShowToast('載入媒體報導失敗', 'error');
     } finally {
       setLoading(false);
@@ -141,7 +146,7 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
       await createMediaReport(newItem);
       onShowToast('媒體報導已新增', 'success');
       loadMedia();
-    } catch (error) {
+    } catch {
       onShowToast('新增失敗', 'error');
     }
   };
@@ -151,7 +156,7 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
       await updateMediaReport(id, updates);
       setMedia(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
       onShowToast('媒體報導已更新', 'success');
-    } catch (error) {
+    } catch {
       onShowToast('更新失敗', 'error');
     }
   };
@@ -162,43 +167,34 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
       await deleteMediaReport(id);
       setMedia(prev => prev.filter(m => m.id !== id));
       onShowToast('媒體報導已刪除', 'success');
-    } catch (error) {
+    } catch {
       onShowToast('刪除失敗', 'error');
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">載入中...</div>;
-  }
+  if (loading) return <div className="text-center py-8">載入中...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">媒體報導</h2>
-        <button
-          onClick={handleAddMedia}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-        >
-          <Plus size={18} />
-          新增報導
+        <button onClick={handleAddMedia} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+          <Plus size={18} />新增報導
         </button>
       </div>
-
       <div className="space-y-4">
         {media.map((item) => (
           <MediaRow key={item.id} item={item} onUpdate={handleUpdateMedia} onDelete={handleDeleteMedia} />
         ))}
       </div>
-
       {media.length === 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
           <p className="text-gray-600">尚無媒體報導</p>
         </div>
       )}
-
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>每條報導逐項即存。填入 YouTube 連結時，前台會自動顯示影片預覽。</p>
+        <p>編輯後按「保存」才會寫入資料庫。填入 YouTube 連結時，前台會自動顯示影片預覽。</p>
       </div>
     </div>
   );
