@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import AdminIntro from './AdminIntro';
 import AdminNews from './AdminNews';
+import AdminActivities from './AdminActivities';
+import AdminResults from './AdminResults';
 import AdminGallery from './AdminGallery';
 import AdminMedia from './AdminMedia';
 import AdminAwards from './AdminAwards';
@@ -14,7 +16,7 @@ interface AdminDashboardProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-type AdminTab = 'intro' | 'news' | 'gallery' | 'media' | 'awards' | 'thankyou';
+type AdminTab = 'intro' | 'news' | 'activities' | 'results' | 'gallery' | 'media' | 'awards' | 'thankyou';
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('intro');
@@ -22,7 +24,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
   const menuItems: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     { id: 'intro', label: '協會簡介', icon: <FileText size={20} /> },
     { id: 'news', label: '最新消息', icon: <Newspaper size={20} /> },
-    { id: 'gallery', label: '活動相簿', icon: <Images size={20} /> },
+    { id: 'activities', label: '報名資訊', icon: <Images size={20} /> },
+    { id: 'results', label: '訓練成果', icon: <Images size={20} /> },
+    { id: 'gallery', label: '活動剪影', icon: <Images size={20} /> },
     { id: 'media', label: '媒體報導', icon: <Settings size={20} /> },
     { id: 'awards', label: '獲獎紀錄', icon: <Award size={20} /> },
     { id: 'thankyou', label: '感恩有您', icon: <Heart size={20} /> },
@@ -59,6 +63,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
           )}
           {activeTab === 'news' && (
             <AdminNews onShowToast={onShowToast} />
+          )}
+          {activeTab === 'activities' && (
+            <AdminActivities onShowToast={onShowToast} />
+          )}
+          {activeTab === 'results' && (
+            <AdminResults onShowToast={onShowToast} />
           )}
           {activeTab === 'gallery' && (
             <AdminGallery onShowToast={onShowToast} />

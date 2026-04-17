@@ -1,0 +1,209 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Upload } from 'lucide-react';
+import { GalleryItem } from '../../types';
+import { getActivityGalleryItems } from '../../services/cmsLoader';
+import {
+  createAlbum,
+  updateAlbum,
+  deleteAlbum,
+  uploadAlbumPhoto,
+  deleteAlbumPhoto,
+} from '../../services/supabaseAdmin';
+import { Editor } from '@tinymce/tinymce-react';
+
+interface AdminActivitiesProps {
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
+}
+
+const AdminActivities: React.FC<AdminActivitiesProps> = ({ onShowToast }) => {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  const loadItems = async () => {
+    setLoading(true);
+    try {
+      const data = await getActivityGalleryItems();
+      setItems(data);
+    } catch (error) {
+      onShowToast('載入報名資訊失敗', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddAlbum = async () => {
+    if (!newTitle.trim()) {
+      onShowToast('請輸入相簿標題', 'error');
+      return;
+    }
+
+    try {
+      await createAlbum('activities', {
+        title: newTitle,
+        description: newDescription,
+        isActive: true,
+      });
+      onShowToast('相簿已新增', 'success');
+      setNewTitle('');
+      setNewDescription('');
+      await loadItems();
+    } catch (error) {
+      onShowToast('新增相簿失敗', 'error');
+    }
+  };
+
+  const handleUpdateDescription = async (item: GalleryItem) => {
+    if (!editingItem) return;
+
+    try {
+      await updateAlbum(item.id, {
+        title: editingItem.title || item.title,
+        description: editingItem.description,
+      });
+      onShowToast('已保存', 'success');
+      setEditingItem(null);
+      await loadItems();
+    } catch (error) {
+      onShowToast('保存失敗', 'error');
+    }
+  };
+
+  const handleDeleteAlbum = async (id: string) => {
+    if (!window.confirm('確定要刪除此相簿嗎？')) return;
+
+    try {
+      await deleteAlbum(id);
+      onShowToast('已刪除', 'success');
+      await loadItems();
+    } catch (error) {
+      onShowToast('刪除失敗', 'error');
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">載入中...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900">報名資訊</h2>
+
+      {/* 新增相簿 */}
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+        <h3 className="text-lg font-semibold mb-4">新增報名資訊</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              標題
+            </label>
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="例如：2026年救生員訓練班"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              描述
+            </label>
+            <Editor
+              apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+              value={newDescription}
+              onEditorChange={setNewDescription}
+              init={{
+                height: 300,
+                menubar: false,
+                plugins: ['link', 'image'],
+                toolbar: 'bold italic underline | bullist numlist | link image',
+              }}
+            />
+          </div>
+          <button
+            onClick={handleAddAlbum}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <Plus size={18} />
+            新增
+          </button>
+        </div>
+      </div>
+
+      {/* 現有相簿列表 */}
+      <div className="space-y-4">
+        {items.map((item) => (
+          <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
+            {editingItem?.id === item.id ? (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={editingItem.title}
+                  onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+                <Editor
+                  apiKey="r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo"
+                  value={editingItem.description}
+                  onEditorChange={(content) => setEditingItem({ ...editingItem, description: content })}
+                  init={{
+                    height: 300,
+                    menubar: false,
+                    plugins: ['link', 'image'],
+                    toolbar: 'bold italic underline | bullist numlist | link image',
+                  }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleUpdateDescription(item)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    保存
+                  </button>
+                  <button
+                    onClick={() => setEditingItem(null)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold">{item.title}</h3>
+                <div
+                  className="text-gray-600 mt-2 text-sm"
+                  dangerouslySetInnerHTML={{ __html: item.description }}
+                />
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => setEditingItem(item)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  >
+                    編輯
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAlbum(item.id)}
+                    className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                  >
+                    <Trash2 size={14} />
+                    刪除
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default AdminActivities;

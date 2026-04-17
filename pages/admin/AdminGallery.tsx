@@ -1,43 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Upload, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import { GalleryItem } from '../../types';
-import { getActivityGalleryItems, getResultGalleryItems, getGalleryItems } from '../../services/cmsLoader';
+import { getGalleryItems } from '../../services/cmsLoader';
 import {
   createAlbum,
   updateAlbum,
   deleteAlbum,
   uploadAlbumPhoto,
   deleteAlbumPhoto,
-  setCoverPhoto,
 } from '../../services/supabaseAdmin';
 
 interface AdminGalleryProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-type GalleryType = 'activities' | 'results' | 'gallery';
-
 const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
-  const [galleryType, setGalleryType] = useState<GalleryType>('activities');
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
   useEffect(() => {
     loadGallery();
-  }, [galleryType]);
+  }, []);
 
   const loadGallery = async () => {
     setLoading(true);
     try {
-      let data: GalleryItem[] = [];
-      if (galleryType === 'activities') {
-        data = await getActivityGalleryItems();
-      } else if (galleryType === 'results') {
-        data = await getResultGalleryItems();
-      } else {
-        data = await getGalleryItems();
-      }
+      const data = await getGalleryItems();
       setItems(data);
     } catch (error) {
       onShowToast('載入相簿失敗', 'error');
@@ -57,7 +46,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
         sortOrder: items.length + 1,
         coverPhotoId: null,
       };
-      await createAlbum(galleryType, newAlbum);
+      await createAlbum('gallery', newAlbum);
       onShowToast('相簿已新增', 'success');
       loadGallery();
     } catch (error) {
@@ -117,25 +106,14 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">活動相簿</h2>
-        <div className="flex items-center gap-3">
-          <select
-            value={galleryType}
-            onChange={(e) => setGalleryType(e.target.value as GalleryType)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="activities">報名資訊</option>
-            <option value="results">訓練成果</option>
-            <option value="gallery">活動剪影</option>
-          </select>
-          <button
-            onClick={handleAddAlbum}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            <Plus size={18} />
-            新增相簿
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-900">活動剪影</h2>
+        <button
+          onClick={handleAddAlbum}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+        >
+          <Plus size={18} />
+          新增相簿
+        </button>
       </div>
 
       <div className="space-y-6">
@@ -249,7 +227,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>相簿和照片逐項即存。支援拖拽重新排序（待實裝）。</p>
+        <p>相簿和照片逐項即存。</p>
       </div>
     </div>
   );
