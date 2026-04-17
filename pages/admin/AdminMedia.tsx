@@ -19,6 +19,97 @@ const isYouTubeLink = (url?: string) => {
   }
 };
 
+interface MediaRowProps {
+  item: MediaItem;
+  onUpdate: (id: string, updates: Partial<MediaItem>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
+  const [draft, setDraft] = useState({ ...item });
+
+  const save = (field: keyof MediaItem, value: any) => {
+    if (draft[field] !== item[field]) {
+      onUpdate(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      {isYouTubeLink(draft.link) && (
+        <div className="mb-4 bg-gray-100 rounded-lg p-2 flex items-center gap-2 text-sm text-blue-600">
+          <Play size={16} />
+          <span>YouTube 連結已偵測，前台會自動顯示影片預覽</span>
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">日期</label>
+          <input
+            type="date"
+            value={draft.date || ''}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+            onBlur={(e) => save('date', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">類型</label>
+          <select
+            value={draft.type || 'news'}
+            onChange={(e) => { setDraft({ ...draft, type: e.target.value }); onUpdate(item.id, { type: e.target.value }); }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="news">新聞</option>
+            <option value="video">影片</option>
+            <option value="article">文章</option>
+          </select>
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">標題</label>
+          <input
+            type="text"
+            value={draft.title || ''}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            onBlur={(e) => save('title', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">來源</label>
+          <input
+            type="text"
+            value={draft.source || ''}
+            onChange={(e) => setDraft({ ...draft, source: e.target.value })}
+            onBlur={(e) => save('source', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">連結</label>
+          <input
+            type="url"
+            value={draft.link || ''}
+            onChange={(e) => setDraft({ ...draft, link: e.target.value })}
+            onBlur={(e) => save('link', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            placeholder="https://..."
+          />
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => onDelete(item.id)}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            <Trash2 size={16} />
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,8 +149,8 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
   const handleUpdateMedia = async (id: string, updates: Partial<MediaItem>) => {
     try {
       await updateMediaReport(id, updates);
+      setMedia(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
       onShowToast('媒體報導已更新', 'success');
-      loadMedia();
     } catch (error) {
       onShowToast('更新失敗', 'error');
     }
@@ -69,8 +160,8 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
     if (!confirm('確定要刪除此媒體報導嗎？')) return;
     try {
       await deleteMediaReport(id);
+      setMedia(prev => prev.filter(m => m.id !== id));
       onShowToast('媒體報導已刪除', 'success');
-      loadMedia();
     } catch (error) {
       onShowToast('刪除失敗', 'error');
     }
@@ -95,75 +186,7 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
 
       <div className="space-y-4">
         {media.map((item) => (
-          <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-            {isYouTubeLink(item.link) && (
-              <div className="mb-4 bg-gray-100 rounded-lg p-2 flex items-center gap-2 text-sm text-blue-600">
-                <Play size={16} />
-                <span>YouTube 連結已偵測，前台會自動顯示影片預覽</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">日期</label>
-                <input
-                  type="date"
-                  value={item.date || ''}
-                  onChange={(e) => handleUpdateMedia(item.id, { date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">類型</label>
-                <select
-                  value={item.type || 'news'}
-                  onChange={(e) => handleUpdateMedia(item.id, { type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                >
-                  <option value="news">新聞</option>
-                  <option value="video">影片</option>
-                  <option value="article">文章</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">標題</label>
-                <input
-                  type="text"
-                  value={item.title || ''}
-                  onChange={(e) => handleUpdateMedia(item.id, { title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">來源</label>
-                <input
-                  type="text"
-                  value={item.source || ''}
-                  onChange={(e) => handleUpdateMedia(item.id, { source: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">連結</label>
-                <input
-                  type="url"
-                  value={item.link || ''}
-                  onChange={(e) => handleUpdateMedia(item.id, { link: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => handleDeleteMedia(item.id)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <Trash2 size={16} />
-                  刪除
-                </button>
-              </div>
-            </div>
-          </div>
+          <MediaRow key={item.id} item={item} onUpdate={handleUpdateMedia} onDelete={handleDeleteMedia} />
         ))}
       </div>
 

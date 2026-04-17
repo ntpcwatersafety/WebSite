@@ -57,8 +57,8 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleUpdateAlbum = async (id: string, updates: Partial<GalleryItem>) => {
     try {
       await updateAlbum('gallery', id, updates);
+      setItems(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
       onShowToast('相簿已更新', 'success');
-      loadGallery();
     } catch (error) {
       onShowToast('更新失敗', 'error');
     }
@@ -68,8 +68,8 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
     if (!confirm('確定要刪除此相簿嗎？相關照片也會被刪除。')) return;
     try {
       await deleteAlbum('gallery', id);
+      setItems(prev => prev.filter(a => a.id !== id));
       onShowToast('相簿已刪除', 'success');
-      loadGallery();
     } catch (error) {
       onShowToast('刪除失敗', 'error');
     }

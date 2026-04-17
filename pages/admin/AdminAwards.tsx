@@ -8,6 +8,79 @@ interface AdminAwardsProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
+interface AwardRowProps {
+  item: AwardItem;
+  onUpdate: (id: string, updates: Partial<AwardItem>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
+  const [draft, setDraft] = useState({ ...item });
+
+  const save = (field: keyof AwardItem, value: any) => {
+    if (draft[field] !== item[field]) {
+      onUpdate(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">年份</label>
+          <input
+            type="text"
+            value={draft.year || ''}
+            onChange={(e) => setDraft({ ...draft, year: e.target.value })}
+            onBlur={(e) => save('year', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">圖示代碼（Emoji 或類別）</label>
+          <input
+            type="text"
+            value={draft.icon || ''}
+            onChange={(e) => setDraft({ ...draft, icon: e.target.value })}
+            onBlur={(e) => save('icon', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            placeholder="🏆"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">獎項名稱</label>
+          <input
+            type="text"
+            value={draft.title || ''}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            onBlur={(e) => save('title', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">說明</label>
+          <textarea
+            value={draft.description || ''}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            onBlur={(e) => save('description', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            rows={2}
+          />
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => onDelete(item.id)}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            <Trash2 size={16} />
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
   const [awards, setAwards] = useState<AwardItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +119,8 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
   const handleUpdateAward = async (id: string, updates: Partial<AwardItem>) => {
     try {
       await updateAward(id, updates);
+      setAwards(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
       onShowToast('獲獎紀錄已更新', 'success');
-      loadAwards();
     } catch (error) {
       onShowToast('更新失敗', 'error');
     }
@@ -57,8 +130,8 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
     if (!confirm('確定要刪除此獲獎紀錄嗎？')) return;
     try {
       await deleteAward(id);
+      setAwards(prev => prev.filter(a => a.id !== id));
       onShowToast('獲獎紀錄已刪除', 'success');
-      loadAwards();
     } catch (error) {
       onShowToast('刪除失敗', 'error');
     }
@@ -83,56 +156,7 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
 
       <div className="space-y-4">
         {awards.map((item) => (
-          <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">年份</label>
-                <input
-                  type="text"
-                  value={item.year || ''}
-                  onChange={(e) => handleUpdateAward(item.id, { year: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">圖示代碼（Emoji 或類別）</label>
-                <input
-                  type="text"
-                  value={item.icon || ''}
-                  onChange={(e) => handleUpdateAward(item.id, { icon: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="🏆"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">獎項名稱</label>
-                <input
-                  type="text"
-                  value={item.title || ''}
-                  onChange={(e) => handleUpdateAward(item.id, { title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">說明</label>
-                <textarea
-                  value={item.description || ''}
-                  onChange={(e) => handleUpdateAward(item.id, { description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  rows={2}
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => handleDeleteAward(item.id)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <Trash2 size={16} />
-                  刪除
-                </button>
-              </div>
-            </div>
-          </div>
+          <AwardRow key={item.id} item={item} onUpdate={handleUpdateAward} onDelete={handleDeleteAward} />
         ))}
       </div>
 

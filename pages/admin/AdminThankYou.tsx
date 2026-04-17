@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle, GripVertical } from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { ThankYouItem } from '../../types';
 import { getThankYouItems } from '../../services/cmsLoader';
 import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../../services/supabaseAdmin';
@@ -7,6 +7,78 @@ import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../.
 interface AdminThankYouProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
+
+interface ThankYouRowProps {
+  item: ThankYouItem;
+  onUpdate: (id: string, updates: Partial<ThankYouItem>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) => {
+  const [draft, setDraft] = useState({ ...item });
+
+  const save = (field: keyof ThankYouItem, value: any) => {
+    if (draft[field] !== item[field]) {
+      onUpdate(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">名稱</label>
+          <input
+            type="text"
+            value={draft.name || ''}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            onBlur={(e) => save('name', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">年份</label>
+          <input
+            type="text"
+            value={draft.year || ''}
+            onChange={(e) => setDraft({ ...draft, year: e.target.value })}
+            onBlur={(e) => save('year', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">排序順序</label>
+          <input
+            type="number"
+            value={draft.sortOrder || 0}
+            onChange={(e) => setDraft({ ...draft, sortOrder: parseInt(e.target.value) })}
+            onBlur={(e) => save('sortOrder', parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">說明</label>
+          <textarea
+            value={draft.description || ''}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            onBlur={(e) => save('description', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            rows={2}
+          />
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => onDelete(item.id)}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            <Trash2 size={16} />
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
   const [items, setItems] = useState<ThankYouItem[]>([]);
@@ -46,8 +118,8 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
   const handleUpdateItem = async (id: string, updates: Partial<ThankYouItem>) => {
     try {
       await updateThankYouItem(id, updates);
+      setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
       onShowToast('感恩項目已更新', 'success');
-      loadItems();
     } catch (error) {
       onShowToast('更新失敗', 'error');
     }
@@ -57,8 +129,8 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
     if (!confirm('確定要刪除此感恩項目嗎？')) return;
     try {
       await deleteThankYouItem(id);
+      setItems(prev => prev.filter(i => i.id !== id));
       onShowToast('感恩項目已刪除', 'success');
-      loadItems();
     } catch (error) {
       onShowToast('刪除失敗', 'error');
     }
@@ -83,55 +155,7 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
 
       <div className="space-y-4">
         {items.map((item) => (
-          <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">名稱</label>
-                <input
-                  type="text"
-                  value={item.name || ''}
-                  onChange={(e) => handleUpdateItem(item.id, { name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">年份</label>
-                <input
-                  type="text"
-                  value={item.year || ''}
-                  onChange={(e) => handleUpdateItem(item.id, { year: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">排序順序</label>
-                <input
-                  type="number"
-                  value={item.sortOrder || 0}
-                  onChange={(e) => handleUpdateItem(item.id, { sortOrder: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">說明</label>
-                <textarea
-                  value={item.description || ''}
-                  onChange={(e) => handleUpdateItem(item.id, { description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  rows={2}
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => handleDeleteItem(item.id)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <Trash2 size={16} />
-                  刪除
-                </button>
-              </div>
-            </div>
-          </div>
+          <ThankYouRow key={item.id} item={item} onUpdate={handleUpdateItem} onDelete={handleDeleteItem} />
         ))}
       </div>
 
