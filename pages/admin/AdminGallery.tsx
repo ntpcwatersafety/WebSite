@@ -178,9 +178,11 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleUploadPhoto = async (albumId: string, file: File) => {
     setUploading(albumId);
     try {
-      await uploadAlbumPhoto('gallery', albumId, file);
+      const { photoId, imageUrl } = await uploadAlbumPhoto('gallery', albumId, file);
+      setItems(prev => prev.map(a => a.id === albumId
+        ? { ...a, photos: [...(a.photos || []), { id: photoId, imageUrl, title: '', description: '' }] }
+        : a));
       onShowToast('照片已上傳', 'success');
-      loadGallery();
     } catch {
       onShowToast('上傳失敗', 'error');
     } finally {
@@ -191,8 +193,8 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleDeletePhoto = async (photoId: string) => {
     try {
       await deleteAlbumPhoto('gallery', photoId);
+      setItems(prev => prev.map(a => ({ ...a, photos: (a.photos || []).filter(p => p.id !== photoId) })));
       onShowToast('照片已刪除', 'success');
-      loadGallery();
     } catch {
       onShowToast('刪除失敗', 'error');
     }
@@ -201,8 +203,11 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleDeletePhotosBatch = async (albumId: string, photoIds: string[]) => {
     try {
       await deleteAlbumPhotosBatch('gallery', photoIds);
+      const idSet = new Set(photoIds);
+      setItems(prev => prev.map(a => a.id === albumId
+        ? { ...a, photos: (a.photos || []).filter(p => !idSet.has(p.id)) }
+        : a));
       onShowToast(`已刪除 ${photoIds.length} 張照片`, 'success');
-      loadGallery();
     } catch {
       onShowToast('批次刪除失敗', 'error');
     }
