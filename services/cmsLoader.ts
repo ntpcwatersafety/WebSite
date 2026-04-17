@@ -132,13 +132,43 @@ export const getHomeNews = async (): Promise<NewsItem[]> => {
  */
 export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
-    const { data, error } = await supabase
+    // 先查相簿
+    const { data: albums, error: albumError } = await supabase
       .from('water_activity_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_activity_photos(id, image_url, title, description)')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
       .eq('is_active', true)
       .order('date', { ascending: false });
-    if (error) throw error;
-    const items = (data || []).map(convertGalleryAlbum);
+
+    if (albumError) throw albumError;
+
+    // 再查照片
+    const { data: photos, error: photoError } = await supabase
+      .from('water_activity_photos')
+      .select('id, album_id, image_url, title, description');
+
+    if (photoError) throw photoError;
+
+    // 在 JavaScript 中組合數據
+    const items = (albums || []).map((album: any) => {
+      const albumPhotos = (photos || []).filter(p => p.album_id === album.id);
+      return {
+        id: album.id,
+        title: album.title,
+        description: album.description,
+        isActive: album.is_active,
+        date: album.date,
+        category: album.category,
+        sortOrder: album.sort_order,
+        coverPhotoId: album.cover_photo_id,
+        photos: albumPhotos.map((photo: any) => ({
+          id: photo.id,
+          imageUrl: photo.image_url,
+          title: photo.title,
+          description: photo.description,
+        })),
+      };
+    });
+
     return sortGalleryItems(items);
   } catch (error) {
     console.error('取得報名資訊相簿失敗:', error);
@@ -151,13 +181,43 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
  */
 export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
-    const { data, error } = await supabase
+    // 先查相簿
+    const { data: albums, error: albumError } = await supabase
       .from('water_result_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_result_photos(id, image_url, title, description)')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
       .eq('is_active', true)
       .order('date', { ascending: false });
-    if (error) throw error;
-    const items = (data || []).map(convertGalleryAlbum);
+
+    if (albumError) throw albumError;
+
+    // 再查照片
+    const { data: photos, error: photoError } = await supabase
+      .from('water_result_photos')
+      .select('id, album_id, image_url, title, description');
+
+    if (photoError) throw photoError;
+
+    // 在 JavaScript 中組合數據
+    const items = (albums || []).map((album: any) => {
+      const albumPhotos = (photos || []).filter(p => p.album_id === album.id);
+      return {
+        id: album.id,
+        title: album.title,
+        description: album.description,
+        isActive: album.is_active,
+        date: album.date,
+        category: album.category,
+        sortOrder: album.sort_order,
+        coverPhotoId: album.cover_photo_id,
+        photos: albumPhotos.map((photo: any) => ({
+          id: photo.id,
+          imageUrl: photo.image_url,
+          title: photo.title,
+          description: photo.description,
+        })),
+      };
+    });
+
     return sortGalleryItems(items);
   } catch (error) {
     console.error('取得訓練成果相簿失敗:', error);
@@ -171,32 +231,53 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     console.log('getGalleryItems: 開始查詢 water_gallery_albums...');
-    const { data, error } = await supabase
+    // 先查相簿
+    const { data: albums, error: albumError } = await supabase
       .from('water_gallery_albums')
-      .select(`
-        id,
-        title,
-        description,
-        is_active,
-        date,
-        category,
-        sort_order,
-        cover_photo_id,
-        water_gallery_photos (
-          id,
-          image_url,
-          title,
-          description
-        )
-      `)
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
       .eq('is_active', true)
       .order('date', { ascending: false });
-    if (error) {
-      console.error('活動剪影相簿查詢錯誤:', error.message, error.details);
-      throw error;
+
+    if (albumError) {
+      console.error('活動剪影相簿查詢錯誤:', albumError.message, albumError.details);
+      throw albumError;
     }
-    console.log('活動剪影相簿數據:', data);
-    const items = (data || []).map(convertGalleryAlbum);
+
+    console.log('活動剪影相簿數據:', albums);
+
+    // 再查所有照片
+    const { data: photos, error: photoError } = await supabase
+      .from('water_gallery_photos')
+      .select('id, album_id, image_url, title, description');
+
+    if (photoError) {
+      console.error('活動剪影照片查詢錯誤:', photoError.message, photoError.details);
+      throw photoError;
+    }
+
+    console.log('活動剪影照片數據:', photos);
+
+    // 在 JavaScript 中組合數據
+    const items = (albums || []).map((album: any) => {
+      const albumPhotos = (photos || []).filter(p => p.album_id === album.id);
+      return {
+        id: album.id,
+        title: album.title,
+        description: album.description,
+        isActive: album.is_active,
+        date: album.date,
+        category: album.category,
+        sortOrder: album.sort_order,
+        coverPhotoId: album.cover_photo_id,
+        photos: albumPhotos.map((photo: any) => ({
+          id: photo.id,
+          imageUrl: photo.image_url,
+          title: photo.title,
+          description: photo.description,
+        })),
+      };
+    });
+
     return sortGalleryItems(items);
   } catch (error) {
     console.error('取得活動剪影相簿失敗:', error);
