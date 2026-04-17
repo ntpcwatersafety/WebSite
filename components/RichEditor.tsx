@@ -39,8 +39,8 @@ const RichEditor: React.FC<RichEditorProps> = ({ value, onChange, height = 300, 
     <Editor
       id={`tinymce-${id}`}
       apiKey={TINYMCE_API_KEY}
-      value={value ?? ''}
-      onEditorChange={onChange}
+      value={typeof value === 'string' ? value : ''}
+      onEditorChange={(content) => onChange(typeof content === 'string' ? content : '')}
       init={{
         ...EDITOR_INIT,
         height,

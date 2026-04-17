@@ -97,8 +97,8 @@ export const getIntroContent = async (): Promise<string> => {
       console.error('協會簡介查詢錯誤:', error.message, error.details);
       throw error;
     }
-    console.log('協會簡介數據:', data);
-    return data?.value || '';
+    const val = data?.value;
+    return typeof val === 'string' ? val : '';
   } catch (error) {
     console.error('取得協會簡介失敗:', error);
     return '';

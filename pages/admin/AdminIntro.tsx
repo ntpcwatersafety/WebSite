@@ -31,7 +31,7 @@ const AdminIntro: React.FC<AdminIntroProps> = ({ onShowToast }) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateIntroContent(content);
+      await updateIntroContent(typeof content === 'string' ? content : '');
       onShowToast('協會簡介已保存', 'success');
     } catch (error) {
       onShowToast('保存失敗', 'error');
