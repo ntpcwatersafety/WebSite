@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, Trash2, CheckSquare, Square, RefreshCw, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
+import { useToast } from '../../contexts/ToastContext';
 
 interface MediaFile {
   name: string;
@@ -9,13 +10,11 @@ interface MediaFile {
   size: number;
 }
 
-interface AdminMediaLibraryProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
 const BUCKET = 'gallery-images';
 
-const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) => {
+const AdminMediaLibrary: React.FC = () => {
+  const { showToast } = useToast();
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -42,11 +41,11 @@ const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) =>
         }));
       setFiles(items);
     } catch {
-      onShowToast('載入圖檔失敗', 'error');
+      showToast('載入圖檔失敗', 'error');
     } finally {
       setLoading(false);
     }
-  }, [onShowToast]);
+  }, [showToast]);
 
   useEffect(() => {
     loadFiles();
@@ -63,7 +62,7 @@ const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) =>
       if (!error) successCount++;
     }
     setUploading(false);
-    onShowToast(`已上傳 ${successCount} 張圖片`, 'success');
+    showToast(`已上傳 ${successCount} 張圖片`, 'success');
     loadFiles();
   };
 
@@ -91,11 +90,11 @@ const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) =>
       const names = Array.from(selected);
       const { error } = await supabase.storage.from(BUCKET).remove(names);
       if (error) throw error;
-      onShowToast(`已刪除 ${names.length} 張圖片`, 'success');
+      showToast(`已刪除 ${names.length} 張圖片`, 'success');
       setSelected(new Set());
       loadFiles();
     } catch {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     } finally {
       setDeleting(false);
     }
@@ -106,12 +105,12 @@ const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) =>
     try {
       const { error } = await supabase.storage.from(BUCKET).remove([name]);
       if (error) throw error;
-      onShowToast('圖片已刪除', 'success');
+      showToast('圖片已刪除', 'success');
       setSelected((prev) => { const n = new Set(prev); n.delete(name); return n; });
       if (preview?.name === name) setPreview(null);
       loadFiles();
     } catch {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 
@@ -254,7 +253,7 @@ const AdminMediaLibrary: React.FC<AdminMediaLibraryProps> = ({ onShowToast }) =>
               <span className="text-xs text-gray-500">{formatSize(preview.size)}</span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => { navigator.clipboard.writeText(preview.url); onShowToast('已複製圖片連結', 'success'); }}
+                  onClick={() => { navigator.clipboard.writeText(preview.url); showToast('已複製圖片連結', 'success'); }}
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   複製連結

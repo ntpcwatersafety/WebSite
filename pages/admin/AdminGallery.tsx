@@ -12,10 +12,8 @@ import {
   setCoverPhoto,
 } from '../../services/supabaseAdmin';
 import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
+import { useToast } from '../../contexts/ToastContext';
 
-interface AdminGalleryProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
 interface AlbumRowProps {
   album: GalleryItem;
@@ -117,7 +115,8 @@ const AlbumRow: React.FC<AlbumRowProps> = ({
   );
 };
 
-const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
+const AdminGallery: React.FC = () => {
+  const { showToast } = useToast();
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -130,7 +129,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       const data = await getGalleryItems();
       setItems(data);
     } catch {
-      onShowToast('載入相簿失敗', 'error');
+      showToast('載入相簿失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -147,10 +146,10 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
         sortOrder: items.length + 1,
         coverPhotoId: null,
       });
-      onShowToast('相簿已新增', 'success');
+      showToast('相簿已新增', 'success');
       loadGallery();
     } catch {
-      onShowToast('新增失敗', 'error');
+      showToast('新增失敗', 'error');
     }
   };
 
@@ -158,9 +157,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
     try {
       await updateAlbum('gallery', id, updates);
       setItems(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
-      onShowToast('相簿已更新', 'success');
+      showToast('相簿已更新', 'success');
     } catch {
-      onShowToast('更新失敗', 'error');
+      showToast('更新失敗', 'error');
     }
   };
 
@@ -169,9 +168,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
     try {
       await deleteAlbum('gallery', id);
       setItems(prev => prev.filter(a => a.id !== id));
-      onShowToast('相簿已刪除', 'success');
+      showToast('相簿已刪除', 'success');
     } catch {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 
@@ -182,9 +181,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       setItems(prev => prev.map(a => a.id === albumId
         ? { ...a, photos: [...(a.photos || []), { id: photoId, imageUrl, title: '', description: '' }] }
         : a));
-      onShowToast('照片已上傳', 'success');
+      showToast('照片已上傳', 'success');
     } catch {
-      onShowToast('上傳失敗', 'error');
+      showToast('上傳失敗', 'error');
     } finally {
       setUploading(null);
     }
@@ -194,9 +193,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
     try {
       await deleteAlbumPhoto('gallery', photoId);
       setItems(prev => prev.map(a => ({ ...a, photos: (a.photos || []).filter(p => p.id !== photoId) })));
-      onShowToast('照片已刪除', 'success');
+      showToast('照片已刪除', 'success');
     } catch {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 
@@ -207,9 +206,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       setItems(prev => prev.map(a => a.id === albumId
         ? { ...a, photos: (a.photos || []).filter(p => !idSet.has(p.id)) }
         : a));
-      onShowToast(`已刪除 ${photoIds.length} 張照片`, 'success');
+      showToast(`已刪除 ${photoIds.length} 張照片`, 'success');
     } catch {
-      onShowToast('批次刪除失敗', 'error');
+      showToast('批次刪除失敗', 'error');
     }
   };
 
@@ -217,9 +216,9 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
     try {
       await setCoverPhoto('gallery', albumId, photoId);
       setItems(prev => prev.map(a => a.id === albumId ? { ...a, coverPhotoId: photoId } : a));
-      onShowToast(photoId ? '封面已設定' : '已取消封面', 'success');
+      showToast(photoId ? '封面已設定' : '已取消封面', 'success');
     } catch {
-      onShowToast('設定封面失敗', 'error');
+      showToast('設定封面失敗', 'error');
     }
   };
 

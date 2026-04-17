@@ -3,10 +3,8 @@ import { Plus, Trash2, Save, CheckCircle, Play } from 'lucide-react';
 import { MediaItem } from '../../types';
 import { getMediaReports } from '../../services/cmsLoader';
 import { createMediaReport, updateMediaReport, deleteMediaReport } from '../../services/supabaseAdmin';
+import { useToast } from '../../contexts/ToastContext';
 
-interface AdminMediaProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
 const isYouTubeLink = (url?: string) => {
   if (!url) return false;
@@ -117,7 +115,8 @@ const MediaRow: React.FC<MediaRowProps> = ({ item, onUpdate, onDelete }) => {
   );
 };
 
-const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
+const AdminMedia: React.FC = () => {
+  const { showToast } = useToast();
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -128,7 +127,7 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
       const data = await getMediaReports();
       setMedia(data);
     } catch {
-      onShowToast('載入媒體報導失敗', 'error');
+      showToast('載入媒體報導失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -144,10 +143,10 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
         type: 'news',
       };
       await createMediaReport(newItem);
-      onShowToast('媒體報導已新增', 'success');
+      showToast('媒體報導已新增', 'success');
       loadMedia();
     } catch {
-      onShowToast('新增失敗', 'error');
+      showToast('新增失敗', 'error');
     }
   };
 
@@ -155,9 +154,9 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
     try {
       await updateMediaReport(id, updates);
       setMedia(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-      onShowToast('媒體報導已更新', 'success');
+      showToast('媒體報導已更新', 'success');
     } catch {
-      onShowToast('更新失敗', 'error');
+      showToast('更新失敗', 'error');
     }
   };
 
@@ -166,9 +165,9 @@ const AdminMedia: React.FC<AdminMediaProps> = ({ onShowToast }) => {
     try {
       await deleteMediaReport(id);
       setMedia(prev => prev.filter(m => m.id !== id));
-      onShowToast('媒體報導已刪除', 'success');
+      showToast('媒體報導已刪除', 'success');
     } catch {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 

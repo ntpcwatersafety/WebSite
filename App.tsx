@@ -7,20 +7,28 @@ import Contact from './pages/Contact';
 import GenericPage from './pages/GenericPage';
 import Gallery from './pages/Gallery';
 import Admin from './pages/Admin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminIntro from './pages/admin/AdminIntro';
+import AdminNews from './pages/admin/AdminNews';
+import AdminActivities from './pages/admin/AdminActivities';
+import AdminResults from './pages/admin/AdminResults';
+import AdminGallery from './pages/admin/AdminGallery';
+import AdminMedia from './pages/admin/AdminMedia';
+import AdminAwards from './pages/admin/AdminAwards';
+import AdminThankYou from './pages/admin/AdminThankYou';
+import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
 import { PAGE_CONTENT, MEDIA_SECTIONS } from './services/cms';
 import ThankYou from './pages/ThankYou';
 import { getActivityGalleryItems, getGalleryItems, getResultGalleryItems } from './services/cmsLoader';
 
-// 包裝元件：根據路徑決定是否顯示 Navbar 和 Footer
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isAdminPage = location.pathname === '/admin';
+  const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdminPage && <Navbar />}
-      
-      {/* Main Content Area */}
+
       <div className={`flex-grow ${!isAdminPage ? 'mt-[78px] md:mt-[70px]' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -29,9 +37,23 @@ const AppContent: React.FC = () => {
           <Route path="/gallery" element={<Gallery key="gallery" pageKey="gallery" loadItems={getGalleryItems} emptyMessage="目前尚無活動剪影內容。" itemLabel="活動" />} />
           <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />
           <Route path="/thankyou" element={<ThankYou />} />
-          {/* <Route path="/about" element={<GenericPage data={PAGE_CONTENT.about} />} /> */}
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<Admin />} />
+
+          {/* 後台：Admin 是外層 layout（header+toast），AdminDashboard 是內層 layout（側邊選單） */}
+          <Route path="/admin" element={<Admin />}>
+            <Route element={<AdminDashboard />}>
+              <Route index element={<AdminIntro />} />
+              <Route path="intro" element={<AdminIntro />} />
+              <Route path="news" element={<AdminNews />} />
+              <Route path="activities" element={<AdminActivities />} />
+              <Route path="results" element={<AdminResults />} />
+              <Route path="gallery" element={<AdminGallery />} />
+              <Route path="media" element={<AdminMedia />} />
+              <Route path="awards" element={<AdminAwards />} />
+              <Route path="thankyou" element={<AdminThankYou />} />
+              <Route path="medialibrary" element={<AdminMediaLibrary />} />
+            </Route>
+          </Route>
         </Routes>
       </div>
 

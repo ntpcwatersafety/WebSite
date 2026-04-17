@@ -3,10 +3,8 @@ import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { ThankYouItem } from '../../types';
 import { getThankYouItems } from '../../services/cmsLoader';
 import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../../services/supabaseAdmin';
+import { useToast } from '../../contexts/ToastContext';
 
-interface AdminThankYouProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
 interface ThankYouRowProps {
   item: ThankYouItem;
@@ -86,7 +84,8 @@ const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) =
   );
 };
 
-const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
+const AdminThankYou: React.FC = () => {
+  const { showToast } = useToast();
   const [items, setItems] = useState<ThankYouItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +98,7 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
       const data = await getThankYouItems();
       setItems(data);
     } catch (error) {
-      onShowToast('載入感恩有您失敗', 'error');
+      showToast('載入感恩有您失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -114,10 +113,10 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
         description: '',
       };
       await createThankYouItem(newItem);
-      onShowToast('感恩項目已新增', 'success');
+      showToast('感恩項目已新增', 'success');
       loadItems();
     } catch (error) {
-      onShowToast('新增失敗', 'error');
+      showToast('新增失敗', 'error');
     }
   };
 
@@ -125,9 +124,9 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
     try {
       await updateThankYouItem(id, updates);
       setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
-      onShowToast('感恩項目已更新', 'success');
+      showToast('感恩項目已更新', 'success');
     } catch (error) {
-      onShowToast('更新失敗', 'error');
+      showToast('更新失敗', 'error');
     }
   };
 
@@ -136,9 +135,9 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
     try {
       await deleteThankYouItem(id);
       setItems(prev => prev.filter(i => i.id !== id));
-      onShowToast('感恩項目已刪除', 'success');
+      showToast('感恩項目已刪除', 'success');
     } catch (error) {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 

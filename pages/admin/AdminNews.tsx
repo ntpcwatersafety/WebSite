@@ -3,6 +3,7 @@ import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { NewsItem } from '../../types';
 import { getHomeNews } from '../../services/cmsLoader';
 import { createNewsItem, updateNewsItem, deleteNewsItem } from '../../services/supabaseAdmin';
+import { useToast } from '../../contexts/ToastContext';
 
 interface NewsRowProps {
   item: NewsItem;
@@ -105,11 +106,9 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
   );
 };
 
-interface AdminNewsProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
-const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
+const AdminNews: React.FC = () => {
+  const { showToast } = useToast();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -122,7 +121,7 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
       const data = await getHomeNews();
       setNews(data);
     } catch (error) {
-      onShowToast('載入最新消息失敗', 'error');
+      showToast('載入最新消息失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -139,10 +138,10 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
         isPinned: false,
       };
       await createNewsItem(newItem);
-      onShowToast('新消息已新增', 'success');
+      showToast('新消息已新增', 'success');
       loadNews();
     } catch (error) {
-      onShowToast('新增失敗', 'error');
+      showToast('新增失敗', 'error');
     }
   };
 
@@ -150,9 +149,9 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
     try {
       await updateNewsItem(id, updates);
       setNews(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
-      onShowToast('消息已更新', 'success');
+      showToast('消息已更新', 'success');
     } catch (error) {
-      onShowToast('更新失敗', 'error');
+      showToast('更新失敗', 'error');
     }
   };
 
@@ -160,10 +159,10 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
     if (!confirm('確定要刪除此消息嗎？')) return;
     try {
       await deleteNewsItem(id);
-      onShowToast('消息已刪除', 'success');
+      showToast('消息已刪除', 'success');
       loadNews();
     } catch (error) {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 

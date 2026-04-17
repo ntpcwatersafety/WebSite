@@ -3,10 +3,8 @@ import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { AwardItem } from '../../types';
 import { getAwards } from '../../services/cmsLoader';
 import { createAward, updateAward, deleteAward } from '../../services/supabaseAdmin';
+import { useToast } from '../../contexts/ToastContext';
 
-interface AdminAwardsProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
 
 interface AwardRowProps {
   item: AwardItem;
@@ -87,7 +85,8 @@ const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
   );
 };
 
-const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
+const AdminAwards: React.FC = () => {
+  const { showToast } = useToast();
   const [awards, setAwards] = useState<AwardItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -100,7 +99,7 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
       const data = await getAwards();
       setAwards(data);
     } catch (error) {
-      onShowToast('載入獲獎紀錄失敗', 'error');
+      showToast('載入獲獎紀錄失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -115,10 +114,10 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
         icon: '',
       };
       await createAward(newItem);
-      onShowToast('獲獎紀錄已新增', 'success');
+      showToast('獲獎紀錄已新增', 'success');
       loadAwards();
     } catch (error) {
-      onShowToast('新增失敗', 'error');
+      showToast('新增失敗', 'error');
     }
   };
 
@@ -126,9 +125,9 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
     try {
       await updateAward(id, updates);
       setAwards(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
-      onShowToast('獲獎紀錄已更新', 'success');
+      showToast('獲獎紀錄已更新', 'success');
     } catch (error) {
-      onShowToast('更新失敗', 'error');
+      showToast('更新失敗', 'error');
     }
   };
 
@@ -137,9 +136,9 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
     try {
       await deleteAward(id);
       setAwards(prev => prev.filter(a => a.id !== id));
-      onShowToast('獲獎紀錄已刪除', 'success');
+      showToast('獲獎紀錄已刪除', 'success');
     } catch (error) {
-      onShowToast('刪除失敗', 'error');
+      showToast('刪除失敗', 'error');
     }
   };
 

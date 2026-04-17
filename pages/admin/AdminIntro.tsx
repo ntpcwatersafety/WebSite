@@ -3,12 +3,10 @@ import { Save, CheckCircle } from 'lucide-react';
 import { getIntroContent } from '../../services/cmsLoader';
 import { updateIntroContent, uploadEditorImage } from '../../services/supabaseAdmin';
 import RichEditor from '../../components/RichEditor';
+import { useToast } from '../../contexts/ToastContext';
 
-interface AdminIntroProps {
-  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-}
-
-const AdminIntro: React.FC<AdminIntroProps> = ({ onShowToast }) => {
+const AdminIntro: React.FC = () => {
+  const { showToast } = useToast();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -22,7 +20,7 @@ const AdminIntro: React.FC<AdminIntroProps> = ({ onShowToast }) => {
       const intro = await getIntroContent();
       setContent(intro);
     } catch (error) {
-      onShowToast('載入協會簡介失敗', 'error');
+      showToast('載入協會簡介失敗', 'error');
     } finally {
       setLoading(false);
     }
@@ -32,9 +30,9 @@ const AdminIntro: React.FC<AdminIntroProps> = ({ onShowToast }) => {
     setSaving(true);
     try {
       await updateIntroContent(typeof content === 'string' ? content : '');
-      onShowToast('協會簡介已保存', 'success');
+      showToast('協會簡介已保存', 'success');
     } catch (error) {
-      onShowToast('保存失敗', 'error');
+      showToast('保存失敗', 'error');
     } finally {
       setSaving(false);
     }

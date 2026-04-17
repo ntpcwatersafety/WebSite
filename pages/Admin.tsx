@@ -1,67 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { LogOut, Menu, X } from 'lucide-react';
 import { logout, onAuthStateChange } from '../services/supabaseAuth';
 import AdminLogin from './admin/AdminLogin';
-import AdminDashboard from './admin/AdminDashboard';
 import AdminFeedbackToast from '../components/AdminFeedbackToast';
+import { ToastProvider, useToast } from '../contexts/ToastContext';
 
-interface ToastMessage {
-  id: number;
-  type: 'success' | 'error';
-  text: string;
-}
-
-const Admin: React.FC = () => {
+const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [messages, setMessages] = useState<ToastMessage[]>([]);
-
-  useEffect(() => {
-    const { data: subscription } = onAuthStateChange((authenticated) => {
-      setIsAuthenticated(authenticated);
-      setLoading(false);
-    });
-    return () => { subscription?.unsubscribe(); };
-  }, []);
+  const { messages, dismiss } = useToast();
 
   const handleLogout = async () => {
     try {
       await logout();
-      setIsAuthenticated(false);
-      showToast('登出成功', 'success');
+      navigate('/admin');
     } catch {
-      showToast('登出失敗', 'error');
+      // ignore
     }
   };
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
-    if (type === 'info') return;
-    const id = Date.now();
-    setMessages(prev => [...prev, { id, type, text: message }]);
-    setTimeout(() => setMessages(prev => prev.filter(m => m.id !== id)), 3000);
-  }, []);
-
-  const handleDismiss = useCallback((id: number) => {
-    setMessages(prev => prev.filter(m => m.id !== id));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">載入中...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -93,11 +50,42 @@ const Admin: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AdminDashboard onShowToast={showToast} />
+        <Outlet />
       </main>
 
-      <AdminFeedbackToast messages={messages} onDismiss={handleDismiss} />
+      <AdminFeedbackToast messages={messages} onDismiss={dismiss} />
     </div>
+  );
+};
+
+const Admin: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const { data: subscription } = onAuthStateChange((authenticated) => {
+      setIsAuthenticated(authenticated);
+      setLoading(false);
+    });
+    return () => { subscription?.unsubscribe(); };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  return (
+    <ToastProvider>
+      <AdminLayout />
+    </ToastProvider>
   );
 };
 
