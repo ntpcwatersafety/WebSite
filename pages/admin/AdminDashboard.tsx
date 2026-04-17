@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   FileText, Newspaper, Images, Award, Heart, Settings,
-  ChevronRight
+  ChevronRight, FolderImage
 } from 'lucide-react';
 import AdminIntro from './AdminIntro';
 import AdminNews from './AdminNews';
@@ -11,12 +11,13 @@ import AdminGallery from './AdminGallery';
 import AdminMedia from './AdminMedia';
 import AdminAwards from './AdminAwards';
 import AdminThankYou from './AdminThankYou';
+import AdminMediaLibrary from './AdminMediaLibrary';
 
 interface AdminDashboardProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-type AdminTab = 'intro' | 'news' | 'activities' | 'results' | 'gallery' | 'media' | 'awards' | 'thankyou';
+type AdminTab = 'intro' | 'news' | 'activities' | 'results' | 'gallery' | 'media' | 'awards' | 'thankyou' | 'medialibrary';
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('intro');
@@ -30,6 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
     { id: 'media', label: '媒體報導', icon: <Settings size={20} /> },
     { id: 'awards', label: '獲獎紀錄', icon: <Award size={20} /> },
     { id: 'thankyou', label: '感恩有您', icon: <Heart size={20} /> },
+    { id: 'medialibrary', label: '圖檔管理', icon: <FolderImage size={20} /> },
   ];
 
   return (
@@ -58,30 +60,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
       {/* Main Content */}
       <div className="flex-grow">
         <div className="bg-white rounded-lg shadow-lg p-6">
-          {activeTab === 'intro' && (
-            <AdminIntro onShowToast={onShowToast} />
-          )}
-          {activeTab === 'news' && (
-            <AdminNews onShowToast={onShowToast} />
-          )}
-          {activeTab === 'activities' && (
-            <AdminActivities onShowToast={onShowToast} />
-          )}
-          {activeTab === 'results' && (
-            <AdminResults onShowToast={onShowToast} />
-          )}
-          {activeTab === 'gallery' && (
-            <AdminGallery onShowToast={onShowToast} />
-          )}
-          {activeTab === 'media' && (
-            <AdminMedia onShowToast={onShowToast} />
-          )}
-          {activeTab === 'awards' && (
-            <AdminAwards onShowToast={onShowToast} />
-          )}
-          {activeTab === 'thankyou' && (
-            <AdminThankYou onShowToast={onShowToast} />
-          )}
+          {activeTab === 'intro' && <AdminIntro onShowToast={onShowToast} />}
+          {activeTab === 'news' && <AdminNews onShowToast={onShowToast} />}
+          {activeTab === 'activities' && <AdminActivities onShowToast={onShowToast} />}
+          {activeTab === 'results' && <AdminResults onShowToast={onShowToast} />}
+          {activeTab === 'gallery' && <AdminGallery onShowToast={onShowToast} />}
+          {activeTab === 'media' && <AdminMedia onShowToast={onShowToast} />}
+          {activeTab === 'awards' && <AdminAwards onShowToast={onShowToast} />}
+          {activeTab === 'thankyou' && <AdminThankYou onShowToast={onShowToast} />}
+          {activeTab === 'medialibrary' && <AdminMediaLibrary onShowToast={onShowToast} />}
         </div>
       </div>
     </div>
