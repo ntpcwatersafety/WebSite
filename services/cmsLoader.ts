@@ -170,12 +170,17 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
  */
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
+    console.log('getGalleryItems: 開始查詢 water_gallery_albums...');
     const { data, error } = await supabase
       .from('water_gallery_albums')
       .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_gallery_photos(id, image_url, title, description)')
       .eq('is_active', true)
       .order('date', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      console.error('活動剪影相簿查詢錯誤:', error.message, error.details);
+      throw error;
+    }
+    console.log('活動剪影相簿數據:', data);
     const items = (data || []).map(convertGalleryAlbum);
     return sortGalleryItems(items);
   } catch (error) {
