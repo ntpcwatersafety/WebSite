@@ -142,9 +142,8 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
   const handleUpdateNews = async (id: string, updates: Partial<NewsItem>) => {
     try {
       await updateNewsItem(id, updates);
+      setNews(prev => prev.map(n => n.id === id ? { ...n, ...updates } : n));
       onShowToast('消息已更新', 'success');
-      setEditingId(null);
-      loadNews();
     } catch (error) {
       onShowToast('更新失敗', 'error');
     }
