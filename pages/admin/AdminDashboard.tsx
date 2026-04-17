@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   FileText, Newspaper, Images, Award, Heart, Settings,
-  ChevronRight, FolderImage
+  ChevronRight, HardDrive
 } from 'lucide-react';
 import AdminIntro from './AdminIntro';
 import AdminNews from './AdminNews';
@@ -31,7 +31,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onShowToast }) => {
     { id: 'media', label: '媒體報導', icon: <Settings size={20} /> },
     { id: 'awards', label: '獲獎紀錄', icon: <Award size={20} /> },
     { id: 'thankyou', label: '感恩有您', icon: <Heart size={20} /> },
-    { id: 'medialibrary', label: '圖檔管理', icon: <FolderImage size={20} /> },
+    { id: 'medialibrary', label: '圖檔管理', icon: <HardDrive size={20} /> },
   ];
 
   return (
