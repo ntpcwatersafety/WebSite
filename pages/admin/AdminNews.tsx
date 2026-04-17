@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { NewsItem } from '../../types';
 import { getHomeNews } from '../../services/cmsLoader';
@@ -12,11 +12,16 @@ interface NewsRowProps {
 
 const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
   const [draft, setDraft] = useState({ ...item });
+  const itemRef = useRef(item);
+  itemRef.current = item;
 
-  const save = (field: keyof NewsItem, value: any) => {
-    if (draft[field] !== item[field]) {
-      onUpdate(item.id, { [field]: value });
-    }
+  const handleSave = () => {
+    onUpdate(item.id, {
+      date: draft.date,
+      title: draft.title,
+      description: draft.description,
+      link: draft.link,
+    });
   };
 
   return (
@@ -28,7 +33,6 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             type="date"
             value={draft.date || ''}
             onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            onBlur={(e) => save('date', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -38,7 +42,6 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.title || ''}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-            onBlur={(e) => save('title', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -47,7 +50,6 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
           <textarea
             value={draft.description || ''}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-            onBlur={(e) => save('description', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             rows={2}
           />
@@ -58,7 +60,6 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             type="url"
             value={draft.link || ''}
             onChange={(e) => setDraft({ ...draft, link: e.target.value })}
-            onBlur={(e) => save('link', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             placeholder="https://..."
           />
@@ -83,7 +84,14 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             <span className="text-sm">釘選</span>
           </label>
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <Save size={16} />
+            保存
+          </button>
           <button
             onClick={() => onDelete(item.id)}
             className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -104,7 +112,6 @@ interface AdminNewsProps {
 const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadNews();
