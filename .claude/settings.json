@@ -4,7 +4,13 @@
       "Bash(node -e ':*)",
       "Bash(node)",
       "Bash(pkill -f \"npm run dev\")",
-      "Bash(curl -s http://localhost:5173)"
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(ls -1 services/*.ts)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(awk '{print $2}')",
+      "Bash(xargs kill *)",
+      "Bash(npx tsx *)",
+      "Bash(tee dev.log)"
     ]
   }
 }

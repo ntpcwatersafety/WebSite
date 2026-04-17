@@ -93,7 +93,11 @@ export const getIntroContent = async (): Promise<string> => {
       .select('value')
       .eq('key', 'introContent')
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('協會簡介查詢錯誤:', error.message, error.details);
+      throw error;
+    }
+    console.log('協會簡介數據:', data);
     return data?.value || '';
   } catch (error) {
     console.error('取得協會簡介失敗:', error);
@@ -111,7 +115,11 @@ export const getHomeNews = async (): Promise<NewsItem[]> => {
       .select('*')
       .order('is_pinned', { ascending: false })
       .order('date', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      console.error('最新消息查詢錯誤:', error.message, error.details);
+      throw error;
+    }
+    console.log('最新消息數據:', data);
     return (data || []).map(convertNewsItem);
   } catch (error) {
     console.error('取得最新消息失敗:', error);
