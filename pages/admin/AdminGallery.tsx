@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Upload, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { getGalleryItems } from '../../services/cmsLoader';
 import {
@@ -8,7 +8,10 @@ import {
   deleteAlbum,
   uploadAlbumPhoto,
   deleteAlbumPhoto,
+  deleteAlbumPhotosBatch,
+  setCoverPhoto,
 } from '../../services/supabaseAdmin';
+import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 
 interface AdminGalleryProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -21,9 +24,14 @@ interface AlbumRowProps {
   onDelete: (id: string) => Promise<void>;
   onUploadPhoto: (albumId: string, file: File) => Promise<void>;
   onDeletePhoto: (photoId: string) => Promise<void>;
+  onDeletePhotosBatch: (albumId: string, photoIds: string[]) => Promise<void>;
+  onSetCover: (albumId: string, photoId: string | null) => Promise<void>;
 }
 
-const AlbumRow: React.FC<AlbumRowProps> = ({ album, uploading, onUpdate, onDelete, onUploadPhoto, onDeletePhoto }) => {
+const AlbumRow: React.FC<AlbumRowProps> = ({
+  album, uploading, onUpdate, onDelete,
+  onUploadPhoto, onDeletePhoto, onDeletePhotosBatch, onSetCover,
+}) => {
   const [draft, setDraft] = useState({ ...album });
 
   const handleSave = () => {
@@ -94,51 +102,17 @@ const AlbumRow: React.FC<AlbumRowProps> = ({ album, uploading, onUpdate, onDelet
         </div>
       </div>
 
-      <div className="border-t pt-4 mt-4">
-        <h4 className="font-semibold text-gray-900 mb-4">相簿中的照片 ({album.photos?.length || 0})</h4>
-
-        <div className="mb-4">
-          <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-600 hover:bg-blue-50 transition">
-            <Upload size={18} className="text-gray-500" />
-            <span className="text-sm text-gray-600">上傳照片</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) onUploadPhoto(album.id, file);
-              }}
-              disabled={uploading === album.id}
-              className="hidden"
-            />
-          </label>
-        </div>
-
-        {album.photos && album.photos.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {album.photos.map((photo) => (
-              <div key={photo.id} className="relative group">
-                <img
-                  src={photo.imageUrl}
-                  alt={photo.title}
-                  className="w-full h-32 object-cover rounded-lg"
-                />
-                <button
-                  onClick={() => onDeletePhoto(photo.id)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition rounded-lg"
-                >
-                  <Trash2 size={20} className="text-white" />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center text-gray-600 text-sm">
-            <ImageIcon size={32} className="mx-auto mb-2 text-gray-400" />
-            <p>此相簿尚無照片</p>
-          </div>
-        )}
-      </div>
+      <AlbumPhotoGrid
+        albumId={album.id}
+        albumType="gallery"
+        photos={album.photos || []}
+        coverPhotoId={album.coverPhotoId}
+        uploading={uploading === album.id}
+        onUpload={onUploadPhoto}
+        onDeleteOne={onDeletePhoto}
+        onDeleteBatch={onDeletePhotosBatch}
+        onSetCover={onSetCover}
+      />
     </div>
   );
 };
@@ -148,16 +122,14 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadGallery();
-  }, []);
+  useEffect(() => { loadGallery(); }, []);
 
   const loadGallery = async () => {
     setLoading(true);
     try {
       const data = await getGalleryItems();
       setItems(data);
-    } catch (error) {
+    } catch {
       onShowToast('載入相簿失敗', 'error');
     } finally {
       setLoading(false);
@@ -166,7 +138,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
 
   const handleAddAlbum = async () => {
     try {
-      const newAlbum: Omit<GalleryItem, 'id' | 'photos'> = {
+      await createAlbum('gallery', {
         title: '新相簿',
         description: '',
         isActive: true,
@@ -174,11 +146,10 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
         category: '',
         sortOrder: items.length + 1,
         coverPhotoId: null,
-      };
-      await createAlbum('gallery', newAlbum);
+      });
       onShowToast('相簿已新增', 'success');
       loadGallery();
-    } catch (error) {
+    } catch {
       onShowToast('新增失敗', 'error');
     }
   };
@@ -188,7 +159,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       await updateAlbum('gallery', id, updates);
       setItems(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
       onShowToast('相簿已更新', 'success');
-    } catch (error) {
+    } catch {
       onShowToast('更新失敗', 'error');
     }
   };
@@ -199,7 +170,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       await deleteAlbum('gallery', id);
       setItems(prev => prev.filter(a => a.id !== id));
       onShowToast('相簿已刪除', 'success');
-    } catch (error) {
+    } catch {
       onShowToast('刪除失敗', 'error');
     }
   };
@@ -210,7 +181,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
       await uploadAlbumPhoto('gallery', albumId, file);
       onShowToast('照片已上傳', 'success');
       loadGallery();
-    } catch (error) {
+    } catch {
       onShowToast('上傳失敗', 'error');
     } finally {
       setUploading(null);
@@ -218,30 +189,43 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   };
 
   const handleDeletePhoto = async (photoId: string) => {
-    if (!confirm('確定要刪除此照片嗎？')) return;
     try {
       await deleteAlbumPhoto('gallery', photoId);
       onShowToast('照片已刪除', 'success');
       loadGallery();
-    } catch (error) {
+    } catch {
       onShowToast('刪除失敗', 'error');
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">載入中...</div>;
-  }
+  const handleDeletePhotosBatch = async (albumId: string, photoIds: string[]) => {
+    try {
+      await deleteAlbumPhotosBatch('gallery', photoIds);
+      onShowToast(`已刪除 ${photoIds.length} 張照片`, 'success');
+      loadGallery();
+    } catch {
+      onShowToast('批次刪除失敗', 'error');
+    }
+  };
+
+  const handleSetCover = async (albumId: string, photoId: string | null) => {
+    try {
+      await setCoverPhoto('gallery', albumId, photoId);
+      setItems(prev => prev.map(a => a.id === albumId ? { ...a, coverPhotoId: photoId } : a));
+      onShowToast(photoId ? '封面已設定' : '已取消封面', 'success');
+    } catch {
+      onShowToast('設定封面失敗', 'error');
+    }
+  };
+
+  if (loading) return <div className="text-center py-8">載入中...</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">活動剪影</h2>
-        <button
-          onClick={handleAddAlbum}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-        >
-          <Plus size={18} />
-          新增相簿
+        <button onClick={handleAddAlbum} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+          <Plus size={18} />新增相簿
         </button>
       </div>
 
@@ -255,6 +239,8 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
             onDelete={handleDeleteAlbum}
             onUploadPhoto={handleUploadPhoto}
             onDeletePhoto={handleDeletePhoto}
+            onDeletePhotosBatch={handleDeletePhotosBatch}
+            onSetCover={handleSetCover}
           />
         ))}
       </div>
@@ -267,7 +253,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>編輯後按「保存」才會寫入資料庫。照片上傳後立即生效。</p>
+        <p>編輯後按「保存」才會寫入資料庫。點★設定封面照片，可批次選取照片後一次刪除。</p>
       </div>
     </div>
   );

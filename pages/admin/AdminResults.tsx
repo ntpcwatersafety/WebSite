@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { getResultGalleryItems } from '../../services/cmsLoader';
 import {
@@ -8,8 +8,11 @@ import {
   deleteAlbum,
   uploadAlbumPhoto,
   deleteAlbumPhoto,
+  deleteAlbumPhotosBatch,
+  setCoverPhoto,
 } from '../../services/supabaseAdmin';
 import RichEditor from '../../components/RichEditor';
+import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 
 interface AdminResultsProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
@@ -23,16 +26,14 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
   const [newDescription, setNewDescription] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadItems();
-  }, []);
+  useEffect(() => { loadItems(); }, []);
 
   const loadItems = async () => {
     setLoading(true);
     try {
       const data = await getResultGalleryItems();
       setItems(data);
-    } catch (error) {
+    } catch {
       onShowToast('載入訓練成果失敗', 'error');
     } finally {
       setLoading(false);
@@ -40,29 +41,20 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
   };
 
   const handleAddAlbum = async () => {
-    if (!newTitle.trim()) {
-      onShowToast('請輸入相簿標題', 'error');
-      return;
-    }
-
+    if (!newTitle.trim()) { onShowToast('請輸入標題', 'error'); return; }
     try {
-      await createAlbum('results', {
-        title: newTitle,
-        description: newDescription,
-        isActive: true,
-      });
-      onShowToast('相簿已新增', 'success');
+      await createAlbum('results', { title: newTitle, description: newDescription, isActive: true });
+      onShowToast('已新增', 'success');
       setNewTitle('');
       setNewDescription('');
       await loadItems();
-    } catch (error) {
-      onShowToast('新增相簿失敗', 'error');
+    } catch {
+      onShowToast('新增失敗', 'error');
     }
   };
 
   const handleUpdateDescription = async (item: GalleryItem) => {
     if (!editingItem) return;
-
     try {
       await updateAlbum('results', item.id, {
         title: editingItem.title || item.title,
@@ -71,19 +63,18 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
       onShowToast('已保存', 'success');
       setEditingItem(null);
       await loadItems();
-    } catch (error) {
+    } catch {
       onShowToast('保存失敗', 'error');
     }
   };
 
   const handleDeleteAlbum = async (id: string) => {
-    if (!window.confirm('確定要刪除此相簿嗎？')) return;
-
+    if (!window.confirm('確定要刪除此項目嗎？')) return;
     try {
       await deleteAlbum('results', id);
       onShowToast('已刪除', 'success');
       await loadItems();
-    } catch (error) {
+    } catch {
       onShowToast('刪除失敗', 'error');
     }
   };
@@ -94,7 +85,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
       await uploadAlbumPhoto('results', albumId, file);
       onShowToast('照片已上傳', 'success');
       await loadItems();
-    } catch (error) {
+    } catch {
       onShowToast('上傳失敗', 'error');
     } finally {
       setUploading(null);
@@ -102,33 +93,46 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
   };
 
   const handleDeletePhoto = async (photoId: string) => {
-    if (!window.confirm('確定要刪除此照片嗎？')) return;
-
     try {
       await deleteAlbumPhoto('results', photoId);
       onShowToast('照片已刪除', 'success');
       await loadItems();
-    } catch (error) {
+    } catch {
       onShowToast('刪除失敗', 'error');
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">載入中...</div>;
-  }
+  const handleDeletePhotosBatch = async (albumId: string, photoIds: string[]) => {
+    try {
+      await deleteAlbumPhotosBatch('results', photoIds);
+      onShowToast(`已刪除 ${photoIds.length} 張照片`, 'success');
+      await loadItems();
+    } catch {
+      onShowToast('批次刪除失敗', 'error');
+    }
+  };
+
+  const handleSetCover = async (albumId: string, photoId: string | null) => {
+    try {
+      await setCoverPhoto('results', albumId, photoId);
+      setItems(prev => prev.map(a => a.id === albumId ? { ...a, coverPhotoId: photoId } : a));
+      onShowToast(photoId ? '封面已設定' : '已取消封面', 'success');
+    } catch {
+      onShowToast('設定封面失敗', 'error');
+    }
+  };
+
+  if (loading) return <div className="text-center py-8">載入中...</div>;
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">訓練成果</h2>
 
-      {/* 新增相簿 */}
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
         <h3 className="text-lg font-semibold mb-4">新增訓練成果</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              標題
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">標題</label>
             <input
               type="text"
               value={newTitle}
@@ -138,22 +142,15 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              描述
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">描述</label>
             <RichEditor value={newDescription} onChange={setNewDescription} />
           </div>
-          <button
-            onClick={handleAddAlbum}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <Plus size={18} />
-            新增
+          <button onClick={handleAddAlbum} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+            <Plus size={18} />新增
           </button>
         </div>
       </div>
 
-      {/* 現有相簿列表 */}
       <div className="space-y-6">
         {items.map((item) => (
           <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
@@ -166,100 +163,53 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
                 <RichEditor
-                  value={editingItem.description}
+                  value={editingItem.description || ''}
                   onChange={(content) => setEditingItem({ ...editingItem, description: content })}
                 />
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleUpdateDescription(item)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    保存
-                  </button>
-                  <button
-                    onClick={() => setEditingItem(null)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-                  >
-                    取消
-                  </button>
+                  <button onClick={() => handleUpdateDescription(item)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
+                  <button onClick={() => setEditingItem(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">取消</button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <div
-                    className="text-gray-600 mt-2 text-sm"
-                    dangerouslySetInnerHTML={{ __html: item.description }}
-                  />
+                  <div className="text-gray-600 mt-2 text-sm" dangerouslySetInnerHTML={{ __html: item.description || '' }} />
                 </div>
-
-                {/* 照片上傳區域 */}
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-900 mb-4">相簿中的照片 ({item.photos?.length || 0})</h4>
-
-                  <div className="mb-4">
-                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-600 hover:bg-blue-50 transition">
-                      <Upload size={18} className="text-gray-500" />
-                      <span className="text-sm text-gray-600">上傳照片</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleUploadPhoto(item.id, file);
-                        }}
-                        disabled={uploading === item.id}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  {item.photos && item.photos.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {item.photos.map((photo) => (
-                        <div key={photo.id} className="relative group">
-                          <img
-                            src={photo.imageUrl}
-                            alt={photo.title}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                          <button
-                            onClick={() => handleDeletePhoto(photo.id)}
-                            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition rounded-lg"
-                          >
-                            <Trash2 size={20} className="text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center text-gray-600 text-sm">
-                      <ImageIcon size={32} className="mx-auto mb-2 text-gray-400" />
-                      <p>此相簿尚無照片</p>
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setEditingItem(item)}
-                    className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  >
-                    編輯
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAlbum(item.id)}
-                    className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                  >
-                    <Trash2 size={14} />
-                    刪除
+                  <button onClick={() => setEditingItem(item)} className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">編輯</button>
+                  <button onClick={() => handleDeleteAlbum(item.id)} className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                    <Trash2 size={14} />刪除
                   </button>
                 </div>
+
+                <AlbumPhotoGrid
+                  albumId={item.id}
+                  albumType="results"
+                  photos={item.photos || []}
+                  coverPhotoId={item.coverPhotoId}
+                  uploading={uploading === item.id}
+                  onUpload={handleUploadPhoto}
+                  onDeleteOne={handleDeletePhoto}
+                  onDeleteBatch={handleDeletePhotosBatch}
+                  onSetCover={handleSetCover}
+                />
               </div>
             )}
           </div>
         ))}
+      </div>
+
+      {items.length === 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600">尚無訓練成果</p>
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
+        <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
+        <p>編輯後按「保存」才會寫入資料庫。點★設定封面照片，可批次選取照片後一次刪除。</p>
       </div>
     </div>
   );

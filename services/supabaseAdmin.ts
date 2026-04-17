@@ -206,6 +206,33 @@ export const deleteAlbumPhoto = async (
   if (deleteError) throw deleteError;
 };
 
+export const deleteAlbumPhotosBatch = async (
+  type: 'activities' | 'results' | 'gallery',
+  photoIds: string[]
+) => {
+  if (photoIds.length === 0) return;
+  const photoTableName = getPhotoTableName(type);
+
+  const { data: photoList, error: fetchError } = await supabase
+    .from(photoTableName)
+    .select('image_url')
+    .in('id', photoIds);
+  if (fetchError) throw fetchError;
+
+  const filePaths = (photoList || [])
+    .map((p: any) => p.image_url?.split('/').pop())
+    .filter(Boolean);
+  if (filePaths.length > 0) {
+    await supabase.storage.from('gallery-images').remove(filePaths);
+  }
+
+  const { error: deleteError } = await supabase
+    .from(photoTableName)
+    .delete()
+    .in('id', photoIds);
+  if (deleteError) throw deleteError;
+};
+
 export const setCoverPhoto = async (
   type: 'activities' | 'results' | 'gallery',
   albumId: string,
