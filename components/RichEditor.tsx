@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React, { useId, useRef, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
@@ -35,12 +35,20 @@ interface RichEditorProps {
 
 const RichEditor: React.FC<RichEditorProps> = ({ value, onChange, height = 300, onImageUpload }) => {
   const id = useId().replace(/:/g, '-');
+  // 用 key 強制 remount：每次外部 value 從空字串換成有內容時（初次載入）才重建
+  // 平時不重建，避免 controlled mode 的 undefined crash
+  const initialValue = useRef(typeof value === 'string' ? value : '');
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
   return (
     <Editor
       id={`tinymce-${id}`}
       apiKey={TINYMCE_API_KEY}
-      value={typeof value === 'string' ? value : ''}
-      onEditorChange={(content) => onChange(typeof content === 'string' ? content : '')}
+      initialValue={initialValue.current}
+      onEditorChange={(content) => {
+        if (typeof content === 'string') onChangeRef.current(content);
+      }}
       init={{
         ...EDITOR_INIT,
         height,
