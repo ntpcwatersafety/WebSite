@@ -173,7 +173,22 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
     console.log('getGalleryItems: 開始查詢 water_gallery_albums...');
     const { data, error } = await supabase
       .from('water_gallery_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_gallery_photos(id, image_url, title, description)')
+      .select(`
+        id,
+        title,
+        description,
+        is_active,
+        date,
+        category,
+        sort_order,
+        cover_photo_id,
+        water_gallery_photos (
+          id,
+          image_url,
+          title,
+          description
+        )
+      `)
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) {
