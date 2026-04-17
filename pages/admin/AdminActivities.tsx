@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, CheckCircle, Upload, X } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { getActivityGalleryItems } from '../../services/cmsLoader';
 import {
@@ -7,6 +7,7 @@ import {
   updateAlbum,
   deleteAlbum,
   uploadAlbumPhoto,
+  uploadQrCode,
   deleteAlbumPhoto,
   deleteAlbumPhotosBatch,
   setCoverPhoto,
@@ -14,7 +15,6 @@ import {
 import RichEditor from '../../components/RichEditor';
 import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 import { useToast } from '../../contexts/ToastContext';
-
 
 const AdminActivities: React.FC = () => {
   const { showToast } = useToast();
@@ -24,6 +24,7 @@ const AdminActivities: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
+  const qrcodeInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadItems(); }, []);
 
@@ -42,32 +43,44 @@ const AdminActivities: React.FC = () => {
   const handleAddAlbum = async () => {
     if (!newTitle.trim()) { showToast('請輸入標題', 'error'); return; }
     try {
-      await createAlbum('activities', { title: newTitle, description: newDescription, isActive: true });
+      const id = await createAlbum('activities', { title: newTitle, description: newDescription, isActive: true });
       showToast('已新增', 'success');
       setNewTitle('');
       setNewDescription('');
-      await loadItems();
+      setItems(prev => [...prev, { id, title: newTitle, description: newDescription, isActive: true, photos: [] }]);
     } catch {
       showToast('新增失敗', 'error');
     }
   };
 
-  const handleUpdateDescription = async (item: GalleryItem) => {
+  const handleSave = async (item: GalleryItem) => {
     if (!editingItem) return;
-    const updatedTitle = editingItem.title || item.title;
-    const updatedDescription = editingItem.description;
-    const updatedDate = editingItem.date;
+    const updates: Partial<GalleryItem> = {
+      title: editingItem.title || item.title,
+      description: editingItem.description,
+      date: editingItem.date,
+      sortOrder: editingItem.sortOrder,
+      registerUrl: editingItem.registerUrl,
+      qrcodeUrl: editingItem.qrcodeUrl,
+    };
     try {
-      await updateAlbum('activities', item.id, {
-        title: updatedTitle,
-        description: updatedDescription,
-        date: updatedDate,
-      });
-      setItems(prev => prev.map(a => a.id === item.id ? { ...a, title: updatedTitle, description: updatedDescription, date: updatedDate } : a));
+      await updateAlbum('activities', item.id, updates);
+      setItems(prev => prev.map(a => a.id === item.id ? { ...a, ...updates } : a));
       showToast('已保存', 'success');
       setEditingItem(null);
     } catch {
       showToast('保存失敗', 'error');
+    }
+  };
+
+  const handleUploadQrCode = async (file: File) => {
+    if (!editingItem) return;
+    try {
+      const url = await uploadQrCode(editingItem.id, file);
+      setEditingItem({ ...editingItem, qrcodeUrl: url });
+      showToast('QRCode 已上傳', 'success');
+    } catch {
+      showToast('QRCode 上傳失敗', 'error');
     }
   };
 
@@ -164,14 +177,15 @@ const AdminActivities: React.FC = () => {
           <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
             {editingItem?.id === item.id ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                {/* 第一列：標題 + 日期 + 排序 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
                     <label className="block text-xs text-gray-500 mb-1">標題</label>
                     <input
                       type="text"
                       value={editingItem.title}
                       onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
                   <div>
@@ -180,24 +194,87 @@ const AdminActivities: React.FC = () => {
                       type="date"
                       value={editingItem.date || ''}
                       onChange={(e) => setEditingItem({ ...editingItem, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">排序（數字小排前）</label>
+                    <input
+                      type="number"
+                      value={editingItem.sortOrder ?? ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="10, 20, 30..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
                 </div>
+
+                {/* 描述 */}
                 <RichEditor
                   value={editingItem.description || ''}
                   onChange={(content) => setEditingItem({ ...editingItem, description: content })}
                 />
+
+                {/* 報名資訊欄 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">報名超連結</label>
+                    <input
+                      type="url"
+                      value={editingItem.registerUrl || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, registerUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">QRCode 圖片</label>
+                    {editingItem.qrcodeUrl ? (
+                      <div className="flex items-center gap-2">
+                        <img src={editingItem.qrcodeUrl} alt="QRCode" className="h-12 w-12 object-contain border rounded" />
+                        <button
+                          onClick={() => setEditingItem({ ...editingItem, qrcodeUrl: '' })}
+                          className="p-1 text-red-500 hover:text-red-700"
+                          title="移除QRCode"
+                        >
+                          <X size={16} />
+                        </button>
+                        <label className="cursor-pointer text-xs text-blue-600 hover:underline">
+                          更換
+                          <input type="file" accept="image/*" className="hidden" ref={qrcodeInputRef}
+                            onChange={(e) => { if (e.target.files?.[0]) handleUploadQrCode(e.target.files[0]); e.target.value = ''; }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm text-gray-500">
+                        <Upload size={14} />上傳 QRCode
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={(e) => { if (e.target.files?.[0]) handleUploadQrCode(e.target.files[0]); e.target.value = ''; }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex gap-2">
-                  <button onClick={() => handleUpdateDescription(item)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
+                  <button onClick={() => handleSave(item)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">保存</button>
                   <button onClick={() => setEditingItem(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">取消</button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <div className="text-gray-600 mt-2 text-sm" dangerouslySetInnerHTML={{ __html: item.description || '' }} />
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                      {item.date && <span>📅 {item.date}</span>}
+                      {item.sortOrder != null && <span>排序: {item.sortOrder}</span>}
+                      {item.registerUrl && <span className="text-blue-600">🔗 有報名連結</span>}
+                      {item.qrcodeUrl && <span className="text-green-600">📱 有QRCode</span>}
+                    </div>
+                    <div className="text-gray-600 mt-2 text-sm" dangerouslySetInnerHTML={{ __html: item.description || '' }} />
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setEditingItem(item)} className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">編輯</button>
@@ -205,7 +282,6 @@ const AdminActivities: React.FC = () => {
                     <Trash2 size={14} />刪除
                   </button>
                 </div>
-
                 <AlbumPhotoGrid
                   albumId={item.id}
                   albumType="activities"

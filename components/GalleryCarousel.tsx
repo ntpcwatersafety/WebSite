@@ -220,6 +220,28 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                       <p className="text-sm leading-6 text-slate-100">{currentPhoto.description}</p>
                     </div>
                   ) : null}
+
+                  {(currentItem.registerUrl || currentItem.qrcodeUrl) ? (
+                    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+                      <p className="text-[11px] font-semibold tracking-[0.14em] text-cyan-200">報名資訊</p>
+                      {currentItem.registerUrl ? (
+                        <a
+                          href={currentItem.registerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-white text-sm font-medium rounded-lg transition"
+                        >
+                          立即報名
+                        </a>
+                      ) : null}
+                      {currentItem.qrcodeUrl ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <img src={currentItem.qrcodeUrl} alt="報名QRCode" className="w-32 h-32 object-contain bg-white rounded-lg p-1" />
+                          <p className="text-xs text-slate-400">掃描 QRCode 報名</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </aside>
             </div>

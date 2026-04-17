@@ -135,7 +135,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
       .from('water_activity_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
 
@@ -160,6 +160,8 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
         category: album.category,
         sortOrder: album.sort_order,
         coverPhotoId: album.cover_photo_id,
+        registerUrl: album.register_url || undefined,
+        qrcodeUrl: album.qrcode_url || undefined,
         photos: albumPhotos.map((photo: any) => ({
           id: photo.id,
           imageUrl: photo.image_url,
@@ -184,7 +186,7 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
       .from('water_result_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
 
@@ -209,6 +211,8 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
         category: album.category,
         sortOrder: album.sort_order,
         coverPhotoId: album.cover_photo_id,
+        registerUrl: album.register_url || undefined,
+        qrcodeUrl: album.qrcode_url || undefined,
         photos: albumPhotos.map((photo: any) => ({
           id: photo.id,
           imageUrl: photo.image_url,
@@ -233,7 +237,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
       .from('water_gallery_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
 
@@ -258,6 +262,8 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
         category: album.category,
         sortOrder: album.sort_order,
         coverPhotoId: album.cover_photo_id,
+        registerUrl: album.register_url || undefined,
+        qrcodeUrl: album.qrcode_url || undefined,
         photos: albumPhotos.map((photo: any) => ({
           id: photo.id,
           imageUrl: photo.image_url,

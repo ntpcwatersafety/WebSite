@@ -54,16 +54,15 @@ const AdminResults: React.FC = () => {
 
   const handleUpdateDescription = async (item: GalleryItem) => {
     if (!editingItem) return;
-    const updatedTitle = editingItem.title || item.title;
-    const updatedDescription = editingItem.description;
-    const updatedDate = editingItem.date;
+    const updates: Partial<GalleryItem> = {
+      title: editingItem.title || item.title,
+      description: editingItem.description,
+      date: editingItem.date,
+      sortOrder: editingItem.sortOrder,
+    };
     try {
-      await updateAlbum('results', item.id, {
-        title: updatedTitle,
-        description: updatedDescription,
-        date: updatedDate,
-      });
-      setItems(prev => prev.map(a => a.id === item.id ? { ...a, title: updatedTitle, description: updatedDescription, date: updatedDate } : a));
+      await updateAlbum('results', item.id, updates);
+      setItems(prev => prev.map(a => a.id === item.id ? { ...a, ...updates } : a));
       showToast('已保存', 'success');
       setEditingItem(null);
     } catch {
@@ -164,14 +163,14 @@ const AdminResults: React.FC = () => {
           <div key={item.id} className="bg-white border border-gray-200 rounded-lg p-6">
             {editingItem?.id === item.id ? (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">標題</label>
                     <input
                       type="text"
                       value={editingItem.title}
                       onChange={(e) => setEditingItem({ ...editingItem, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
                   <div>
@@ -180,7 +179,17 @@ const AdminResults: React.FC = () => {
                       type="date"
                       value={editingItem.date || ''}
                       onChange={(e) => setEditingItem({ ...editingItem, date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">排序（數字小排前）</label>
+                    <input
+                      type="number"
+                      value={editingItem.sortOrder ?? ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, sortOrder: e.target.value ? Number(e.target.value) : undefined })}
+                      placeholder="10, 20, 30..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                     />
                   </div>
                 </div>

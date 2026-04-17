@@ -43,7 +43,7 @@ const AlbumRow: React.FC<AlbumRowProps> = ({
 
   return (
     <div className="border border-gray-200 rounded-lg p-6 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-xs text-gray-500 mb-1">標題</label>
           <input
@@ -59,6 +59,16 @@ const AlbumRow: React.FC<AlbumRowProps> = ({
             type="date"
             value={draft.date || ''}
             onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">排序（數字小排前）</label>
+          <input
+            type="number"
+            value={draft.sortOrder ?? ''}
+            onChange={(e) => setDraft({ ...draft, sortOrder: e.target.value ? Number(e.target.value) : undefined })}
+            placeholder="10, 20, 30..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>

@@ -103,6 +103,8 @@ export const createAlbum = async (
       category: item.category || '',
       sort_order: item.sortOrder || null,
       cover_photo_id: item.coverPhotoId || null,
+      register_url: item.registerUrl || null,
+      qrcode_url: item.qrcodeUrl || null,
     });
   if (error) throw error;
   return id;
@@ -122,6 +124,8 @@ export const updateAlbum = async (
   if (changes.category !== undefined) updateData.category = changes.category;
   if (changes.sortOrder !== undefined) updateData.sort_order = changes.sortOrder;
   if (changes.coverPhotoId !== undefined) updateData.cover_photo_id = changes.coverPhotoId;
+  if (changes.registerUrl !== undefined) updateData.register_url = changes.registerUrl;
+  if (changes.qrcodeUrl !== undefined) updateData.qrcode_url = changes.qrcodeUrl;
 
   const { error } = await supabase
     .from(tableName)
@@ -174,6 +178,17 @@ export const uploadAlbumPhoto = async (
   if (insertError) throw insertError;
 
   return { photoId, imageUrl };
+};
+
+export const uploadQrCode = async (albumId: string, file: File): Promise<string> => {
+  const ext = file.name.split('.').pop();
+  const fileName = `qrcode-${albumId}-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from('gallery-images')
+    .upload(fileName, file, { upsert: true });
+  if (uploadError) throw uploadError;
+  const { data } = supabase.storage.from('gallery-images').getPublicUrl(fileName);
+  return data.publicUrl;
 };
 
 export const deleteAlbumPhoto = async (

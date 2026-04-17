@@ -45,6 +45,8 @@ export interface GalleryItem {
   category?: string;
   sortOrder?: number;
   coverPhotoId?: string;
+  registerUrl?: string;
+  qrcodeUrl?: string;
   photos: GalleryPhoto[];
 }
 
