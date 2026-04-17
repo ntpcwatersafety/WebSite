@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { ThankYouItem } from '../../types';
 import { getThankYouItems } from '../../services/cmsLoader';
 import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../../services/supabaseAdmin';
@@ -17,10 +17,13 @@ interface ThankYouRowProps {
 const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) => {
   const [draft, setDraft] = useState({ ...item });
 
-  const save = (field: keyof ThankYouItem, value: any) => {
-    if (draft[field] !== item[field]) {
-      onUpdate(item.id, { [field]: value });
-    }
+  const handleSave = () => {
+    onUpdate(item.id, {
+      name: draft.name,
+      year: draft.year,
+      sortOrder: draft.sortOrder,
+      description: draft.description,
+    });
   };
 
   return (
@@ -32,7 +35,6 @@ const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) =
             type="text"
             value={draft.name || ''}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            onBlur={(e) => save('name', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -42,7 +44,6 @@ const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) =
             type="text"
             value={draft.year || ''}
             onChange={(e) => setDraft({ ...draft, year: e.target.value })}
-            onBlur={(e) => save('year', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -52,7 +53,6 @@ const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) =
             type="number"
             value={draft.sortOrder || 0}
             onChange={(e) => setDraft({ ...draft, sortOrder: parseInt(e.target.value) })}
-            onBlur={(e) => save('sortOrder', parseInt(e.target.value))}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -61,12 +61,18 @@ const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) =
           <textarea
             value={draft.description || ''}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-            onBlur={(e) => save('description', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             rows={2}
           />
         </div>
-        <div className="flex justify-end">
+        <div className="md:col-span-2 flex justify-end gap-2">
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <Save size={16} />
+            保存
+          </button>
           <button
             onClick={() => onDelete(item.id)}
             className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -167,7 +173,7 @@ const AdminThankYou: React.FC<AdminThankYouProps> = ({ onShowToast }) => {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>每個感恩項目逐項即存。可編輯排序順序來調整在頁面上的顯示位置。</p>
+        <p>編輯後按「保存」才會寫入資料庫。可編輯排序順序來調整在頁面上的顯示位置。</p>
       </div>
     </div>
   );

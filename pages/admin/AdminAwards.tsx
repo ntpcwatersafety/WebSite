@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { AwardItem } from '../../types';
 import { getAwards } from '../../services/cmsLoader';
 import { createAward, updateAward, deleteAward } from '../../services/supabaseAdmin';
@@ -17,10 +17,13 @@ interface AwardRowProps {
 const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
   const [draft, setDraft] = useState({ ...item });
 
-  const save = (field: keyof AwardItem, value: any) => {
-    if (draft[field] !== item[field]) {
-      onUpdate(item.id, { [field]: value });
-    }
+  const handleSave = () => {
+    onUpdate(item.id, {
+      year: draft.year,
+      icon: draft.icon,
+      title: draft.title,
+      description: draft.description,
+    });
   };
 
   return (
@@ -32,7 +35,6 @@ const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.year || ''}
             onChange={(e) => setDraft({ ...draft, year: e.target.value })}
-            onBlur={(e) => save('year', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -42,7 +44,6 @@ const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.icon || ''}
             onChange={(e) => setDraft({ ...draft, icon: e.target.value })}
-            onBlur={(e) => save('icon', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             placeholder="🏆"
           />
@@ -53,7 +54,6 @@ const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
             type="text"
             value={draft.title || ''}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-            onBlur={(e) => save('title', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
@@ -62,12 +62,18 @@ const AwardRow: React.FC<AwardRowProps> = ({ item, onUpdate, onDelete }) => {
           <textarea
             value={draft.description || ''}
             onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-            onBlur={(e) => save('description', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             rows={2}
           />
         </div>
-        <div className="flex justify-end">
+        <div className="md:col-span-2 flex justify-end gap-2">
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            <Save size={16} />
+            保存
+          </button>
           <button
             onClick={() => onDelete(item.id)}
             className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
@@ -168,7 +174,7 @@ const AdminAwards: React.FC<AdminAwardsProps> = ({ onShowToast }) => {
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>每條獲獎紀錄逐項即存。可填入 Emoji 或文字作為圖示。</p>
+        <p>編輯後按「保存」才會寫入資料庫。可填入 Emoji 或文字作為圖示。</p>
       </div>
     </div>
   );
