@@ -4,6 +4,99 @@ import { NewsItem } from '../../types';
 import { getHomeNews } from '../../services/cmsLoader';
 import { createNewsItem, updateNewsItem, deleteNewsItem } from '../../services/supabaseAdmin';
 
+interface NewsRowProps {
+  item: NewsItem;
+  onUpdate: (id: string, updates: Partial<NewsItem>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
+const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
+  const [draft, setDraft] = useState({ ...item });
+
+  const save = (field: keyof NewsItem, value: any) => {
+    if (draft[field] !== item[field]) {
+      onUpdate(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">日期</label>
+          <input
+            type="date"
+            value={draft.date || ''}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+            onBlur={(e) => save('date', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">標題</label>
+          <input
+            type="text"
+            value={draft.title || ''}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            onBlur={(e) => save('title', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">描述</label>
+          <textarea
+            value={draft.description || ''}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            onBlur={(e) => save('description', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            rows={2}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <label className="block text-xs text-gray-500 mb-1">連結</label>
+          <input
+            type="url"
+            value={draft.link || ''}
+            onChange={(e) => setDraft({ ...draft, link: e.target.value })}
+            onBlur={(e) => save('link', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            placeholder="https://..."
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.isNew || false}
+              onChange={(e) => { setDraft({ ...draft, isNew: e.target.checked }); onUpdate(item.id, { isNew: e.target.checked }); }}
+              className="rounded"
+            />
+            <span className="text-sm">標記為新</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.isPinned || false}
+              onChange={(e) => { setDraft({ ...draft, isPinned: e.target.checked }); onUpdate(item.id, { isPinned: e.target.checked }); }}
+              className="rounded"
+            />
+            <span className="text-sm">釘選</span>
+          </label>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={() => onDelete(item.id)}
+            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+          >
+            <Trash2 size={16} />
+            刪除
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface AdminNewsProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
@@ -87,76 +180,12 @@ const AdminNews: React.FC<AdminNewsProps> = ({ onShowToast }) => {
 
       <div className="space-y-4">
         {news.map((item) => (
-          <div key={item.id} className="border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">日期</label>
-                <input
-                  type="date"
-                  value={item.date || ''}
-                  onChange={(e) => handleUpdateNews(item.id, { date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">標題</label>
-                <input
-                  type="text"
-                  value={item.title || ''}
-                  onChange={(e) => handleUpdateNews(item.id, { title: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">描述</label>
-                <textarea
-                  value={item.description || ''}
-                  onChange={(e) => handleUpdateNews(item.id, { description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  rows={2}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">連結</label>
-                <input
-                  type="url"
-                  value={item.link || ''}
-                  onChange={(e) => handleUpdateNews(item.id, { link: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={item.isNew || false}
-                    onChange={(e) => handleUpdateNews(item.id, { isNew: e.target.checked })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">標記為新</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={item.isPinned || false}
-                    onChange={(e) => handleUpdateNews(item.id, { isPinned: e.target.checked })}
-                    className="rounded"
-                  />
-                  <span className="text-sm">釘選</span>
-                </label>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => handleDeleteNews(item.id)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  <Trash2 size={16} />
-                  刪除
-                </button>
-              </div>
-            </div>
-          </div>
+          <NewsRow
+            key={item.id}
+            item={item}
+            onUpdate={handleUpdateNews}
+            onDelete={handleDeleteNews}
+          />
         ))}
       </div>
 
