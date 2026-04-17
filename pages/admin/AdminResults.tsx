@@ -22,6 +22,8 @@ const AdminResults: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newSortOrder, setNewSortOrder] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -41,12 +43,21 @@ const AdminResults: React.FC = () => {
 
   const handleAddAlbum = async () => {
     if (!newTitle.trim()) { showToast('請輸入標題', 'error'); return; }
+    const sortOrder = newSortOrder ? Number(newSortOrder) : undefined;
     try {
-      await createAlbum('results', { title: newTitle, description: newDescription, isActive: true });
+      const id = await createAlbum('results', {
+        title: newTitle,
+        description: newDescription,
+        isActive: true,
+        date: newDate || undefined,
+        sortOrder,
+      });
       showToast('已新增', 'success');
+      setItems(prev => [...prev, { id, title: newTitle, description: newDescription, isActive: true, date: newDate || undefined, sortOrder, photos: [] }]);
       setNewTitle('');
+      setNewDate('');
+      setNewSortOrder('');
       setNewDescription('');
-      await loadItems();
     } catch {
       showToast('新增失敗', 'error');
     }
@@ -138,15 +149,36 @@ const AdminResults: React.FC = () => {
       <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
         <h3 className="text-lg font-semibold mb-4">新增訓練成果</h3>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">標題</label>
-            <input
-              type="text"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="例如：2025年救生員訓練成果"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">標題</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="例如：2025年救生員訓練成果"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">排序（數字小排前）</label>
+              <input
+                type="number"
+                value={newSortOrder}
+                onChange={(e) => setNewSortOrder(e.target.value)}
+                placeholder="10, 20, 30..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">描述</label>
