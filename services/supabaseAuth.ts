@@ -1,6 +1,6 @@
 // 簡單的本地認證方式（帳號密碼）
 const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'admin';
+const ADMIN_PASSWORD = 'ntpcwater2025';
 const SESSION_KEY = 'admin_session';
 
 interface AdminSession {
