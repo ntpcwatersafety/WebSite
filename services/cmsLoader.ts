@@ -230,7 +230,6 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
  */
 export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
-    console.log('getGalleryItems: 開始查詢 water_gallery_albums...');
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
       .from('water_gallery_albums')
@@ -238,24 +237,14 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
       .eq('is_active', true)
       .order('date', { ascending: false });
 
-    if (albumError) {
-      console.error('活動剪影相簿查詢錯誤:', albumError.message, albumError.details);
-      throw albumError;
-    }
+    if (albumError) throw albumError;
 
-    console.log('活動剪影相簿數據:', albums);
-
-    // 再查所有照片
+    // 再查照片
     const { data: photos, error: photoError } = await supabase
       .from('water_gallery_photos')
       .select('id, album_id, image_url, title, description');
 
-    if (photoError) {
-      console.error('活動剪影照片查詢錯誤:', photoError.message, photoError.details);
-      throw photoError;
-    }
-
-    console.log('活動剪影照片數據:', photos);
+    if (photoError) throw photoError;
 
     // 在 JavaScript 中組合數據
     const items = (albums || []).map((album: any) => {
