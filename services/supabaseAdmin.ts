@@ -6,8 +6,7 @@ import { GalleryItem, NewsItem, MediaItem, AwardItem, ThankYouItem } from '../ty
 export const updateAdminPassword = async (password: string) => {
   const { error } = await supabase
     .from('water_site_settings')
-    .upsert({ key: 'adminPassword', value: password })
-    .eq('key', 'adminPassword');
+    .upsert({ key: 'adminPassword', value: password }, { onConflict: 'key' });
   if (error) throw error;
 };
 
@@ -16,8 +15,7 @@ export const updateAdminPassword = async (password: string) => {
 export const updateIntroContent = async (html: string) => {
   const { error } = await supabase
     .from('water_site_settings')
-    .upsert({ key: 'introContent', value: html })
-    .eq('key', 'introContent');
+    .upsert({ key: 'introContent', value: html }, { onConflict: 'key' });
   if (error) throw error;
 };
 
