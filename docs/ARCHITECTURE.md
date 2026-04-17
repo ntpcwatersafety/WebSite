@@ -348,9 +348,12 @@ src/pages/
     ├── AdminDashboard.tsx      # 標籤頁導航
     ├── AdminIntro.tsx          # 協會簡介編輯
     ├── AdminNews.tsx           # 最新消息管理
+    ├── AdminActivities.tsx     # 報名資訊管理（日期、排序、QRCode）
     ├── AdminGallery.tsx        # 相簿管理
+    ├── AdminResults.tsx        # 訓練成果管理（日期、排序）
     ├── AdminMedia.tsx          # 媒體報導管理
     ├── AdminAwards.tsx         # 獲獎紀錄管理
+    ├── AdminMediaLibrary.tsx   # 媒體庫管理
     └── AdminThankYou.tsx       # 感恩有您管理
 ```
 
@@ -943,6 +946,15 @@ CREATE INDEX idx_water_gallery_albums_type ON water_gallery_albums(type);
 
 ---
 
-**文檔版本**: 2.0  
-**最後更新**: 2026-04-16  
+**文檔版本**: 2.1  
+**最後更新**: 2026-04-18  
 **維護者**: 新北市水上安全協會
+
+---
+
+## 最新更新日誌
+
+### 2026-04-18
+- 新增日期與排序欄位到報名資訊（AdminActivities）與訓練成果（AdminResults）
+- 整理專案結構，刪除未使用的檔案：`scripts/`、`public/admin/`、`services/initService.ts`
+- 更新頁面結構文檔
