@@ -126,7 +126,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     const { data, error } = await supabase
       .from('water_activity_albums')
-      .select('*, water_activity_photos(*)')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_activity_photos(id, image_url, title, description)')
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) throw error;
@@ -145,7 +145,7 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     const { data, error } = await supabase
       .from('water_result_albums')
-      .select('*, water_result_photos(*)')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_result_photos(id, image_url, title, description)')
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) throw error;
@@ -164,8 +164,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     const { data, error } = await supabase
       .from('water_gallery_albums')
-      .select('*, water_gallery_photos(*)')
-      .eq('type', 'gallery')
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, water_gallery_photos(id, image_url, title, description)')
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) throw error;
