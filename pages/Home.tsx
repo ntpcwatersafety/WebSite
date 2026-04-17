@@ -13,7 +13,9 @@ const Home: React.FC = () => {
   useEffect(() => {
     const loadSections = async () => {
       try {
+        console.log('開始載入首頁區塊...');
         const sections = await getHomeSections();
+        console.log('首頁區塊載入成功:', sections);
         setDynamicSections(sections);
       } catch (error) {
         console.error('載入首頁區塊失敗:', error);
@@ -32,15 +34,22 @@ const Home: React.FC = () => {
       <main className="container mx-auto my-6 max-w-[1000px] px-4 sm:my-8 sm:px-5">
         {dynamicSections && dynamicSections.length > 0 ? (
           <div className="space-y-1 sm:space-y-2">
-            {dynamicSections.map((section) => (
-              <CollapsibleCard 
-                key={section.id} 
-                title={section.title} 
-                isOpenDefault={section.isOpenDefault}
-              >
-                {renderSectionContent(section)}
-              </CollapsibleCard>
-            ))}
+            {dynamicSections.map((section) => {
+              const content = renderSectionContent(section);
+              return (
+                <CollapsibleCard
+                  key={section.id}
+                  title={section.title}
+                  isOpenDefault={section.isOpenDefault}
+                >
+                  {content || (
+                    <div className="text-gray-400 text-center py-8">
+                      目前尚無資料
+                    </div>
+                  )}
+                </CollapsibleCard>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border-t-4 border-gray-300 p-12 text-center">

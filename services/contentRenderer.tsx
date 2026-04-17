@@ -686,6 +686,6 @@ export const renderSectionContent = (section: SectionContent): React.ReactNode =
       if (section.content) {
         return renderTextContent(section.content);
       }
-      return null;
+      return renderEmptyState('目前尚無相關內容。');
   }
 };

@@ -83,8 +83,11 @@ export const PAGE_CONTENT: Record<string, PageConfig> = {
 // ===============================
 // 動態取得首頁區塊內容，合併 CMS 資料中的 introContent
 export const getHomeSections = async (): Promise<SectionContent[]> => {
+  console.log('getHomeSections: 開始載入 CMS 資料...');
   const cmsData = await loadCmsData();
-  return [
+  console.log('getHomeSections: CMS 資料:', cmsData);
+
+  const sections = [
     {
       id: 'intro',
       title: '協會簡介',
@@ -107,6 +110,8 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
       isOpenDefault: (cmsData?.thankYouItems?.length || 0) > 0,
     },
   ];
+  console.log('getHomeSections: 返回區塊:', sections);
+  return sections;
 };
 
 // ===============================
