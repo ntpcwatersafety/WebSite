@@ -55,14 +55,16 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
 
   const handleUpdateDescription = async (item: GalleryItem) => {
     if (!editingItem) return;
+    const updatedTitle = editingItem.title || item.title;
+    const updatedDescription = editingItem.description;
     try {
       await updateAlbum('results', item.id, {
-        title: editingItem.title || item.title,
-        description: editingItem.description,
+        title: updatedTitle,
+        description: updatedDescription,
       });
+      setItems(prev => prev.map(a => a.id === item.id ? { ...a, title: updatedTitle, description: updatedDescription } : a));
       onShowToast('已保存', 'success');
       setEditingItem(null);
-      await loadItems();
     } catch {
       onShowToast('保存失敗', 'error');
     }
@@ -72,8 +74,8 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
     if (!window.confirm('確定要刪除此項目嗎？')) return;
     try {
       await deleteAlbum('results', id);
+      setItems(prev => prev.filter(a => a.id !== id));
       onShowToast('已刪除', 'success');
-      await loadItems();
     } catch {
       onShowToast('刪除失敗', 'error');
     }

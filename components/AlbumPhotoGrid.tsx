@@ -55,10 +55,15 @@ const AlbumPhotoGrid: React.FC<AlbumPhotoGridProps> = ({
     }
   };
 
-  const handleDeleteOne = (photoId: string) => {
+  const handleDeleteOne = async (photoId: string) => {
     if (!window.confirm('確定要刪除此照片嗎？')) return;
-    setSelected((prev) => { const n = new Set(prev); n.delete(photoId); return n; });
-    onDeleteOne(photoId);
+    setDeleting(true);
+    try {
+      await onDeleteOne(photoId);
+      setSelected((prev) => { const n = new Set(prev); n.delete(photoId); return n; });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSetCover = (photoId: string, isCover: boolean) => {

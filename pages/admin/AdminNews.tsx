@@ -69,7 +69,7 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             <input
               type="checkbox"
               checked={draft.isNew || false}
-              onChange={(e) => { setDraft({ ...draft, isNew: e.target.checked }); onUpdate(item.id, { isNew: e.target.checked }); }}
+              onChange={(e) => setDraft({ ...draft, isNew: e.target.checked })}
               className="rounded"
             />
             <span className="text-sm">標記為新</span>
@@ -78,7 +78,7 @@ const NewsRow: React.FC<NewsRowProps> = ({ item, onUpdate, onDelete }) => {
             <input
               type="checkbox"
               checked={draft.isPinned || false}
-              onChange={(e) => { setDraft({ ...draft, isPinned: e.target.checked }); onUpdate(item.id, { isPinned: e.target.checked }); }}
+              onChange={(e) => setDraft({ ...draft, isPinned: e.target.checked })}
               className="rounded"
             />
             <span className="text-sm">釘選</span>
