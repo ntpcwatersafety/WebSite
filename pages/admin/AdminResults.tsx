@@ -61,7 +61,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
     if (!editingItem) return;
 
     try {
-      await updateAlbum(item.id, {
+      await updateAlbum('results', item.id, {
         title: editingItem.title || item.title,
         description: editingItem.description,
       });
@@ -77,7 +77,7 @@ const AdminResults: React.FC<AdminResultsProps> = ({ onShowToast }) => {
     if (!window.confirm('確定要刪除此相簿嗎？')) return;
 
     try {
-      await deleteAlbum(id);
+      await deleteAlbum('results', id);
       onShowToast('已刪除', 'success');
       await loadItems();
     } catch (error) {

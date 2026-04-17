@@ -56,7 +56,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
 
   const handleUpdateAlbum = async (id: string, updates: Partial<GalleryItem>) => {
     try {
-      await updateAlbum(id, updates);
+      await updateAlbum('gallery', id, updates);
       onShowToast('相簿已更新', 'success');
       loadGallery();
     } catch (error) {
@@ -67,7 +67,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleDeleteAlbum = async (id: string) => {
     if (!confirm('確定要刪除此相簿嗎？相關照片也會被刪除。')) return;
     try {
-      await deleteAlbum(id);
+      await deleteAlbum('gallery', id);
       onShowToast('相簿已刪除', 'success');
       loadGallery();
     } catch (error) {
@@ -78,7 +78,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleUploadPhoto = async (albumId: string, file: File) => {
     setUploading(albumId);
     try {
-      await uploadAlbumPhoto(albumId, file);
+      await uploadAlbumPhoto('gallery', albumId, file);
       onShowToast('照片已上傳', 'success');
       loadGallery();
     } catch (error) {
@@ -91,7 +91,7 @@ const AdminGallery: React.FC<AdminGalleryProps> = ({ onShowToast }) => {
   const handleDeletePhoto = async (photoId: string) => {
     if (!confirm('確定要刪除此照片嗎？')) return;
     try {
-      await deleteAlbumPhoto(photoId);
+      await deleteAlbumPhoto('gallery', photoId);
       onShowToast('照片已刪除', 'success');
       loadGallery();
     } catch (error) {

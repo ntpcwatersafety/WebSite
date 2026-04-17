@@ -63,7 +63,7 @@ const AdminActivities: React.FC<AdminActivitiesProps> = ({ onShowToast }) => {
     if (!editingItem) return;
 
     try {
-      await updateAlbum(item.id, {
+      await updateAlbum('activities', item.id, {
         title: editingItem.title || item.title,
         description: editingItem.description,
       });
@@ -79,7 +79,7 @@ const AdminActivities: React.FC<AdminActivitiesProps> = ({ onShowToast }) => {
     if (!window.confirm('確定要刪除此相簿嗎？')) return;
 
     try {
-      await deleteAlbum(id);
+      await deleteAlbum('activities', id);
       onShowToast('已刪除', 'success');
       await loadItems();
     } catch (error) {

@@ -120,9 +120,8 @@ export const getHomeNews = async (): Promise<NewsItem[]> => {
 export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_gallery_albums')
-      .select('*, water_gallery_photos(*)')
-      .eq('type', 'activities')
+      .from('water_activity_albums')
+      .select('*, water_activity_photos(*)')
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) throw error;
@@ -140,9 +139,8 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
 export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_gallery_albums')
-      .select('*, water_gallery_photos(*)')
-      .eq('type', 'results')
+      .from('water_result_albums')
+      .select('*, water_result_photos(*)')
       .eq('is_active', true)
       .order('date', { ascending: false });
     if (error) throw error;

@@ -66,16 +66,38 @@ export const deleteNewsItem = async (id: string) => {
 
 // ==================== 相簿管理 ====================
 
+/**
+ * 取得表名對應關係
+ */
+const getAlbumTableName = (type: 'activities' | 'results' | 'gallery'): string => {
+  const tableMap: Record<string, string> = {
+    activities: 'water_activity_albums',
+    results: 'water_result_albums',
+    gallery: 'water_gallery_albums',
+  };
+  return tableMap[type];
+};
+
+const getPhotoTableName = (type: 'activities' | 'results' | 'gallery'): string => {
+  const tableMap: Record<string, string> = {
+    activities: 'water_activity_photos',
+    results: 'water_result_photos',
+    gallery: 'water_gallery_photos',
+  };
+  return tableMap[type];
+};
+
 export const createAlbum = async (
   type: 'activities' | 'results' | 'gallery',
   item: Omit<GalleryItem, 'id' | 'photos'>
 ) => {
-  const id = `${type}GalleryItems-${Date.now()}`;
+  const id = `${type}Album-${Date.now()}`;
+  const tableName = getAlbumTableName(type);
+
   const { error } = await supabase
-    .from('water_gallery_albums')
+    .from(tableName)
     .insert({
       id,
-      type,
       title: item.title,
       description: item.description || '',
       is_active: item.isActive !== false,
@@ -88,7 +110,12 @@ export const createAlbum = async (
   return id;
 };
 
-export const updateAlbum = async (id: string, changes: Partial<GalleryItem>) => {
+export const updateAlbum = async (
+  type: 'activities' | 'results' | 'gallery',
+  id: string,
+  changes: Partial<GalleryItem>
+) => {
+  const tableName = getAlbumTableName(type);
   const updateData: Record<string, any> = {};
   if (changes.title) updateData.title = changes.title;
   if (changes.description !== undefined) updateData.description = changes.description;
@@ -99,25 +126,26 @@ export const updateAlbum = async (id: string, changes: Partial<GalleryItem>) => 
   if (changes.coverPhotoId !== undefined) updateData.cover_photo_id = changes.coverPhotoId;
 
   const { error } = await supabase
-    .from('water_gallery_albums')
+    .from(tableName)
     .update(updateData)
     .eq('id', id);
   if (error) throw error;
 };
 
-export const deleteAlbum = async (id: string) => {
+export const deleteAlbum = async (type: 'activities' | 'results' | 'gallery', id: string) => {
+  const tableName = getAlbumTableName(type);
   const { error } = await supabase
-    .from('water_gallery_albums')
+    .from(tableName)
     .delete()
     .eq('id', id);
   if (error) throw error;
 };
 
 export const uploadAlbumPhoto = async (
+  type: 'activities' | 'results' | 'gallery',
   albumId: string,
   file: File,
-  title: string = '',
-  sortOrder: number = 0
+  title: string = ''
 ) => {
   // 上傳圖片到 Supabase Storage
   const ext = file.name.split('.').pop();
@@ -134,32 +162,38 @@ export const uploadAlbumPhoto = async (
   const imageUrl = data.publicUrl;
 
   // 新增照片記錄
+  const photoTableName = getPhotoTableName(type);
   const photoId = `${albumId}-photo-${Date.now()}`;
   const { error: insertError } = await supabase
-    .from('water_gallery_photos')
+    .from(photoTableName)
     .insert({
       id: photoId,
       album_id: albumId,
       image_url: imageUrl,
-      title,
-      sort_order: sortOrder,
+      title: title || '',
+      description: '',
     });
   if (insertError) throw insertError;
 
   return { photoId, imageUrl };
 };
 
-export const deleteAlbumPhoto = async (photoId: string) => {
+export const deleteAlbumPhoto = async (
+  type: 'activities' | 'results' | 'gallery',
+  photoId: string
+) => {
+  const photoTableName = getPhotoTableName(type);
+
   // 取得照片資訊
   const { data: photo, error: fetchError } = await supabase
-    .from('water_gallery_photos')
+    .from(photoTableName)
     .select('image_url')
     .eq('id', photoId)
     .single();
   if (fetchError) throw fetchError;
 
   // 從 Storage 刪除
-  if (photo.image_url) {
+  if (photo?.image_url) {
     const filePath = photo.image_url.split('/').pop();
     if (filePath) {
       await supabase.storage.from('gallery-images').remove([filePath]);
@@ -168,27 +202,23 @@ export const deleteAlbumPhoto = async (photoId: string) => {
 
   // 刪除資料庫記錄
   const { error: deleteError } = await supabase
-    .from('water_gallery_photos')
+    .from(photoTableName)
     .delete()
     .eq('id', photoId);
   if (deleteError) throw deleteError;
 };
 
-export const setCoverPhoto = async (albumId: string, photoId: string | null) => {
+export const setCoverPhoto = async (
+  type: 'activities' | 'results' | 'gallery',
+  albumId: string,
+  photoId: string | null
+) => {
+  const tableName = getAlbumTableName(type);
   const { error } = await supabase
-    .from('water_gallery_albums')
+    .from(tableName)
     .update({ cover_photo_id: photoId })
     .eq('id', albumId);
   if (error) throw error;
-};
-
-export const reorderAlbumPhotos = async (albumId: string, orderedPhotoIds: string[]) => {
-  for (let i = 0; i < orderedPhotoIds.length; i++) {
-    await supabase
-      .from('water_gallery_photos')
-      .update({ sort_order: i })
-      .eq('id', orderedPhotoIds[i]);
-  }
 };
 
 // ==================== 媒體報導 ====================
