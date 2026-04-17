@@ -182,15 +182,14 @@ export const deleteAlbumPhoto = async (
 ) => {
   const photoTableName = getPhotoTableName(type);
 
-  // 取得照片資訊
-  const { data: photo, error: fetchError } = await supabase
+  // 取得照片資訊（忽略查詢錯誤，仍繼續刪除）
+  const { data: photo } = await supabase
     .from(photoTableName)
     .select('image_url')
     .eq('id', photoId)
     .single();
-  if (fetchError) throw fetchError;
 
-  // 從 Storage 刪除
+  // 從 Storage 刪除實體檔案
   if (photo?.image_url) {
     const filePath = photo.image_url.split('/').pop();
     if (filePath) {

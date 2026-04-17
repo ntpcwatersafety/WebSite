@@ -158,7 +158,10 @@ const AlbumPhotoGrid: React.FC<AlbumPhotoGridProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm('確定要刪除此照片嗎？')) onDeleteOne(photo.id);
+                      if (window.confirm('確定要刪除此照片嗎？')) {
+                        setSelected((prev) => { const n = new Set(prev); n.delete(photo.id); return n; });
+                        onDeleteOne(photo.id);
+                      }
                     }}
                     className="text-red-400 hover:text-red-200"
                   >
