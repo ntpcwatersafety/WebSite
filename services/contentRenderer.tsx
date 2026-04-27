@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { SectionContent, NewsItem, MediaItem, AwardItem, TestimonialItem, GalleryItem, CourseItem, ThankYouItem, TrainingRecordItem } from '../types';
 import { Phone, MapPin, Mail, ExternalLink, Play, FileText } from 'lucide-react';
-import { sortCourseItems, sortGalleryItems, sortThankYouItems, sortTrainingRecords } from './cmsData';
+import { sortCourseItems, sortGalleryItems, sortThankYouItems, sortTrainingRecords } from './sortUtils';
 
 /**
  * =================================================================

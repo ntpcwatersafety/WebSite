@@ -3,7 +3,7 @@ import Hero from '../components/Hero';
 import { PAGE_CONTENT } from '../services/cms';
 import { getThankYouItems } from '../services/cmsLoader';
 import { ThankYouItem } from '../types';
-import { sortThankYouItems } from '../services/cmsData';
+import { sortThankYouItems } from '../services/sortUtils';
 
 const ThankYou: React.FC = () => {
   const pageData = PAGE_CONTENT.thankyou;

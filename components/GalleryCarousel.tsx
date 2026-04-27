@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GalleryItem } from '../types';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { sortGalleryItems } from '../services/cmsData';
+import { sortGalleryItems } from '../services/sortUtils';
 
 interface GalleryCarouselProps {
   items: GalleryItem[];

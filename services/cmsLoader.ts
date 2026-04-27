@@ -1,6 +1,6 @@
 import { ThankYouItem, NewsItem, AwardItem, MediaItem, GalleryItem } from '../types';
 import { supabase } from './supabaseClient';
-import { sortGalleryItems, sortThankYouItems } from './cmsData';
+import { sortGalleryItems, sortThankYouItems } from './sortUtils';
 
 // ==================== 快取機制 ====================
 
