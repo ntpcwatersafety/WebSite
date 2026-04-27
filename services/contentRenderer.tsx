@@ -469,7 +469,7 @@ export const renderThankYouItems = (items: ThankYouItem[]) => {
   }
 
   const grouped = sortThankYouItems(items).reduce<Array<{ year: string; entries: ThankYouItem[] }>>((result, item) => {
-    const year = item.year?.trim() || '未分類';
+    const year = item.year != null ? String(item.year) : '未分類';
     const existing = result.find((group) => group.year === year);
 
     if (existing) {

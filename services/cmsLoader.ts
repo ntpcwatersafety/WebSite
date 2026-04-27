@@ -61,7 +61,7 @@ const convertThankYouItem = (row: any): ThankYouItem => ({
 
 const convertGalleryAlbum = (row: any): GalleryItem => {
   // 相容新舊表的照片關聯欄位名稱
-  const photos = row.water_activity_photos || row.water_result_photos || row.water_gallery_photos || [];
+  const photos = row.activity_photos || row.result_photos || row.gallery_photos || [];
 
   return {
     id: row.id,
@@ -89,7 +89,7 @@ const convertGalleryAlbum = (row: any): GalleryItem => {
 export const getIntroContent = async (): Promise<string> => {
   try {
     const { data, error } = await supabase
-      .from('water_site_settings')
+      .from('site_settings')
       .select('value')
       .eq('key', 'introContent')
       .single();
@@ -111,7 +111,7 @@ export const getIntroContent = async (): Promise<string> => {
 export const getHomeNews = async (): Promise<NewsItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_home_news')
+      .from('home_news')
       .select('*')
       .order('is_pinned', { ascending: false })
       .order('date', { ascending: false });
@@ -134,7 +134,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
-      .from('water_activity_albums')
+      .from('activity_albums')
       .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
@@ -143,7 +143,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
 
     // 再查照片
     const { data: photos, error: photoError } = await supabase
-      .from('water_activity_photos')
+      .from('activity_photos')
       .select('id, album_id, image_url, title, description');
 
     if (photoError) throw photoError;
@@ -185,7 +185,7 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
-      .from('water_result_albums')
+      .from('result_albums')
       .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
@@ -194,7 +194,7 @@ export const getResultGalleryItems = async (): Promise<GalleryItem[]> => {
 
     // 再查照片
     const { data: photos, error: photoError } = await supabase
-      .from('water_result_photos')
+      .from('result_photos')
       .select('id, album_id, image_url, title, description');
 
     if (photoError) throw photoError;
@@ -236,7 +236,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
   try {
     // 先查相簿
     const { data: albums, error: albumError } = await supabase
-      .from('water_gallery_albums')
+      .from('gallery_albums')
       .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
       .eq('is_active', true)
       .order('date', { ascending: false });
@@ -245,7 +245,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
 
     // 再查照片
     const { data: photos, error: photoError } = await supabase
-      .from('water_gallery_photos')
+      .from('gallery_photos')
       .select('id, album_id, image_url, title, description');
 
     if (photoError) throw photoError;
@@ -286,7 +286,7 @@ export const getGalleryItems = async (): Promise<GalleryItem[]> => {
 export const getMediaReports = async (): Promise<MediaItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_media_reports')
+      .from('media_reports')
       .select('*')
       .order('date', { ascending: false });
     if (error) throw error;
@@ -303,7 +303,7 @@ export const getMediaReports = async (): Promise<MediaItem[]> => {
 export const getAwards = async (): Promise<AwardItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_awards')
+      .from('awards')
       .select('*')
       .order('year', { ascending: false });
     if (error) throw error;
@@ -320,7 +320,7 @@ export const getAwards = async (): Promise<AwardItem[]> => {
 export const getThankYouItems = async (): Promise<ThankYouItem[]> => {
   try {
     const { data, error } = await supabase
-      .from('water_thank_you_items')
+      .from('thank_you_items')
       .select('*')
       .order('year', { ascending: false })
       .order('sort_order', { ascending: true, nullsFirst: false });

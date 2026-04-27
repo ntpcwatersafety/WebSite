@@ -15,7 +15,7 @@ interface AdminSession {
 const getAdminPassword = async (): Promise<string> => {
   try {
     const { data, error } = await supabase
-      .from('water_site_settings')
+      .from('site_settings')
       .select('value')
       .eq('key', 'adminPassword')
       .single();
@@ -28,7 +28,7 @@ const getAdminPassword = async (): Promise<string> => {
       // 嘗試初始化到資料庫
       try {
         await supabase
-          .from('water_site_settings')
+          .from('site_settings')
           .upsert({ key: 'adminPassword', value: defaultPassword }, { onConflict: 'key' });
         console.log('✅ 已初始化管理員密碼到資料庫');
       } catch (initError) {

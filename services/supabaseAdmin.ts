@@ -5,7 +5,7 @@ import { GalleryItem, NewsItem, MediaItem, AwardItem, ThankYouItem } from '../ty
 
 export const updateAdminPassword = async (password: string) => {
   const { error } = await supabase
-    .from('water_site_settings')
+    .from('site_settings')
     .upsert({ key: 'adminPassword', value: password }, { onConflict: 'key' });
   if (error) throw error;
 };
@@ -14,7 +14,7 @@ export const updateAdminPassword = async (password: string) => {
 
 export const updateIntroContent = async (html: string) => {
   const { error } = await supabase
-    .from('water_site_settings')
+    .from('site_settings')
     .upsert({ key: 'introContent', value: html }, { onConflict: 'key' });
   if (error) throw error;
 };
@@ -24,7 +24,7 @@ export const updateIntroContent = async (html: string) => {
 export const createNewsItem = async (item: Omit<NewsItem, 'id'>) => {
   const id = `homeNews-${Date.now()}`;
   const { error } = await supabase
-    .from('water_home_news')
+    .from('home_news')
     .insert({
       id,
       date: item.date,
@@ -48,7 +48,7 @@ export const updateNewsItem = async (id: string, changes: Partial<NewsItem>) => 
   if (changes.isPinned !== undefined) updateData.is_pinned = changes.isPinned;
 
   const { error } = await supabase
-    .from('water_home_news')
+    .from('home_news')
     .update(updateData)
     .eq('id', id);
   if (error) throw error;
@@ -56,7 +56,7 @@ export const updateNewsItem = async (id: string, changes: Partial<NewsItem>) => 
 
 export const deleteNewsItem = async (id: string) => {
   const { error } = await supabase
-    .from('water_home_news')
+    .from('home_news')
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -69,18 +69,18 @@ export const deleteNewsItem = async (id: string) => {
  */
 const getAlbumTableName = (type: 'activities' | 'results' | 'gallery'): string => {
   const tableMap: Record<string, string> = {
-    activities: 'water_activity_albums',
-    results: 'water_result_albums',
-    gallery: 'water_gallery_albums',
+    activities: 'activity_albums',
+    results: 'result_albums',
+    gallery: 'gallery_albums',
   };
   return tableMap[type];
 };
 
 const getPhotoTableName = (type: 'activities' | 'results' | 'gallery'): string => {
   const tableMap: Record<string, string> = {
-    activities: 'water_activity_photos',
-    results: 'water_result_photos',
-    gallery: 'water_gallery_photos',
+    activities: 'activity_photos',
+    results: 'result_photos',
+    gallery: 'gallery_photos',
   };
   return tableMap[type];
 };
@@ -265,7 +265,7 @@ export const setCoverPhoto = async (
 export const createMediaReport = async (item: Omit<MediaItem, 'id'>) => {
   const id = `mediaReport-${Date.now()}`;
   const { error } = await supabase
-    .from('water_media_reports')
+    .from('media_reports')
     .insert({
       id,
       date: item.date,
@@ -287,7 +287,7 @@ export const updateMediaReport = async (id: string, changes: Partial<MediaItem>)
   if (changes.type) updateData.type = changes.type;
 
   const { error } = await supabase
-    .from('water_media_reports')
+    .from('media_reports')
     .update(updateData)
     .eq('id', id);
   if (error) throw error;
@@ -295,7 +295,7 @@ export const updateMediaReport = async (id: string, changes: Partial<MediaItem>)
 
 export const deleteMediaReport = async (id: string) => {
   const { error } = await supabase
-    .from('water_media_reports')
+    .from('media_reports')
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -306,7 +306,7 @@ export const deleteMediaReport = async (id: string) => {
 export const createAward = async (item: Omit<AwardItem, 'id'>) => {
   const id = `award-${Date.now()}`;
   const { error } = await supabase
-    .from('water_awards')
+    .from('awards')
     .insert({
       id,
       year: item.year,
@@ -326,7 +326,7 @@ export const updateAward = async (id: string, changes: Partial<AwardItem>) => {
   if (changes.icon !== undefined) updateData.icon = changes.icon;
 
   const { error } = await supabase
-    .from('water_awards')
+    .from('awards')
     .update(updateData)
     .eq('id', id);
   if (error) throw error;
@@ -334,7 +334,7 @@ export const updateAward = async (id: string, changes: Partial<AwardItem>) => {
 
 export const deleteAward = async (id: string) => {
   const { error } = await supabase
-    .from('water_awards')
+    .from('awards')
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -345,7 +345,7 @@ export const deleteAward = async (id: string) => {
 export const createThankYouItem = async (item: Omit<ThankYouItem, 'id'>) => {
   const id = `thankYouItem-${Date.now()}`;
   const { error } = await supabase
-    .from('water_thank_you_items')
+    .from('thank_you_items')
     .insert({
       id,
       name: item.name,
@@ -365,7 +365,7 @@ export const updateThankYouItem = async (id: string, changes: Partial<ThankYouIt
   if (changes.description !== undefined) updateData.description = changes.description;
 
   const { error } = await supabase
-    .from('water_thank_you_items')
+    .from('thank_you_items')
     .update(updateData)
     .eq('id', id);
   if (error) throw error;
@@ -373,7 +373,7 @@ export const updateThankYouItem = async (id: string, changes: Partial<ThankYouIt
 
 export const deleteThankYouItem = async (id: string) => {
   const { error } = await supabase
-    .from('water_thank_you_items')
+    .from('thank_you_items')
     .delete()
     .eq('id', id);
   if (error) throw error;
