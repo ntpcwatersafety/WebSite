@@ -54,7 +54,7 @@ const convertAwardItem = (row: any): AwardItem => ({
 const convertThankYouItem = (row: any): ThankYouItem => ({
   id: row.id,
   name: row.name,
-  year: row.year,
+  year: row.year != null ? String(row.year) : undefined,
   sortOrder: row.sort_order,
   description: row.description,
 });
