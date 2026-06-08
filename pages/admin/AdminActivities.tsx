@@ -17,6 +17,8 @@ import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 import SortableGalleryList from '../../components/admin/SortableGalleryList';
 import { useToast } from '../../contexts/ToastContext';
 
+type EditorMode = 'add' | 'edit' | null;
+
 const cloneItem = (item: GalleryItem): GalleryItem => ({
   ...item,
   photos: [...(item.photos || [])],
@@ -28,14 +30,10 @@ const AdminActivities: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
-
-  const [newTitle, setNewTitle] = useState('');
-  const [newDate, setNewDate] = useState('');
-  const [newSortOrder, setNewSortOrder] = useState('');
-  const [newDescription, setNewDescription] = useState('');
 
   const qrcodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,11 +54,29 @@ const AdminActivities: React.FC = () => {
   };
 
   const startEdit = (item: GalleryItem) => {
+    setEditorMode('edit');
     setEditingId(item.id);
     setDraft(cloneItem(item));
   };
 
+  const startAdd = () => {
+    setEditorMode('add');
+    setEditingId(null);
+    setDraft({
+      id: '',
+      title: '',
+      description: '',
+      isActive: true,
+      date: new Date().toISOString().split('T')[0],
+      sortOrder: undefined,
+      registerUrl: '',
+      qrcodeUrl: '',
+      photos: [],
+    });
+  };
+
   const cancelEdit = () => {
+    setEditorMode(null);
     setEditingId(null);
     setDraft(null);
   };
@@ -89,64 +105,44 @@ const AdminActivities: React.FC = () => {
     }
   };
 
-  const handleAddAlbum = async () => {
-    if (!newTitle.trim()) {
+  const handleSave = async () => {
+    if (!draft) return;
+    if (!draft.title?.trim()) {
       showToast('請輸入標題', 'error');
       return;
     }
 
-    const sortOrder = newSortOrder ? Number(newSortOrder) : undefined;
-
     try {
-      const id = await createAlbum('activities', {
-        title: newTitle,
-        description: newDescription,
-        isActive: true,
-        date: newDate || undefined,
-        sortOrder,
-      });
+      if (editorMode === 'add') {
+        await createAlbum('activities', {
+          title: draft.title,
+          description: draft.description,
+          isActive: draft.isActive !== false,
+          date: draft.date || undefined,
+          sortOrder: draft.sortOrder,
+          registerUrl: draft.registerUrl,
+          qrcodeUrl: draft.qrcodeUrl,
+        });
+        await loadItems();
+        showToast('已新增', 'success');
+      } else if (editorMode === 'edit' && editingId) {
+        const updates: Partial<GalleryItem> = {
+          title: draft.title,
+          description: draft.description,
+          date: draft.date,
+          sortOrder: draft.sortOrder,
+          registerUrl: draft.registerUrl,
+          qrcodeUrl: draft.qrcodeUrl,
+        };
 
-      const newItem: GalleryItem = {
-        id,
-        title: newTitle,
-        description: newDescription,
-        isActive: true,
-        date: newDate || undefined,
-        sortOrder,
-        photos: [],
-      };
+        await updateAlbum('activities', editingId, updates);
+        setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
+        showToast('已保存', 'success');
+      }
 
-      setItems((prev) => [newItem, ...prev]);
-      setNewTitle('');
-      setNewDate('');
-      setNewSortOrder('');
-      setNewDescription('');
-      startEdit(newItem);
-      showToast('已新增', 'success');
-    } catch {
-      showToast('新增失敗', 'error');
-    }
-  };
-
-  const handleSave = async () => {
-    if (!editingId || !draft) return;
-
-    const updates: Partial<GalleryItem> = {
-      title: draft.title,
-      description: draft.description,
-      date: draft.date,
-      sortOrder: draft.sortOrder,
-      registerUrl: draft.registerUrl,
-      qrcodeUrl: draft.qrcodeUrl,
-    };
-
-    try {
-      await updateAlbum('activities', editingId, updates);
-      setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
-      showToast('已保存', 'success');
       cancelEdit();
     } catch {
-      showToast('保存失敗', 'error');
+      showToast(editorMode === 'add' ? '新增失敗' : '保存失敗', 'error');
     }
   };
 
@@ -260,7 +256,15 @@ const AdminActivities: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">報名資訊</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-900">報名資訊</h2>
+        <button
+          onClick={startAdd}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+        >
+          <Plus size={18} />新增
+        </button>
+      </div>
 
       <SortableGalleryList
         items={items}
@@ -271,17 +275,19 @@ const AdminActivities: React.FC = () => {
         emptyText="尚無報名資訊"
       />
 
-      {editingId && draft && (
+      {editorMode && draft && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">編輯報名資訊</h3>
-            <button
-              onClick={() => handleDeleteAlbum(editingId)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-            >
-              <Trash2 size={14} />
-              刪除
-            </button>
+            <h3 className="text-lg font-semibold">{editorMode === 'add' ? '新增報名資訊' : '編輯報名資訊'}</h3>
+            {editorMode === 'edit' && editingId && (
+              <button
+                onClick={() => handleDeleteAlbum(editingId)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                <Trash2 size={14} />
+                刪除
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -339,7 +345,9 @@ const AdminActivities: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">QRCode 圖片</label>
-              {draft.qrcodeUrl ? (
+              {editorMode === 'add' ? (
+                <div className="text-xs text-gray-500">先保存新增資料後，才可上傳 QRCode。</div>
+              ) : draft.qrcodeUrl ? (
                 <div className="flex items-center gap-2">
                   <img src={draft.qrcodeUrl} alt="QRCode" className="h-12 w-12 object-contain border rounded" />
                   <button
@@ -387,67 +395,25 @@ const AdminActivities: React.FC = () => {
             </button>
           </div>
 
-          <AlbumPhotoGrid
-            albumId={editingId}
-            albumType="activities"
-            photos={draft.photos || []}
-            coverPhotoId={draft.coverPhotoId}
-            uploading={uploading === editingId}
-            onUpload={handleUploadPhoto}
-            onDeleteOne={handleDeletePhoto}
-            onDeleteBatch={handleDeletePhotosBatch}
-            onSetCover={handleSetCover}
-          />
+          {editorMode === 'edit' && editingId && (
+            <AlbumPhotoGrid
+              albumId={editingId}
+              albumType="activities"
+              photos={draft.photos || []}
+              coverPhotoId={draft.coverPhotoId}
+              uploading={uploading === editingId}
+              onUpload={handleUploadPhoto}
+              onDeleteOne={handleDeletePhoto}
+              onDeleteBatch={handleDeletePhotosBatch}
+              onSetCover={handleSetCover}
+            />
+          )}
         </div>
       )}
 
-      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold mb-4">新增報名資訊</h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">標題</label>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(event) => setNewTitle(event.target.value)}
-                placeholder="例如：2026年救生員訓練班"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
-              <input
-                type="date"
-                value={newDate}
-                onChange={(event) => setNewDate(event.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">排序（可不填）</label>
-              <input
-                type="number"
-                value={newSortOrder}
-                onChange={(event) => setNewSortOrder(event.target.value)}
-                placeholder="10, 20, 30..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
-            <RichEditor value={newDescription} onChange={setNewDescription} />
-          </div>
-          <button onClick={handleAddAlbum} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            <Plus size={18} />新增
-          </button>
-        </div>
-      </div>
-
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>先在上方列表點「編輯」再修改內容。列表可拖拉排序，未設定排序時會依日期新的在上方。</p>
+        <p>先在上方點「新增」或從列表點「編輯」再修改內容。新增與編輯共用同一表單，保存新增後會刷新列表。</p>
       </div>
     </div>
   );

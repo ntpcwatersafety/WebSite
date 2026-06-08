@@ -15,6 +15,8 @@ import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 import SortableGalleryList from '../../components/admin/SortableGalleryList';
 import { useToast } from '../../contexts/ToastContext';
 
+type EditorMode = 'add' | 'edit' | null;
+
 const cloneItem = (item: GalleryItem): GalleryItem => ({
   ...item,
   photos: [...(item.photos || [])],
@@ -26,6 +28,7 @@ const AdminGallery: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
 
@@ -46,43 +49,31 @@ const AdminGallery: React.FC = () => {
   };
 
   const startEdit = (item: GalleryItem) => {
+    setEditorMode('edit');
     setEditingId(item.id);
     setDraft(cloneItem(item));
   };
 
-  const cancelEdit = () => {
+  const startAdd = () => {
+    setEditorMode('add');
     setEditingId(null);
-    setDraft(null);
+    setDraft({
+      id: '',
+      title: '',
+      description: '',
+      isActive: true,
+      date: new Date().toISOString().split('T')[0],
+      category: '',
+      sortOrder: undefined,
+      coverPhotoId: null,
+      photos: [],
+    });
   };
 
-  const handleAddAlbum = async () => {
-    try {
-      const id = await createAlbum('gallery', {
-        title: '新相簿',
-        description: '',
-        isActive: true,
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        coverPhotoId: null,
-      });
-
-      const newItem: GalleryItem = {
-        id,
-        title: '新相簿',
-        description: '',
-        isActive: true,
-        date: new Date().toISOString().split('T')[0],
-        category: '',
-        coverPhotoId: null,
-        photos: [],
-      };
-
-      setItems((prev) => [newItem, ...prev]);
-      startEdit(newItem);
-      showToast('相簿已新增', 'success');
-    } catch {
-      showToast('新增失敗', 'error');
-    }
+  const cancelEdit = () => {
+    setEditorMode(null);
+    setEditingId(null);
+    setDraft(null);
   };
 
   const handleReorder = async (reordered: GalleryItem[]) => {
@@ -110,23 +101,42 @@ const AdminGallery: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!editingId || !draft) return;
+    if (!draft) return;
+    if (!draft.title?.trim()) {
+      showToast('請輸入標題', 'error');
+      return;
+    }
 
     try {
-      const updates: Partial<GalleryItem> = {
-        title: draft.title,
-        date: draft.date,
-        description: draft.description,
-        isActive: draft.isActive,
-        sortOrder: draft.sortOrder,
-      };
+      if (editorMode === 'add') {
+        await createAlbum('gallery', {
+          title: draft.title,
+          description: draft.description,
+          isActive: draft.isActive !== false,
+          date: draft.date || undefined,
+          category: draft.category,
+          sortOrder: draft.sortOrder,
+          coverPhotoId: draft.coverPhotoId,
+        });
+        await loadGallery();
+        showToast('相簿已新增', 'success');
+      } else if (editorMode === 'edit' && editingId) {
+        const updates: Partial<GalleryItem> = {
+          title: draft.title,
+          date: draft.date,
+          description: draft.description,
+          isActive: draft.isActive,
+          sortOrder: draft.sortOrder,
+        };
 
-      await updateAlbum('gallery', editingId, updates);
-      setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
-      showToast('相簿已更新', 'success');
+        await updateAlbum('gallery', editingId, updates);
+        setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
+        showToast('相簿已更新', 'success');
+      }
+
       cancelEdit();
     } catch {
-      showToast('更新失敗', 'error');
+      showToast(editorMode === 'add' ? '新增失敗' : '更新失敗', 'error');
     }
   };
 
@@ -232,7 +242,7 @@ const AdminGallery: React.FC = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">活動剪影</h2>
         <button
-          onClick={handleAddAlbum}
+          onClick={startAdd}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
         >
           <Plus size={18} />
@@ -249,17 +259,19 @@ const AdminGallery: React.FC = () => {
         emptyText="尚無相簿"
       />
 
-      {editingId && draft && (
+      {editorMode && draft && (
         <div className="border border-gray-200 rounded-lg p-6 space-y-4 bg-white">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">編輯相簿</h3>
-            <button
-              onClick={() => handleDeleteAlbum(editingId)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              <Trash2 size={16} />
-              刪除相簿
-            </button>
+            <h3 className="text-lg font-semibold text-gray-900">{editorMode === 'add' ? '新增相簿' : '編輯相簿'}</h3>
+            {editorMode === 'edit' && editingId && (
+              <button
+                onClick={() => handleDeleteAlbum(editingId)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                <Trash2 size={16} />
+                刪除相簿
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,17 +346,19 @@ const AdminGallery: React.FC = () => {
             </button>
           </div>
 
-          <AlbumPhotoGrid
-            albumId={editingId}
-            albumType="gallery"
-            photos={draft.photos || []}
-            coverPhotoId={draft.coverPhotoId}
-            uploading={uploading === editingId}
-            onUpload={handleUploadPhoto}
-            onDeleteOne={handleDeletePhoto}
-            onDeleteBatch={handleDeletePhotosBatch}
-            onSetCover={handleSetCover}
-          />
+          {editorMode === 'edit' && editingId && (
+            <AlbumPhotoGrid
+              albumId={editingId}
+              albumType="gallery"
+              photos={draft.photos || []}
+              coverPhotoId={draft.coverPhotoId}
+              uploading={uploading === editingId}
+              onUpload={handleUploadPhoto}
+              onDeleteOne={handleDeletePhoto}
+              onDeleteBatch={handleDeletePhotosBatch}
+              onSetCover={handleSetCover}
+            />
+          )}
         </div>
       )}
 

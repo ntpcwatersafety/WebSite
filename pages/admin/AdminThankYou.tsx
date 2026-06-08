@@ -6,6 +6,8 @@ import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../.
 import { sortThankYouItems } from '../../services/sortUtils';
 import { useToast } from '../../contexts/ToastContext';
 
+type EditorMode = 'add' | 'edit' | null;
+
 const reorderByIds = (items: ThankYouItem[], dragId: string, dropId: string): ThankYouItem[] => {
   if (dragId === dropId) return items;
   const sourceIndex = items.findIndex((item) => item.id === dragId);
@@ -27,6 +29,7 @@ const AdminThankYou: React.FC = () => {
   const [overId, setOverId] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorMode, setEditorMode] = useState<EditorMode>(null);
   const [draft, setDraft] = useState<ThankYouItem | null>(null);
 
   const sortedItems = useMemo(() => sortThankYouItems(items), [items]);
@@ -48,39 +51,38 @@ const AdminThankYou: React.FC = () => {
   };
 
   const startEdit = (item: ThankYouItem) => {
+    setEditorMode('edit');
     setEditingId(item.id);
     setDraft({ ...item });
   };
 
+  const startAdd = () => {
+    const maxOrder = sortedItems.reduce((max, item) => Math.max(max, item.sortOrder || 0), 0);
+    setEditorMode('add');
+    setEditingId(null);
+    setDraft({
+      id: '',
+      name: '',
+      year: new Date().getFullYear().toString(),
+      sortOrder: maxOrder + 10,
+      description: '',
+    });
+  };
+
   const cancelEdit = () => {
+    setEditorMode(null);
     setEditingId(null);
     setDraft(null);
   };
 
-  const handleAddItem = async () => {
-    try {
-      const maxOrder = sortedItems.reduce((max, item) => Math.max(max, item.sortOrder || 0), 0);
-      const newItem: Omit<ThankYouItem, 'id'> = {
-        name: '新感謝對象',
-        year: new Date().getFullYear().toString(),
-        sortOrder: maxOrder + 10,
-        description: '',
-      };
-      const id = await createThankYouItem(newItem);
-
-      const created: ThankYouItem = { id, ...newItem };
-      setItems((prev) => [...prev, created]);
-      startEdit(created);
-      showToast('感恩項目已新增', 'success');
-    } catch {
-      showToast('新增失敗', 'error');
-    }
-  };
-
   const handleSave = async () => {
-    if (!editingId || !draft) return;
+    if (!draft) return;
+    if (!draft.name?.trim()) {
+      showToast('請輸入名稱', 'error');
+      return;
+    }
 
-    const updates: Partial<ThankYouItem> = {
+    const payload: Omit<ThankYouItem, 'id'> = {
       name: draft.name,
       year: draft.year,
       sortOrder: draft.sortOrder,
@@ -88,12 +90,19 @@ const AdminThankYou: React.FC = () => {
     };
 
     try {
-      await updateThankYouItem(editingId, updates);
-      setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
-      showToast('感恩項目已更新', 'success');
+      if (editorMode === 'add') {
+        await createThankYouItem(payload);
+        await loadItems();
+        showToast('感恩項目已新增', 'success');
+      } else if (editorMode === 'edit' && editingId) {
+        await updateThankYouItem(editingId, payload);
+        setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...payload } : item)));
+        showToast('感恩項目已更新', 'success');
+      }
+
       cancelEdit();
     } catch {
-      showToast('更新失敗', 'error');
+      showToast(editorMode === 'add' ? '新增失敗' : '更新失敗', 'error');
     }
   };
 
@@ -146,7 +155,7 @@ const AdminThankYou: React.FC = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">感恩有您</h2>
         <button
-          onClick={handleAddItem}
+          onClick={startAdd}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
         >
           <Plus size={18} />
@@ -213,8 +222,11 @@ const AdminThankYou: React.FC = () => {
         )}
       </div>
 
-      {editingId && draft && (
+      {editorMode && draft && (
         <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div className="mb-3 text-sm font-medium text-gray-700">
+            {editorMode === 'add' ? '新增感恩項目' : '編輯感恩項目'}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1">名稱</label>
