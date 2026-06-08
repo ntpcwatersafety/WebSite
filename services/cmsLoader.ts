@@ -59,28 +59,6 @@ const convertThankYouItem = (row: any): ThankYouItem => ({
   description: row.description,
 });
 
-const convertGalleryAlbum = (row: any): GalleryItem => {
-  // 相容新舊表的照片關聯欄位名稱
-  const photos = row.activity_photos || row.result_photos || row.gallery_photos || [];
-
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    isActive: row.is_active,
-    date: row.date,
-    category: row.category,
-    sortOrder: row.sort_order,
-    coverPhotoId: row.cover_photo_id,
-    photos: photos.map((photo: any) => ({
-      id: photo.id,
-      imageUrl: photo.image_url,
-      title: photo.title,
-      description: photo.description,
-    })),
-  };
-};
-
 // ==================== 查詢函式 ====================
 
 /**

@@ -2,6 +2,17 @@
 
 本文檔說明如何維護現有 Supabase 架構下的網站。
 
+## 最近更新（2026-06-08）
+
+- 後台 UI 流程統一：`最新消息`、`報名資訊`、`訓練成果`、`活動剪影`、`感恩有您` 改為「點新增才顯示欄位」。
+- 新增與編輯改為共用同一套表單欄位，降低欄位不一致風險。
+- 新增資料改為保存後才建立，並在保存成功後重新整理列表。
+- 程式整理：移除未使用程式碼。
+  - `components/CollapsibleCard.tsx`：移除未使用 `useEffect` import。
+  - `pages/admin/AdminThankYou.tsx`：移除未使用 `Trash2` import。
+  - `services/cmsLoader.ts`：移除未使用 `convertGalleryAlbum()`。
+  - `vite.config.ts`：移除未使用 `mode` 參數。
+
 ## 當前架構
 
 ```

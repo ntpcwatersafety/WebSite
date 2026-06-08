@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, Save, CheckCircle, GripVertical } from 'lucide-react';
+import { Plus, Save, CheckCircle, GripVertical } from 'lucide-react';
 import { ThankYouItem } from '../../types';
 import { getThankYouItems } from '../../services/cmsLoader';
 import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../../services/supabaseAdmin';

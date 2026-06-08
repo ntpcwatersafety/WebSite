@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
     // 自動判斷：如果有 CNAME 檔案（自訂網域）用 '/'，否則用 '/WebSite/'
     const hasCNAME = fs.existsSync('public/CNAME');
     const base = hasCNAME ? '/' : '/WebSite/';
