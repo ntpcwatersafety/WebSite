@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, CheckCircle, Upload, X, Save } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { DEFAULT_ACTIVITY_CATEGORIES, getActivityCategories, getActivityGalleryItems } from '../../services/cmsLoader';
 import {
   createAlbum,
   updateAlbum,
   updateActivityCategories,
+  replaceActivityAlbumCategory,
   deleteAlbum,
   uploadAlbumPhoto,
   uploadQrCode,
@@ -34,6 +35,8 @@ const AdminActivities: React.FC = () => {
   const [editorMode, setEditorMode] = useState<EditorMode>(null);
   const [categories, setCategories] = useState<string[]>([...DEFAULT_ACTIVITY_CATEGORIES]);
   const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingCategoryValue, setEditingCategoryValue] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
@@ -103,6 +106,85 @@ const AdminActivities: React.FC = () => {
       showToast('類別已新增', 'success');
     } catch {
       showToast('新增類別失敗', 'error');
+    }
+  };
+
+  const startEditCategory = (category: string) => {
+    setEditingCategory(category);
+    setEditingCategoryValue(category);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategory(null);
+    setEditingCategoryValue('');
+  };
+
+  const handleSaveCategory = async () => {
+    if (!editingCategory) return;
+
+    const value = editingCategoryValue.trim();
+    if (!value) {
+      showToast('類別名稱不可空白', 'error');
+      return;
+    }
+
+    if (value !== editingCategory && categories.includes(value)) {
+      showToast('類別已存在', 'error');
+      return;
+    }
+
+    const next = categories.map((cat) => (cat === editingCategory ? value : cat));
+
+    try {
+      await Promise.all([
+        updateActivityCategories(next),
+        replaceActivityAlbumCategory(editingCategory, value),
+      ]);
+
+      setCategories(next);
+      setItems((prev) => prev.map((item) => (
+        item.category === editingCategory ? { ...item, category: value } : item
+      )));
+      setDraft((prev) => {
+        if (!prev) return prev;
+        return prev.category === editingCategory ? { ...prev, category: value } : prev;
+      });
+
+      cancelEditCategory();
+      showToast('類別已更新', 'success');
+    } catch {
+      showToast('更新類別失敗', 'error');
+    }
+  };
+
+  const handleDeleteCategory = async (category: string) => {
+    if (categories.length <= 1) {
+      showToast('至少保留一個類別', 'error');
+      return;
+    }
+
+    if (!window.confirm(`確定要刪除類別「${category}」嗎？該類別資料會改為未分類。`)) return;
+
+    const next = categories.filter((cat) => cat !== category);
+    try {
+      await Promise.all([
+        updateActivityCategories(next),
+        replaceActivityAlbumCategory(category, ''),
+      ]);
+
+      setCategories(next);
+      setItems((prev) => prev.map((item) => (
+        item.category === category ? { ...item, category: '' } : item
+      )));
+      setDraft((prev) => {
+        if (!prev) return prev;
+        return prev.category === category ? { ...prev, category: next[0] || '' } : prev;
+      });
+
+      if (editingCategory === category) cancelEditCategory();
+      showToast('類別已刪除', 'success');
+    } catch {
+      showToast('刪除類別失敗', 'error');
     }
   };
 
@@ -299,20 +381,38 @@ const AdminActivities: React.FC = () => {
         </button>
       </div>
 
-      <SortableGalleryList
-        items={items}
-        selectedId={editingId}
-        onSelect={startEdit}
-        onReorder={handleReorder}
-        savingOrder={savingOrder}
-        emptyText="尚無報名資訊"
-      />
-
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
         <h3 className="text-sm font-semibold text-gray-700">報名資訊類別管理</h3>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <span key={cat} className="px-2.5 py-1 text-xs rounded-full bg-cyan-100 text-cyan-700">{cat}</span>
+            <div key={cat} className="flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-cyan-100 text-cyan-700">
+              {editingCategory === cat ? (
+                <>
+                  <input
+                    type="text"
+                    value={editingCategoryValue}
+                    onChange={(event) => setEditingCategoryValue(event.target.value)}
+                    className="px-2 py-0.5 text-xs rounded border border-cyan-300 bg-white text-gray-700 w-24"
+                  />
+                  <button onClick={handleSaveCategory} className="text-cyan-700 hover:text-cyan-900" title="保存類別">
+                    <Check size={14} />
+                  </button>
+                  <button onClick={cancelEditCategory} className="text-gray-500 hover:text-gray-700" title="取消編輯">
+                    <X size={14} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>{cat}</span>
+                  <button onClick={() => startEditCategory(cat)} className="text-cyan-700 hover:text-cyan-900" title="編輯類別">
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => handleDeleteCategory(cat)} className="text-red-600 hover:text-red-700" title="刪除類別">
+                    <Trash2 size={12} />
+                  </button>
+                </>
+              )}
+            </div>
           ))}
         </div>
         <div className="flex gap-2">
@@ -331,6 +431,15 @@ const AdminActivities: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <SortableGalleryList
+        items={items}
+        selectedId={editingId}
+        onSelect={startEdit}
+        onReorder={handleReorder}
+        savingOrder={savingOrder}
+        emptyText="尚無報名資訊"
+      />
 
       {editorMode && draft && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">

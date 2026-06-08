@@ -31,6 +31,18 @@ export const updateActivityCategories = async (categories: string[]) => {
   if (error) throw error;
 };
 
+export const replaceActivityAlbumCategory = async (fromCategory: string, toCategory: string = '') => {
+  const from = String(fromCategory || '').trim();
+  if (!from) return;
+
+  const { error } = await supabase
+    .from('activity_albums')
+    .update({ category: String(toCategory || '').trim() })
+    .eq('category', from);
+
+  if (error) throw error;
+};
+
 // ==================== 最新消息 ====================
 
 export const createNewsItem = async (item: Omit<NewsItem, 'id'>) => {

@@ -45,7 +45,10 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
     const withCategory = nonEmptyItems.filter((item) => item.category && item.category.trim());
     const uncategorized = nonEmptyItems.filter((item) => !item.category || !item.category.trim());
 
-    const categoryOrder = categories.length > 0 ? categories : Array.from(new Set(withCategory.map((item) => item.category!.trim())));
+    const discovered = Array.from(new Set(withCategory.map((item) => item.category!.trim())));
+    const categoryOrder = categories.length > 0
+      ? [...categories, ...discovered.filter((cat) => !categories.includes(cat))]
+      : discovered;
 
     const sections = categoryOrder
       .map((category) => ({
