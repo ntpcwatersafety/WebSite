@@ -184,7 +184,7 @@ const handleUpdateNews = async (id: string, updates: Partial<NewsItem>) => {
 ### 本機開發 (.env.local)
 
 ```env
-VITE_SUPABASE_URL=https://nixptyjwehqcwkfwluna.supabase.co
+VITE_SUPABASE_URL=https://nvixwvdweergpjbnhnhk.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 

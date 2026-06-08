@@ -73,7 +73,8 @@ Supabase（認證 + 數據庫 + 存儲）
 ### Project Details
 
 - **Project Name**: 新北市水上安全協會
-- **URL**: https://nixptyjwehqcwkfwluna.supabase.co
+- **Project Ref**: nvixwvdweergpjbnhnhk
+- **URL**: https://nvixwvdweergpjbnhnhk.supabase.co
 - **Region**: (east-asia/或其他)
 - **Organization**: (您的組織)
 
@@ -82,7 +83,7 @@ Supabase（認證 + 數據庫 + 存儲）
 位於 `.env.local`（本機開發）和 GitHub Secrets（部署）：
 
 ```env
-VITE_SUPABASE_URL=https://nixptyjwehqcwkfwluna.supabase.co
+VITE_SUPABASE_URL=https://nvixwvdweergpjbnhnhk.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -181,7 +182,7 @@ WHERE tablename = 'water_home_news';
 - **編輯器**：TinyMCE（Rich Text）
 - **數據存儲**：`water_site_settings` 表的 `key='introContent'`
 - **圖片上傳**：上傳至 Supabase Storage `editor-images` bucket
-- **返回 URL**：`https://nixptyjwehqcwkfwluna.supabase.co/storage/v1/object/public/editor-images/...`
+- **返回 URL**：`https://nvixwvdweergpjbnhnhk.supabase.co/storage/v1/object/public/editor-images/...`
 
 ### 最新消息（AdminNews）
 
@@ -403,7 +404,7 @@ GitHub Actions 會自動：
 1. 進入 GitHub repo → Settings → Secrets and variables → Actions
 2. 新增 Secret：
    - 名稱：`VITE_SUPABASE_URL`
-   - 值：`https://nixptyjwehqcwkfwluna.supabase.co`
+  - 值：`https://nvixwvdweergpjbnhnhk.supabase.co`
 3. 新增 Secret：
    - 名稱：`VITE_SUPABASE_ANON_KEY`
    - 值：（粘貼實際的 ANON_KEY）

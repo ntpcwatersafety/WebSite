@@ -725,7 +725,7 @@ jobs:
 
 | 名稱 | 值 |
 |------|-----|
-| `VITE_SUPABASE_URL` | `https://nixptyjwehqcwkfwluna.supabase.co` |
+| `VITE_SUPABASE_URL` | `https://nvixwvdweergpjbnhnhk.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | （粘貼實際的 ANON_KEY） |
 
 **注意**：ANON_KEY 是公開的（前端可見），但受 RLS 策略保護。
