@@ -7,6 +7,9 @@
 - 後台 UI 流程統一：`最新消息`、`報名資訊`、`訓練成果`、`活動剪影`、`感恩有您` 改為「點新增才顯示欄位」。
 - 新增與編輯改為共用同一套表單欄位，降低欄位不一致風險。
 - 新增資料改為保存後才建立，並在保存成功後重新整理列表。
+- 報名資訊新增「類別」欄位，預設類別為 `初級`、`進階`、`學童`。
+- 後台可新增報名資訊類別，並儲存在 `site_settings.key = activityCategories`。
+- 前台報名資訊頁改為按類別分組顯示；每個類別區塊預設展開，使用者可點標題收合。
 - 程式整理：移除未使用程式碼。
   - `components/CollapsibleCard.tsx`：移除未使用 `useEffect` import。
   - `pages/admin/AdminThankYou.tsx`：移除未使用 `Trash2` import。

@@ -19,6 +19,18 @@ export const updateIntroContent = async (html: string) => {
   if (error) throw error;
 };
 
+export const updateActivityCategories = async (categories: string[]) => {
+  const normalized = categories
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({ key: 'activityCategories', value: JSON.stringify(Array.from(new Set(normalized))) }, { onConflict: 'key' });
+
+  if (error) throw error;
+};
+
 // ==================== 最新消息 ====================
 
 export const createNewsItem = async (item: Omit<NewsItem, 'id'>) => {

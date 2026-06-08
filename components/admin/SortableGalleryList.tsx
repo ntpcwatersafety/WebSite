@@ -98,6 +98,7 @@ const SortableGalleryList: React.FC<SortableGalleryListProps> = ({
                           {item.date}
                         </span>
                       )}
+                      {item.category && <span>類別: {item.category}</span>}
                       <span className="inline-flex items-center gap-1">
                         <ImageIcon size={12} />
                         {item.photos?.length || 0} 張

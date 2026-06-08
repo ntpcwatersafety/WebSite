@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, CheckCircle, Upload, X, Save } from 'lucide-react';
 import { GalleryItem } from '../../types';
-import { getActivityGalleryItems } from '../../services/cmsLoader';
+import { DEFAULT_ACTIVITY_CATEGORIES, getActivityCategories, getActivityGalleryItems } from '../../services/cmsLoader';
 import {
   createAlbum,
   updateAlbum,
+  updateActivityCategories,
   deleteAlbum,
   uploadAlbumPhoto,
   uploadQrCode,
@@ -31,6 +32,8 @@ const AdminActivities: React.FC = () => {
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
   const [editorMode, setEditorMode] = useState<EditorMode>(null);
+  const [categories, setCategories] = useState<string[]>([...DEFAULT_ACTIVITY_CATEGORIES]);
+  const [newCategory, setNewCategory] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
@@ -44,8 +47,12 @@ const AdminActivities: React.FC = () => {
   const loadItems = async () => {
     setLoading(true);
     try {
-      const data = await getActivityGalleryItems();
+      const [data, categoryList] = await Promise.all([
+        getActivityGalleryItems(),
+        getActivityCategories(),
+      ]);
       setItems(data);
+      setCategories(categoryList);
     } catch {
       showToast('載入報名資訊失敗', 'error');
     } finally {
@@ -71,8 +78,32 @@ const AdminActivities: React.FC = () => {
       sortOrder: undefined,
       registerUrl: '',
       qrcodeUrl: '',
+      category: categories[0] || DEFAULT_ACTIVITY_CATEGORIES[0],
       photos: [],
     });
+  };
+
+  const handleAddCategory = async () => {
+    const value = newCategory.trim();
+    if (!value) {
+      showToast('請輸入類別名稱', 'error');
+      return;
+    }
+
+    if (categories.includes(value)) {
+      showToast('類別已存在', 'error');
+      return;
+    }
+
+    const next = [...categories, value];
+    try {
+      await updateActivityCategories(next);
+      setCategories(next);
+      setNewCategory('');
+      showToast('類別已新增', 'success');
+    } catch {
+      showToast('新增類別失敗', 'error');
+    }
   };
 
   const cancelEdit = () => {
@@ -120,6 +151,7 @@ const AdminActivities: React.FC = () => {
           isActive: draft.isActive !== false,
           date: draft.date || undefined,
           sortOrder: draft.sortOrder,
+          category: draft.category,
           registerUrl: draft.registerUrl,
           qrcodeUrl: draft.qrcodeUrl,
         });
@@ -131,6 +163,7 @@ const AdminActivities: React.FC = () => {
           description: draft.description,
           date: draft.date,
           sortOrder: draft.sortOrder,
+          category: draft.category,
           registerUrl: draft.registerUrl,
           qrcodeUrl: draft.qrcodeUrl,
         };
@@ -275,6 +308,30 @@ const AdminActivities: React.FC = () => {
         emptyText="尚無報名資訊"
       />
 
+      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700">報名資訊類別管理</h3>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((cat) => (
+            <span key={cat} className="px-2.5 py-1 text-xs rounded-full bg-cyan-100 text-cyan-700">{cat}</span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newCategory}
+            onChange={(event) => setNewCategory(event.target.value)}
+            placeholder="新增類別，例如：青少年"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <button
+            onClick={handleAddCategory}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+          >
+            新增類別
+          </button>
+        </div>
+      </div>
+
       {editorMode && draft && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between">
@@ -321,6 +378,18 @@ const AdminActivities: React.FC = () => {
                 placeholder="10, 20, 30..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">類別</label>
+              <select
+                value={draft.category || ''}
+                onChange={(event) => setDraft({ ...draft, category: event.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
             </div>
           </div>
 

@@ -18,6 +18,7 @@ interface CacheData {
 let cachedData: CacheData | null = null;
 let cacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 分鐘快取
+export const DEFAULT_ACTIVITY_CATEGORIES = ['初級', '進階', '學童'];
 
 // ==================== 欄位轉換工具 ====================
 
@@ -80,6 +81,33 @@ export const getIntroContent = async (): Promise<string> => {
   } catch (error) {
     console.error('取得協會簡介失敗:', error);
     return '';
+  }
+};
+
+/**
+ * 取得報名資訊類別（站點設定）
+ */
+export const getActivityCategories = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'activityCategories')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const raw = data?.value;
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : [];
+    const saved = Array.isArray(parsed) ? parsed : [];
+    const normalized = saved
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+
+    return Array.from(new Set([...DEFAULT_ACTIVITY_CATEGORIES, ...normalized]));
+  } catch (error) {
+    console.error('取得報名資訊類別失敗:', error);
+    return [...DEFAULT_ACTIVITY_CATEGORIES];
   }
 };
 
