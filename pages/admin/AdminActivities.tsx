@@ -81,7 +81,7 @@ const AdminActivities: React.FC = () => {
       sortOrder: undefined,
       registerUrl: '',
       qrcodeUrl: '',
-      category: categories[0] || DEFAULT_ACTIVITY_CATEGORIES[0],
+      category: '',
       photos: [],
     });
   };
@@ -222,6 +222,10 @@ const AdminActivities: React.FC = () => {
     if (!draft) return;
     if (!draft.title?.trim()) {
       showToast('請輸入標題', 'error');
+      return;
+    }
+    if (!String(draft.category || '').trim()) {
+      showToast('請選擇類別', 'error');
       return;
     }
 
@@ -495,6 +499,7 @@ const AdminActivities: React.FC = () => {
                 onChange={(event) => setDraft({ ...draft, category: event.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               >
+                <option value="">請選擇類別</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
