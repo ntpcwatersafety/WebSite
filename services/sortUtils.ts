@@ -71,15 +71,26 @@ export const sortTrainingRecords = (items: TrainingRecordItem[] | null | undefin
 export const sortThankYouItems = (items: ThankYouItem[] | null | undefined): ThankYouItem[] => {
   if (!Array.isArray(items)) return [];
 
+  const hasManualOrder = items.some(
+    (item) => typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
+  );
+
   return [...items].sort((left, right) => {
+    if (hasManualOrder) {
+      const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+      if (sortOrderDiff !== 0) return sortOrderDiff;
+    }
+
     const rightYear = Number(right.year);
     const leftYear = Number(left.year);
     const yearDiff = (Number.isFinite(rightYear) ? rightYear : Number.NEGATIVE_INFINITY)
       - (Number.isFinite(leftYear) ? leftYear : Number.NEGATIVE_INFINITY);
     if (yearDiff !== 0) return yearDiff;
 
-    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
-    if (sortOrderDiff !== 0) return sortOrderDiff;
+    if (!hasManualOrder) {
+      const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+      if (sortOrderDiff !== 0) return sortOrderDiff;
+    }
 
     return String(left.name || '').localeCompare(String(right.name || ''), 'zh-Hant');
   });

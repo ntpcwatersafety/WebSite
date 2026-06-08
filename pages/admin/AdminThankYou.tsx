@@ -1,131 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, CheckCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Plus, Trash2, Save, CheckCircle, GripVertical } from 'lucide-react';
 import { ThankYouItem } from '../../types';
 import { getThankYouItems } from '../../services/cmsLoader';
 import { createThankYouItem, updateThankYouItem, deleteThankYouItem } from '../../services/supabaseAdmin';
+import { sortThankYouItems } from '../../services/sortUtils';
 import { useToast } from '../../contexts/ToastContext';
 
+const reorderByIds = (items: ThankYouItem[], dragId: string, dropId: string): ThankYouItem[] => {
+  if (dragId === dropId) return items;
+  const sourceIndex = items.findIndex((item) => item.id === dragId);
+  const targetIndex = items.findIndex((item) => item.id === dropId);
+  if (sourceIndex < 0 || targetIndex < 0) return items;
 
-interface ThankYouRowProps {
-  item: ThankYouItem;
-  onUpdate: (id: string, updates: Partial<ThankYouItem>) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-}
-
-const ThankYouRow: React.FC<ThankYouRowProps> = ({ item, onUpdate, onDelete }) => {
-  const [draft, setDraft] = useState({ ...item });
-
-  const handleSave = () => {
-    onUpdate(item.id, {
-      name: draft.name,
-      year: draft.year,
-      sortOrder: draft.sortOrder,
-      description: draft.description,
-    });
-  };
-
-  return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">名稱</label>
-          <input
-            type="text"
-            value={draft.name || ''}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">年份</label>
-          <input
-            type="text"
-            value={draft.year || ''}
-            onChange={(e) => setDraft({ ...draft, year: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">排序順序</label>
-          <input
-            type="number"
-            value={draft.sortOrder || 0}
-            onChange={(e) => setDraft({ ...draft, sortOrder: parseInt(e.target.value) })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs text-gray-500 mb-1">說明</label>
-          <textarea
-            value={draft.description || ''}
-            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            rows={2}
-          />
-        </div>
-        <div className="md:col-span-2 flex justify-end gap-2">
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            <Save size={16} />
-            保存
-          </button>
-          <button
-            onClick={() => onDelete(item.id)}
-            className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-          >
-            <Trash2 size={16} />
-            刪除
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const next = [...items];
+  const [dragItem] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, dragItem);
+  return next;
 };
 
 const AdminThankYou: React.FC = () => {
   const { showToast } = useToast();
   const [items, setItems] = useState<ThankYouItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<ThankYouItem | null>(null);
+
+  const sortedItems = useMemo(() => sortThankYouItems(items), [items]);
 
   useEffect(() => {
-    loadItems();
+    void loadItems();
   }, []);
 
   const loadItems = async () => {
+    setLoading(true);
     try {
       const data = await getThankYouItems();
       setItems(data);
-    } catch (error) {
+    } catch {
       showToast('載入感恩有您失敗', 'error');
     } finally {
       setLoading(false);
     }
   };
 
+  const startEdit = (item: ThankYouItem) => {
+    setEditingId(item.id);
+    setDraft({ ...item });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(null);
+  };
+
   const handleAddItem = async () => {
     try {
+      const maxOrder = sortedItems.reduce((max, item) => Math.max(max, item.sortOrder || 0), 0);
       const newItem: Omit<ThankYouItem, 'id'> = {
         name: '新感謝對象',
         year: new Date().getFullYear().toString(),
-        sortOrder: items.length + 1,
+        sortOrder: maxOrder + 10,
         description: '',
       };
-      await createThankYouItem(newItem);
+      const id = await createThankYouItem(newItem);
+
+      const created: ThankYouItem = { id, ...newItem };
+      setItems((prev) => [...prev, created]);
+      startEdit(created);
       showToast('感恩項目已新增', 'success');
-      loadItems();
-    } catch (error) {
+    } catch {
       showToast('新增失敗', 'error');
     }
   };
 
-  const handleUpdateItem = async (id: string, updates: Partial<ThankYouItem>) => {
+  const handleSave = async () => {
+    if (!editingId || !draft) return;
+
+    const updates: Partial<ThankYouItem> = {
+      name: draft.name,
+      year: draft.year,
+      sortOrder: draft.sortOrder,
+      description: draft.description,
+    };
+
     try {
-      await updateThankYouItem(id, updates);
-      setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+      await updateThankYouItem(editingId, updates);
+      setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
       showToast('感恩項目已更新', 'success');
-    } catch (error) {
+      cancelEdit();
+    } catch {
       showToast('更新失敗', 'error');
     }
   };
@@ -134,16 +101,45 @@ const AdminThankYou: React.FC = () => {
     if (!confirm('確定要刪除此感恩項目嗎？')) return;
     try {
       await deleteThankYouItem(id);
-      setItems(prev => prev.filter(i => i.id !== id));
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      if (editingId === id) cancelEdit();
       showToast('感恩項目已刪除', 'success');
-    } catch (error) {
+    } catch {
       showToast('刪除失敗', 'error');
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">載入中...</div>;
-  }
+  const handleDrop = async (dropId: string) => {
+    if (!dragId) return;
+
+    const reordered = reorderByIds(sortedItems, dragId, dropId);
+    setDragId(null);
+    setOverId(null);
+
+    const next = reordered.map((item, index) => ({
+      ...item,
+      sortOrder: (index + 1) * 10,
+    }));
+
+    setItems(next);
+    if (editingId) {
+      const nextEditing = next.find((item) => item.id === editingId);
+      if (nextEditing) setDraft({ ...nextEditing });
+    }
+
+    setSavingOrder(true);
+    try {
+      await Promise.all(next.map((item) => updateThankYouItem(item.id, { sortOrder: item.sortOrder })));
+      showToast('排序已保存', 'success');
+    } catch {
+      showToast('保存排序失敗，已重新載入', 'error');
+      await loadItems();
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  if (loading) return <div className="text-center py-8">載入中...</div>;
 
   return (
     <div className="space-y-6">
@@ -158,21 +154,126 @@ const AdminThankYou: React.FC = () => {
         </button>
       </div>
 
-      <div className="space-y-4">
-        {items.map((item) => (
-          <ThankYouRow key={item.id} item={item} onUpdate={handleUpdateItem} onDelete={handleDeleteItem} />
-        ))}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b bg-gray-50 text-sm text-gray-600 flex items-center justify-between">
+          <span>列表（可拖拉排序）</span>
+          {savingOrder && <span className="text-blue-600">排序儲存中...</span>}
+        </div>
+
+        {sortedItems.length === 0 ? (
+          <div className="p-8 text-center text-gray-600">尚無感恩項目</div>
+        ) : (
+          <ul className="divide-y divide-gray-200">
+            {sortedItems.map((item) => (
+              <li
+                key={item.id}
+                draggable={!savingOrder}
+                onDragStart={() => setDragId(item.id)}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (!savingOrder) setOverId(item.id);
+                }}
+                onDragLeave={() => setOverId((current) => (current === item.id ? null : current))}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void handleDrop(item.id);
+                }}
+                className={`px-4 py-3 ${editingId === item.id ? 'bg-blue-50' : 'bg-white'} ${overId === item.id ? 'ring-2 ring-blue-200' : ''}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <GripVertical size={16} className="text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{item.name || '(未命名)'}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        {item.year && <span>{item.year}</span>}
+                        {item.sortOrder != null && <span>排序 {item.sortOrder}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => startEdit(item)}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      編輯
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      刪除
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {items.length === 0 && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-gray-600">尚無感恩項目</p>
+      {editingId && draft && (
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">名稱</label>
+              <input
+                type="text"
+                value={draft.name || ''}
+                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">年份</label>
+              <input
+                type="text"
+                value={draft.year || ''}
+                onChange={(event) => setDraft({ ...draft, year: event.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">排序順序</label>
+              <input
+                type="number"
+                value={draft.sortOrder ?? ''}
+                onChange={(event) => setDraft({ ...draft, sortOrder: event.target.value ? Number(event.target.value) : undefined })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">說明</label>
+              <textarea
+                value={draft.description || ''}
+                onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                rows={3}
+              />
+            </div>
+            <div className="md:col-span-2 flex justify-end gap-2">
+              <button
+                onClick={cancelEdit}
+                className="px-4 py-2 text-sm bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <Save size={16} />
+                保存
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>編輯後按「保存」才會寫入資料庫。可編輯排序順序來調整在頁面上的顯示位置。</p>
+        <p>先在上方列表點「編輯」再修改。可直接拖拉項目排序，系統會同步更新 sortOrder。</p>
       </div>
     </div>
   );
