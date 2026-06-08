@@ -26,6 +26,19 @@ const cloneItem = (item: GalleryItem): GalleryItem => ({
   photos: [...(item.photos || [])],
 });
 
+const reorderCategoryList = (items: string[], dragValue: string, dropValue: string): string[] => {
+  if (dragValue === dropValue) return items;
+
+  const sourceIndex = items.findIndex((item) => item === dragValue);
+  const targetIndex = items.findIndex((item) => item === dropValue);
+  if (sourceIndex < 0 || targetIndex < 0) return items;
+
+  const next = [...items];
+  const [dragItem] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, dragItem);
+  return next;
+};
+
 const AdminActivities: React.FC = () => {
   const { showToast } = useToast();
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -37,6 +50,9 @@ const AdminActivities: React.FC = () => {
   const [newCategory, setNewCategory] = useState('');
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editingCategoryValue, setEditingCategoryValue] = useState('');
+  const [categoryDragId, setCategoryDragId] = useState<string | null>(null);
+  const [categoryOverId, setCategoryOverId] = useState<string | null>(null);
+  const [savingCategoryOrder, setSavingCategoryOrder] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
@@ -185,6 +201,30 @@ const AdminActivities: React.FC = () => {
       showToast('類別已刪除', 'success');
     } catch {
       showToast('刪除類別失敗', 'error');
+    }
+  };
+
+  const handleCategoryDrop = async (dropCategory: string) => {
+    if (!categoryDragId || savingCategoryOrder) return;
+
+    const reordered = reorderCategoryList(categories, categoryDragId, dropCategory);
+    setCategoryDragId(null);
+    setCategoryOverId(null);
+
+    if (reordered === categories) return;
+
+    const previous = categories;
+    setCategories(reordered);
+    setSavingCategoryOrder(true);
+
+    try {
+      await updateActivityCategories(reordered);
+      showToast('類別排序已保存', 'success');
+    } catch {
+      setCategories(previous);
+      showToast('保存類別排序失敗', 'error');
+    } finally {
+      setSavingCategoryOrder(false);
     }
   };
 
@@ -386,10 +426,24 @@ const AdminActivities: React.FC = () => {
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">報名資訊類別管理</h3>
+        <h3 className="text-sm font-semibold text-gray-700">報名資訊類別管理（可拖拉排序）</h3>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => (
-            <div key={cat} className="flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-cyan-100 text-cyan-700">
+            <div
+              key={cat}
+              draggable={!savingCategoryOrder && !editingCategory}
+              onDragStart={() => setCategoryDragId(cat)}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (!savingCategoryOrder && !editingCategory) setCategoryOverId(cat);
+              }}
+              onDragLeave={() => setCategoryOverId((current) => (current === cat ? null : current))}
+              onDrop={(event) => {
+                event.preventDefault();
+                void handleCategoryDrop(cat);
+              }}
+              className={`flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-cyan-100 text-cyan-700 cursor-move ${categoryOverId === cat ? 'ring-2 ring-cyan-300' : ''}`}
+            >
               {editingCategory === cat ? (
                 <>
                   <input
@@ -419,6 +473,7 @@ const AdminActivities: React.FC = () => {
             </div>
           ))}
         </div>
+        {savingCategoryOrder && <p className="text-xs text-blue-600">類別排序儲存中...</p>}
         <div className="flex gap-2">
           <input
             type="text"
