@@ -31,12 +31,23 @@ export const sortCourseItems = (items: CourseItem[] | null | undefined): CourseI
 export const sortGalleryItems = (items: GalleryItem[] | null | undefined): GalleryItem[] => {
   if (!Array.isArray(items)) return [];
 
+  const hasManualOrder = items.some(
+    (item) => typeof item.sortOrder === 'number' && Number.isFinite(item.sortOrder)
+  );
+
   return [...items].sort((left, right) => {
+    if (hasManualOrder) {
+      const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+      if (sortOrderDiff !== 0) return sortOrderDiff;
+    }
+
     const dateDiff = toComparableTimestamp(right.date) - toComparableTimestamp(left.date);
     if (dateDiff !== 0) return dateDiff;
 
-    const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
-    if (sortOrderDiff !== 0) return sortOrderDiff;
+    if (!hasManualOrder) {
+      const sortOrderDiff = toComparableSortOrder(left.sortOrder) - toComparableSortOrder(right.sortOrder);
+      if (sortOrderDiff !== 0) return sortOrderDiff;
+    }
 
     return String(left.title || '').localeCompare(String(right.title || ''), 'zh-Hant');
   });
