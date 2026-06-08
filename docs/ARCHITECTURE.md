@@ -946,13 +946,20 @@ CREATE INDEX idx_water_gallery_albums_type ON water_gallery_albums(type);
 
 ---
 
-**文檔版本**: 2.1  
-**最後更新**: 2026-04-18  
+**文檔版本**: 2.2  
+**最後更新**: 2026-06-08  
 **維護者**: 新北市水上安全協會
 
 ---
 
 ## 最新更新日誌
+
+### 2026-06-08
+- 報名資訊（AdminActivities）新增類別管理強化：支援新增、編輯、刪除與拖拉排序。
+- 類別排序會儲存到 `site_settings.key = activityCategories`，前台報名資訊依該順序分組顯示。
+- 類別欄位改為必選，新增「請選擇類別」占位，避免未分類資料落入前台「其他」。
+- 類別改名/刪除時，會同步批次更新 `activity_albums.category` 既有資料值。
+- 前台分類邏輯補強：若資料包含未在設定清單中的類別，會自動補入分組並顯示。
 
 ### 2026-04-18
 - 新增日期與排序欄位到報名資訊（AdminActivities）與訓練成果（AdminResults）
