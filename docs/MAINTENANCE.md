@@ -12,6 +12,43 @@ Supabase（認證 + 數據庫 + 存儲）
 後台管理：後台 UI 組件
 ```
 
+## GitHub 與技術架構速查
+
+### GitHub 帳號與倉庫
+
+- **GitHub Organization / 帳號**: `ntpcwatersafety`
+- **Repository**: `WebSite`
+- **Remote URL**: `https://github.com/ntpcwatersafety/WebSite.git`
+- **主要分支**: `main`
+
+### 前端技術
+
+- React + TypeScript（SPA）
+- Vite（建置與開發）
+- React Router（前端路由）
+- Tailwind CSS（樣式）
+- TinyMCE（後台富文字編輯）
+
+### 後端技術（BaaS）
+
+- Supabase PostgreSQL（資料庫）
+- Supabase Auth（管理後台登入）
+- Supabase Storage（圖片與媒體檔案）
+- EmailJS（聯絡表單寄信）
+
+### 平台與部署
+
+- GitHub Pages（網站託管）
+- GitHub Actions（CI/CD 自動部署）
+- Workflow 檔案：`.github/workflows/deploy.yml`
+
+### 資料來源（如何驗證）
+
+- GitHub 資訊來源：`git remote -v`
+- 技術棧來源：`package.json`
+- 部署來源：`.github/workflows/deploy.yml`
+- 架構詳述：`docs/ARCHITECTURE.md`
+
 ### 數據流
 
 ```
