@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, RefreshCw, Search } from 'lucide-react';
+import { Download, RefreshCw, Search, Filter } from 'lucide-react';
 import { ActivityRegistrationRecord } from '../../types';
 import {
   ACTIVITY_REGISTRATION_LABELS,
-  downloadActivityRegistrationsCsv,
+  downloadActivityRegistrationsXlsx,
   getActivityRegistrations,
 } from '../../services/activityRegistration';
 import { useToast } from '../../contexts/ToastContext';
@@ -19,6 +19,7 @@ const AdminRegistrations: React.FC = () => {
   const [items, setItems] = useState<ActivityRegistrationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState('all');
 
   const loadItems = async () => {
     setLoading(true);
@@ -39,9 +40,13 @@ const AdminRegistrations: React.FC = () => {
 
   const filteredItems = useMemo(() => {
     const key = keyword.trim().toLowerCase();
-    if (!key) return items;
+    return items.filter((item) => {
+      const matchesActivity = selectedActivity === 'all' || item.activityId === selectedActivity;
+      if (!matchesActivity) return false;
 
-    return items.filter((item) => [
+      if (!key) return true;
+
+      return [
       item.activityTitle,
       item.name,
       item.email,
@@ -49,8 +54,20 @@ const AdminRegistrations: React.FC = () => {
       item.emergencyContactName,
       item.emergencyContactPhone,
       item.notes || '',
-    ].join(' ').toLowerCase().includes(key));
-  }, [items, keyword]);
+      ].join(' ').toLowerCase().includes(key);
+    });
+  }, [items, keyword, selectedActivity]);
+
+  const activityOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return items
+      .filter((item) => {
+        if (seen.has(item.activityId)) return false;
+        seen.add(item.activityId);
+        return true;
+      })
+      .map((item) => ({ id: item.activityId, title: item.activityTitle }));
+  }, [items]);
 
   const handleExport = () => {
     if (filteredItems.length === 0) {
@@ -58,7 +75,7 @@ const AdminRegistrations: React.FC = () => {
       return;
     }
 
-    downloadActivityRegistrationsCsv(filteredItems);
+    downloadActivityRegistrationsXlsx(filteredItems);
     showToast(`已匯出 ${filteredItems.length} 筆報名資料`, 'success');
   };
 
@@ -67,7 +84,7 @@ const AdminRegistrations: React.FC = () => {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">報名管理</h2>
-          <p className="text-sm text-gray-500 mt-1">查看活動報名資料，並下載 Excel 可開啟的 CSV 檔。</p>
+          <p className="text-sm text-gray-500 mt-1">查看活動報名資料，支援依活動篩選並下載 .xlsx 檔。</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -83,22 +100,43 @@ const AdminRegistrations: React.FC = () => {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
           >
             <Download size={16} />
-            下載 Excel(CSV)
+            下載 Excel
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <label className="text-sm text-gray-600">搜尋（活動、姓名、Email、電話）</label>
-        <div className="mt-2 relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="輸入關鍵字"
-            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
-          />
+      <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+        <div>
+          <label className="text-sm text-gray-600 flex items-center gap-2">
+            <Filter size={16} />
+            依活動篩選
+          </label>
+          <div className="mt-2">
+            <select
+              value={selectedActivity}
+              onChange={(event) => setSelectedActivity(event.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              <option value="all">全部活動</option>
+              {activityOptions.map((activity) => (
+                <option key={activity.id} value={activity.id}>{activity.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-600">搜尋（姓名、Email、電話）</label>
+          <div className="mt-2 relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="輸入關鍵字"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+          </div>
         </div>
       </div>
 

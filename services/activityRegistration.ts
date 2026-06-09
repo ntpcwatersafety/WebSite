@@ -1,5 +1,6 @@
 import { ActivityRegistrationFormData, ActivityRegistrationRecord } from '../types';
 import { supabase } from './supabaseClient';
+import * as XLSX from 'xlsx';
 
 const GENDER_LABEL: Record<ActivityRegistrationFormData['gender'], string> = {
   male: '生理男',
@@ -104,15 +105,14 @@ export const getActivityRegistrations = async (): Promise<ActivityRegistrationRe
   return (data || []).map(convertRegistrationRow);
 };
 
-const escapeCsvCell = (value: string): string => {
-  const normalized = String(value ?? '').replace(/\r?\n/g, ' ').trim();
-  if (/[",]/.test(normalized)) {
-    return `"${normalized.replace(/"/g, '""')}"`;
-  }
-  return normalized;
+const formatReferralLabel = (record: ActivityRegistrationRecord) => {
+  const label = REFERRAL_LABEL[record.referralSource];
+  return record.referralSource === 'other' && record.referralSourceOther
+    ? `${label} (${record.referralSourceOther})`
+    : label;
 };
 
-export const downloadActivityRegistrationsCsv = (records: ActivityRegistrationRecord[]) => {
+export const downloadActivityRegistrationsXlsx = (records: ActivityRegistrationRecord[]) => {
   const header = [
     '報名時間',
     '活動名稱',
@@ -140,21 +140,40 @@ export const downloadActivityRegistrationsCsv = (records: ActivityRegistrationRe
     item.phone,
     item.emergencyContactName,
     item.emergencyContactPhone,
-    REFERRAL_LABEL[item.referralSource],
+    formatReferralLabel(item),
     item.referralSource === 'other' ? (item.referralSourceOther || '') : '',
     item.notes || '',
   ]);
 
-  const csv = [header, ...rows]
-    .map((row) => row.map((cell) => escapeCsvCell(String(cell))).join(','))
-    .join('\r\n');
+  const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  worksheet['!cols'] = [
+    { wch: 22 },
+    { wch: 24 },
+    { wch: 12 },
+    { wch: 28 },
+    { wch: 10 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 30 },
+  ];
 
-  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, '報名資料');
+
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   const dateTag = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `activity-registrations-${dateTag}.csv`;
+  link.download = `activity-registrations-${dateTag}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

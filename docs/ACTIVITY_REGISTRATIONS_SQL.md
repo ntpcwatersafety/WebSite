@@ -27,14 +27,16 @@ create index if not exists idx_activity_registrations_activity_id on public.acti
 alter table public.activity_registrations enable row level security;
 
 -- 前台寫入：允許匿名新增
-create policy if not exists "activity registrations insert"
+drop policy if exists "activity registrations insert" on public.activity_registrations;
+create policy "activity registrations insert"
 on public.activity_registrations
 for insert
 with check (true);
 
 -- 後台讀取：目前站台後台採前端登入(localStorage)機制，無 Supabase auth user。
 -- 因此需開放 select 才能讀取；若你後續改成 Supabase Auth，請改成角色限定 policy。
-create policy if not exists "activity registrations select"
+drop policy if exists "activity registrations select" on public.activity_registrations;
+create policy "activity registrations select"
 on public.activity_registrations
 for select
 using (true);
