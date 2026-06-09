@@ -171,6 +171,28 @@ export interface ContactFormData {
   message: string;
 }
 
+export type RegistrationGender = 'male' | 'female';
+
+export type RegistrationIdentity = 'member' | 'memberFamily' | 'newMember' | 'nonMember';
+
+export type RegistrationReferralSource = 'member' | 'friend' | 'flyer' | 'officialSite' | 'beclass' | 'other';
+
+export interface ActivityRegistrationFormData {
+  activityId: string;
+  activityTitle: string;
+  name: string;
+  email: string;
+  gender: RegistrationGender;
+  birthDate: string; // 民國格式，例如 701123
+  identity: RegistrationIdentity;
+  phone: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  referralSource: RegistrationReferralSource;
+  referralSourceOther?: string;
+  notes?: string;
+}
+
 // 導覽列項目結構
 export interface NavItem {
   label: string;

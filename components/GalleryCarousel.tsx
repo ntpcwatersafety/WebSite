@@ -3,22 +3,26 @@ import { createPortal } from 'react-dom';
 import { GalleryItem } from '../types';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { sortGalleryItems } from '../services/sortUtils';
+import ActivityRegistrationDialog from './ActivityRegistrationDialog';
 
 interface GalleryCarouselProps {
   items: GalleryItem[];
   emptyMessage?: string;
   itemLabel?: string;
+  enableRegistration?: boolean;
 }
 
 const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   items,
   emptyMessage = '目前尚無相簿內容。',
-  itemLabel = '項目'
+  itemLabel = '項目',
+  enableRegistration = false,
 }) => {
   const activeItems = sortGalleryItems(items).filter((item) => item.isActive !== false && item.photos?.length);
   const [itemIndex, setItemIndex] = useState(0);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
   const currentItem = activeItems[itemIndex] || activeItems[0];
   const currentPhotos = currentItem?.photos || [];
@@ -35,6 +39,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setIsRegistrationOpen(false);
   };
 
   const goPrev = () => {
@@ -202,10 +207,19 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                         </span>
                       ) : null}
                     </div>
-                    {(currentItem.registerUrl || currentItem.qrcodeUrl) ? (
+                    {(enableRegistration || currentItem.registerUrl || currentItem.qrcodeUrl) ? (
                       <div className="mt-3 flex flex-wrap items-start gap-4">
                         {currentItem.qrcodeUrl ? (
                           <img src={currentItem.qrcodeUrl} alt="報名QRCode" className="w-24 h-24 object-contain bg-white rounded-lg p-1 flex-shrink-0" />
+                        ) : null}
+                        {enableRegistration ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsRegistrationOpen(true)}
+                            className="flex items-center justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg transition"
+                          >
+                            站內報名
+                          </button>
                         ) : null}
                         {currentItem.registerUrl ? (
                           <a
@@ -214,7 +228,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                             rel="noopener noreferrer"
                             className="flex items-center justify-center px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-white text-sm font-medium rounded-lg transition"
                           >
-                            立即報名
+                            外部報名
                           </a>
                         ) : null}
                       </div>
@@ -244,6 +258,14 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
           </div>
         </div>
       , document.body) : null}
+
+      {enableRegistration && currentItem ? (
+        <ActivityRegistrationDialog
+          activity={currentItem}
+          isOpen={isRegistrationOpen}
+          onClose={() => setIsRegistrationOpen(false)}
+        />
+      ) : null}
     </div>
   );
 };

@@ -69,7 +69,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
       <div className="space-y-4">
         {sections.map((section) => (
           <CollapsibleCard key={section.title} title={section.title} isOpenDefault>
-            <GalleryCarousel items={section.data} emptyMessage="目前尚無內容。" itemLabel={itemLabel} />
+            <GalleryCarousel items={section.data} emptyMessage="目前尚無內容。" itemLabel={itemLabel} enableRegistration />
           </CollapsibleCard>
         ))}
       </div>
