@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   FileText, Newspaper, Images, Award, Heart, Settings,
-  ChevronRight, HardDrive
+  ChevronRight, HardDrive, ClipboardList
 } from 'lucide-react';
 
 const menuItems = [
@@ -14,6 +14,7 @@ const menuItems = [
   { path: '/admin/media',        label: '媒體報導', icon: <Settings size={20} /> },
   { path: '/admin/awards',       label: '獲獎紀錄', icon: <Award size={20} /> },
   { path: '/admin/thankyou',     label: '感恩有您', icon: <Heart size={20} /> },
+  { path: '/admin/registrations',label: '報名管理', icon: <ClipboardList size={20} /> },
   { path: '/admin/medialibrary', label: '圖檔管理', icon: <HardDrive size={20} /> },
 ];
 

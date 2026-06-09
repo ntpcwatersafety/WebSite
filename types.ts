@@ -193,6 +193,11 @@ export interface ActivityRegistrationFormData {
   notes?: string;
 }
 
+export interface ActivityRegistrationRecord extends ActivityRegistrationFormData {
+  id: string;
+  createdAt: string;
+}
+
 // 導覽列項目結構
 export interface NavItem {
   label: string;
