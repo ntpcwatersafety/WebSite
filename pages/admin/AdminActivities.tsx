@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check, ClipboardList } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import { DEFAULT_ACTIVITY_CATEGORIES, getActivityCategories, getActivityGalleryItems } from '../../services/cmsLoader';
+import { getActivityRegistrations } from '../../services/activityRegistration';
 import {
   createAlbum,
   updateAlbum,
@@ -17,6 +18,7 @@ import {
 import RichEditor from '../../components/RichEditor';
 import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
 import SortableGalleryList from '../../components/admin/SortableGalleryList';
+import ActivityRegistrationsDialog from '../../components/admin/ActivityRegistrationsDialog';
 import { useToast } from '../../contexts/ToastContext';
 
 type EditorMode = 'add' | 'edit' | null;
@@ -53,6 +55,9 @@ const AdminActivities: React.FC = () => {
   const [categoryDragId, setCategoryDragId] = useState<string | null>(null);
   const [categoryOverId, setCategoryOverId] = useState<string | null>(null);
   const [savingCategoryOrder, setSavingCategoryOrder] = useState(false);
+  const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
+  const [registrationTarget, setRegistrationTarget] = useState<GalleryItem | null>(null);
+  const [registrationDialogMode, setRegistrationDialogMode] = useState<'list' | 'add'>('list');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<GalleryItem | null>(null);
@@ -63,6 +68,19 @@ const AdminActivities: React.FC = () => {
     void loadItems();
   }, []);
 
+  const loadRegistrationCounts = async () => {
+    try {
+      const registrations = await getActivityRegistrations();
+      const counts = registrations.reduce<Record<string, number>>((acc, record) => {
+        acc[record.activityId] = (acc[record.activityId] || 0) + 1;
+        return acc;
+      }, {});
+      setRegistrationCounts(counts);
+    } catch {
+      showToast('載入報名統計失敗', 'error');
+    }
+  };
+
   const loadItems = async () => {
     setLoading(true);
     try {
@@ -72,6 +90,7 @@ const AdminActivities: React.FC = () => {
       ]);
       setItems(data);
       setCategories(categoryList);
+      await loadRegistrationCounts();
     } catch {
       showToast('載入報名資訊失敗', 'error');
     } finally {
@@ -411,6 +430,12 @@ const AdminActivities: React.FC = () => {
     }
   };
 
+  const openRegistrationDialog = (item: GalleryItem) => {
+    const count = registrationCounts[item.id] || 0;
+    setRegistrationDialogMode(count > 0 ? 'list' : 'add');
+    setRegistrationTarget(item);
+  };
+
   if (loading) return <div className="text-center py-8">載入中...</div>;
 
   return (
@@ -498,6 +523,21 @@ const AdminActivities: React.FC = () => {
         onReorder={handleReorder}
         savingOrder={savingOrder}
         emptyText="尚無報名資訊"
+        renderActions={(item) => {
+          const registrationCount = registrationCounts[item.id] || 0;
+          const hasRegistrations = registrationCount > 0;
+
+          return (
+            <button
+              onClick={() => openRegistrationDialog(item)}
+              className={`flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded ${hasRegistrations ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+              title={hasRegistrations ? '查詢報名紀錄' : '新增紀錄'}
+            >
+              <ClipboardList size={14} />
+              {hasRegistrations ? `查詢報名紀錄 (${registrationCount})` : '新增紀錄'}
+            </button>
+          );
+        }}
       />
 
       {editorMode && draft && (
@@ -653,6 +693,16 @@ const AdminActivities: React.FC = () => {
         <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
         <p>先在上方點「新增」或從列表點「編輯」再修改內容。新增與編輯共用同一表單，保存新增後會刷新列表。</p>
       </div>
+
+      {registrationTarget ? (
+        <ActivityRegistrationsDialog
+          activity={registrationTarget}
+          isOpen
+          openMode={registrationDialogMode}
+          onClose={() => setRegistrationTarget(null)}
+          onChanged={loadRegistrationCounts}
+        />
+      ) : null}
     </div>
   );
 };

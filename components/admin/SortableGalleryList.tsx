@@ -10,6 +10,7 @@ interface SortableGalleryListProps {
   onReorder: (items: GalleryItem[]) => Promise<void>;
   savingOrder?: boolean;
   emptyText: string;
+  renderActions?: (item: GalleryItem) => React.ReactNode;
 }
 
 const reorderByIds = (items: GalleryItem[], dragId: string, dropId: string): GalleryItem[] => {
@@ -32,6 +33,7 @@ const SortableGalleryList: React.FC<SortableGalleryListProps> = ({
   onReorder,
   savingOrder = false,
   emptyText,
+  renderActions,
 }) => {
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -108,13 +110,16 @@ const SortableGalleryList: React.FC<SortableGalleryListProps> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => onSelect(item)}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  <Pencil size={14} />
-                  編輯
-                </button>
+                <div className="flex items-center gap-2">
+                  {renderActions ? renderActions(item) : null}
+                  <button
+                    onClick={() => onSelect(item)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    <Pencil size={14} />
+                    編輯
+                  </button>
+                </div>
               </div>
             </li>
           );
