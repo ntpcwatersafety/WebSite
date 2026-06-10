@@ -104,7 +104,12 @@ export const getActivityCategories = async (): Promise<string[]> => {
       .map((item) => String(item || '').trim())
       .filter(Boolean);
 
-    return Array.from(new Set([...DEFAULT_ACTIVITY_CATEGORIES, ...normalized]));
+    // 若後端已有設定，完整以儲存值為準；僅在尚未設定時才回退預設。
+    if (normalized.length > 0) {
+      return Array.from(new Set(normalized));
+    }
+
+    return [...DEFAULT_ACTIVITY_CATEGORIES];
   } catch (error) {
     console.error('取得報名資訊類別失敗:', error);
     return [...DEFAULT_ACTIVITY_CATEGORIES];
