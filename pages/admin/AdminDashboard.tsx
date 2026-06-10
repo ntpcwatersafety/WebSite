@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   FileText, Newspaper, Images, Award, Heart, Settings,
-  ChevronRight, HardDrive
+  ChevronRight, ChevronLeft, PanelLeftClose, HardDrive
 } from 'lucide-react';
 
 const menuItems = [
@@ -20,11 +20,24 @@ const menuItems = [
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMenuCollapsed, setIsMenuCollapsed] = useState(false);
 
   return (
     <div className="flex gap-6">
       {/* 左側選單 */}
-      <div className="w-48 flex-shrink-0">
+      <div className={`${isMenuCollapsed ? 'w-20' : 'w-48'} flex-shrink-0 transition-all duration-200`}>
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsMenuCollapsed((prev) => !prev)}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+            title={isMenuCollapsed ? '展開選單' : '收合選單'}
+          >
+            {isMenuCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            {!isMenuCollapsed && <PanelLeftClose size={14} />}
+          </button>
+        </div>
+
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const active = location.pathname === item.path;
@@ -32,15 +45,16 @@ const AdminDashboard: React.FC = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition ${
+                className={`w-full flex items-center ${isMenuCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg font-medium transition ${
                   active
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-700 hover:bg-gray-50 border border-transparent'
                 }`}
+                title={item.label}
               >
                 {item.icon}
-                <span className="flex-grow text-left">{item.label}</span>
-                {active && <ChevronRight size={18} />}
+                {!isMenuCollapsed && <span className="flex-grow text-left">{item.label}</span>}
+                {!isMenuCollapsed && active && <ChevronRight size={18} />}
               </button>
             );
           })}
