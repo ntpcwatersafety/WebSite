@@ -40,8 +40,22 @@ create policy "activity registrations select"
 on public.activity_registrations
 for select
 using (true);
+
+-- 後台編輯/刪除：目前同樣採前端登入機制，先開放 update/delete。
+drop policy if exists "activity registrations update" on public.activity_registrations;
+create policy "activity registrations update"
+on public.activity_registrations
+for update
+using (true)
+with check (true);
+
+drop policy if exists "activity registrations delete" on public.activity_registrations;
+create policy "activity registrations delete"
+on public.activity_registrations
+for delete
+using (true);
 ```
 
 注意：
-- 目前後台沒有 Supabase JWT 角色管控，`select` policy 開放代表知道 API key 者可讀取。
+- 目前後台沒有 Supabase JWT 角色管控，`select/update/delete` policy 開放代表知道 API key 者可讀寫。
 - 若要提高安全性，建議下一步把後台登入改為 Supabase Auth + 角色控管，再收斂 select policy。

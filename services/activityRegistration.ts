@@ -31,7 +31,44 @@ export const ACTIVITY_REGISTRATION_LABELS = {
 
 const normalizeBirthDate = (birthDate: string): string => birthDate.replace(/\D/g, '');
 
+export const buildActivityRegistrationInitialForm = (
+  activityId: string = '',
+  activityTitle: string = ''
+): ActivityRegistrationFormData => ({
+  activityId,
+  activityTitle,
+  name: '',
+  email: '',
+  gender: 'male',
+  birthDate: '',
+  identity: 'member',
+  phone: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  referralSource: 'member',
+  referralSourceOther: '',
+  notes: '',
+});
+
+const toRegistrationPayload = (data: ActivityRegistrationFormData) => ({
+  activity_id: data.activityId,
+  activity_title: data.activityTitle,
+  name: data.name.trim(),
+  email: data.email.trim(),
+  gender: data.gender,
+  birth_date: normalizeBirthDate(data.birthDate),
+  identity: data.identity,
+  phone: data.phone.trim(),
+  emergency_contact_name: data.emergencyContactName.trim(),
+  emergency_contact_phone: data.emergencyContactPhone.trim(),
+  referral_source: data.referralSource,
+  referral_source_other: data.referralSourceOther?.trim() || null,
+  notes: data.notes?.trim() || null,
+});
+
 export const validateActivityRegistration = (data: ActivityRegistrationFormData): string | null => {
+  if (!data.activityId.trim()) return '請選擇活動';
+  if (!data.activityTitle.trim()) return '活動名稱不可空白';
   if (!data.name.trim()) return '請填寫姓名';
   if (!data.email.trim()) return '請填寫 Email';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) return 'Email 格式不正確';
@@ -50,24 +87,10 @@ export const validateActivityRegistration = (data: ActivityRegistrationFormData)
   return null;
 };
 
-export const submitActivityRegistration = async (data: ActivityRegistrationFormData): Promise<void> => {
+export const createActivityRegistration = async (data: ActivityRegistrationFormData): Promise<void> => {
   const { error } = await supabase
     .from('activity_registrations')
-    .insert({
-      activity_id: data.activityId,
-      activity_title: data.activityTitle,
-      name: data.name.trim(),
-      email: data.email.trim(),
-      gender: data.gender,
-      birth_date: normalizeBirthDate(data.birthDate),
-      identity: data.identity,
-      phone: data.phone.trim(),
-      emergency_contact_name: data.emergencyContactName.trim(),
-      emergency_contact_phone: data.emergencyContactPhone.trim(),
-      referral_source: data.referralSource,
-      referral_source_other: data.referralSourceOther?.trim() || null,
-      notes: data.notes?.trim() || null,
-    });
+    .insert(toRegistrationPayload(data));
 
   if (error) {
     if (error.message?.includes('activity_registrations')) {
@@ -75,6 +98,28 @@ export const submitActivityRegistration = async (data: ActivityRegistrationFormD
     }
     throw error;
   }
+};
+
+export const submitActivityRegistration = async (data: ActivityRegistrationFormData): Promise<void> => {
+  await createActivityRegistration(data);
+};
+
+export const updateActivityRegistration = async (id: string, data: ActivityRegistrationFormData): Promise<void> => {
+  const { error } = await supabase
+    .from('activity_registrations')
+    .update(toRegistrationPayload(data))
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+export const deleteActivityRegistration = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('activity_registrations')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 };
 
 const convertRegistrationRow = (row: any): ActivityRegistrationRecord => ({
