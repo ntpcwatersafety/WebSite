@@ -254,6 +254,98 @@ export const resetPasswordByToken = async (token: string, newPassword: string): 
   if (updateError) throw updateError;
 };
 
+// ── 後台：取得全部會員 ────────────────────────────────────────
+export const getAllMembers = async (): Promise<MemberProfile[]> => {
+  const { data, error } = await supabase
+    .from('water_members')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(rowToProfile);
+};
+
+// ── 後台：新增會員（含初始密碼）────────────────────────────────
+export const adminCreateMember = async (
+  profile: MemberProfile,
+  password: string
+): Promise<void> => {
+  const emailKey = profile.email.trim().toLowerCase();
+
+  const { data: existing } = await supabase
+    .from('water_members')
+    .select('id')
+    .eq('email', emailKey)
+    .maybeSingle();
+
+  if (existing) throw new Error('此 Email 已被註冊');
+
+  const salt = generateSalt();
+  const hash = await hashPassword(password || generateSalt(), salt);
+
+  const { error } = await supabase.from('water_members').insert({
+    email: emailKey,
+    password_hash: hash,
+    password_salt: salt,
+    name: profile.name.trim(),
+    phone: profile.phone.trim(),
+    address_county: profile.addressCounty,
+    address_district: profile.addressDistrict,
+    address_detail: profile.addressDetail.trim(),
+    id_number: profile.idNumber.trim(),
+    birth_date: profile.birthDate,
+    identity: profile.identity,
+    coach_cert_year: profile.coachCertYear.trim(),
+    emergency_contact_name: profile.emergencyContactName.trim(),
+    emergency_contact_phone: profile.emergencyContactPhone.trim(),
+    emergency_contact_relation: profile.emergencyContactRelation.trim(),
+    souvenir_received: profile.souvenirReceived,
+    souvenir_receive_date: profile.souvenirReceiveDate,
+  });
+
+  if (error) throw error;
+};
+
+// ── 後台：依 ID 更新會員（可含 email 修改）────────────────────
+export const adminUpdateMember = async (
+  id: string,
+  profile: MemberProfile
+): Promise<void> => {
+  const { error } = await supabase
+    .from('water_members')
+    .update({
+      email: profile.email.trim().toLowerCase(),
+      name: profile.name.trim(),
+      phone: profile.phone.trim(),
+      address_county: profile.addressCounty,
+      address_district: profile.addressDistrict,
+      address_detail: profile.addressDetail.trim(),
+      id_number: profile.idNumber.trim(),
+      birth_date: profile.birthDate,
+      identity: profile.identity,
+      coach_cert_year: profile.coachCertYear.trim(),
+      emergency_contact_name: profile.emergencyContactName.trim(),
+      emergency_contact_phone: profile.emergencyContactPhone.trim(),
+      emergency_contact_relation: profile.emergencyContactRelation.trim(),
+      souvenir_received: profile.souvenirReceived,
+      souvenir_receive_date: profile.souvenirReceiveDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+// ── 後台：刪除會員 ────────────────────────────────────────────
+export const adminDeleteMember = async (id: string): Promise<void> => {
+  const { error } = await supabase
+    .from('water_members')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
 // ── 台灣縣市區域資料 ──────────────────────────────────────────
 export const TAIWAN_DISTRICTS: Record<string, string[]> = {
   台北市: ['中正區','大同區','中山區','松山區','大安區','萬華區','信義區','士林區','北投區','內湖區','南港區','文山區'],

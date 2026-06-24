@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import {
   FileText, Newspaper, Images, Award, Heart, Settings,
-  ChevronRight, ChevronLeft, PanelLeftClose, HardDrive
+  ChevronRight, ChevronLeft, PanelLeftClose, HardDrive, Users
 } from 'lucide-react';
 
 const menuItems = [
@@ -15,6 +15,7 @@ const menuItems = [
   { path: '/admin/awards',       label: '獲獎紀錄', icon: <Award size={20} /> },
   { path: '/admin/thankyou',     label: '感恩有您', icon: <Heart size={20} /> },
   { path: '/admin/medialibrary', label: '圖檔管理', icon: <HardDrive size={20} /> },
+  { path: '/admin/members',      label: '會員管理', icon: <Users size={20} /> },
 ];
 
 const AdminDashboard: React.FC = () => {
