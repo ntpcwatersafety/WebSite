@@ -185,7 +185,7 @@ export interface ActivityRegistrationFormData {
   name: string;
   email: string;
   gender: RegistrationGender;
-  birthDate: string; // 民國格式，例如 701123
+  birthDate: string; // 民國格式，例如 701123 或 1000102
   identity: RegistrationIdentity;
   phone: string;
   emergencyContactName: string;

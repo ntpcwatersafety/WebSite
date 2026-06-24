@@ -109,7 +109,7 @@ export const validateActivityRegistration = (
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) return 'Email 格式不正確';
 
   const birthDate = normalizeBirthDate(data.birthDate);
-  if (!/^\d{6}$/.test(birthDate)) return '出生日期請使用民國格式 701123';
+  if (!/^\d{6,7}$/.test(birthDate)) return '出生日期請使用民國格式 701123 或 1000102';
 
   if (!/^09\d{8}$/.test(data.phone.trim())) return '手機號碼請使用 09 開頭的 10 碼格式';
   if (!data.emergencyContactName.trim()) return '請填寫緊急聯絡人姓名';
