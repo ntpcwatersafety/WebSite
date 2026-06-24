@@ -11,6 +11,9 @@ export const EMAILJS_CONFIG = {
   PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
 };
 
+// 密碼重設 Email Template（在 EmailJS 另建一個 template，見 docs/MEMBER_SQL.md）
+export const EMAILJS_RESET_TEMPLATE_ID = 'YOUR_RESET_TEMPLATE_ID';
+
 // ===============================
 // 2. 導覽列設定
 // ===============================

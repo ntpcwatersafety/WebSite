@@ -205,3 +205,35 @@ export interface NavItem {
   label: string;
   path: string;
 }
+
+// ==============================
+// 會員系統型別
+// ==============================
+
+export type MemberIdentity = 'coach' | 'team' | 'member' | 'new';
+
+export interface MemberProfile {
+  id?: string;
+  email: string;
+  name: string;
+  phone: string;
+  addressCounty: string;
+  addressDistrict: string;
+  addressDetail: string;
+  idNumber: string;
+  birthDate: string;
+  identity: MemberIdentity;
+  coachCertYear: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
+  souvenirReceived: boolean;
+  souvenirReceiveDate: string;
+  createdAt?: string;
+}
+
+export interface MemberSession {
+  email: string;
+  name: string;
+  timestamp: number;
+}

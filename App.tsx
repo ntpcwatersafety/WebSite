@@ -20,6 +20,11 @@ import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
 import { PAGE_CONTENT, MEDIA_SECTIONS } from './services/cms';
 import ThankYou from './pages/ThankYou';
 import { getActivityGalleryItems, getGalleryItems, getResultGalleryItems } from './services/cmsLoader';
+import MemberLogin from './pages/MemberLogin';
+import MemberRegister from './pages/MemberRegister';
+import MemberProfile from './pages/MemberProfile';
+import MemberForgotPassword from './pages/MemberForgotPassword';
+import MemberResetPassword from './pages/MemberResetPassword';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -38,6 +43,13 @@ const AppContent: React.FC = () => {
           <Route path="/media" element={<GenericPage data={PAGE_CONTENT.media} sections={MEDIA_SECTIONS} />} />
           <Route path="/thankyou" element={<ThankYou />} />
           <Route path="/contact" element={<Contact />} />
+
+          {/* 會員專區 */}
+          <Route path="/member/login" element={<MemberLogin />} />
+          <Route path="/member/register" element={<MemberRegister />} />
+          <Route path="/member/profile" element={<MemberProfile />} />
+          <Route path="/member/forgot-password" element={<MemberForgotPassword />} />
+          <Route path="/member/reset-password" element={<MemberResetPassword />} />
 
           {/* 後台：Admin 是外層 layout（header+toast），AdminDashboard 是內層 layout（側邊選單） */}
           <Route path="/admin" element={<Admin />}>

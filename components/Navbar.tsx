@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Waves } from 'lucide-react';
+import { Menu, X, Waves, User, LogIn } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { NAV_ITEMS } from '../services/cms';
+import { getMemberSession } from '../services/memberService';
+import { MemberSession } from '../types';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [memberSession, setMemberSession] = useState<MemberSession | null>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    setMemberSession(getMemberSession());
+  }, [location]);
 
   // Close menu when route changes
   useEffect(() => {
@@ -42,11 +49,11 @@ const Navbar: React.FC = () => {
 
       <div className="absolute right-4 h-9 w-9 md:hidden" aria-hidden="true" />
 
-      <ul className="hidden md:flex gap-6 list-none">
+      <ul className="hidden md:flex gap-6 list-none items-center">
         {NAV_ITEMS.map((item) => (
           <li key={item.path}>
-            <Link 
-              to={item.path} 
+            <Link
+              to={item.path}
               className={`text-gray-600 font-medium transition-colors hover:text-secondary ${
                 location.pathname === item.path ? 'text-secondary' : ''
               }`}
@@ -55,6 +62,25 @@ const Navbar: React.FC = () => {
             </Link>
           </li>
         ))}
+        <li>
+          {memberSession ? (
+            <Link
+              to="/member/profile"
+              className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-white transition hover:bg-primary/90"
+            >
+              <User size={14} />
+              {memberSession.name}
+            </Link>
+          ) : (
+            <Link
+              to="/member/login"
+              className="flex items-center gap-1.5 rounded-full border border-primary px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary hover:text-white"
+            >
+              <LogIn size={14} />
+              會員登入
+            </Link>
+          )}
+        </li>
       </ul>
 
       <div 
@@ -73,6 +99,23 @@ const Navbar: React.FC = () => {
             {item.label}
           </Link>
         ))}
+        {memberSession ? (
+          <Link
+            to="/member/profile"
+            className="flex w-full items-center justify-center gap-2 border-b border-gray-100 py-4 text-lg font-medium text-primary hover:bg-blue-50/30"
+          >
+            <User size={18} />
+            {memberSession.name}
+          </Link>
+        ) : (
+          <Link
+            to="/member/login"
+            className="flex w-full items-center justify-center gap-2 border-b border-gray-100 py-4 text-lg font-medium text-primary hover:bg-blue-50/30"
+          >
+            <LogIn size={18} />
+            會員登入
+          </Link>
+        )}
       </div>
     </nav>
   );
