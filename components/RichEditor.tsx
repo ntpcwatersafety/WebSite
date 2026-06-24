@@ -1,6 +1,5 @@
 import React, { useId, useRef, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import type { Editor as TinyMCEEditor } from 'tinymce';
 
 const TINYMCE_API_KEY = 'r5if44rv4x9bo1fan9i5rj3wyy782zuqkqd4lkhkomddqngo';
 
@@ -36,7 +35,7 @@ interface RichEditorProps {
 
 const RichEditor: React.FC<RichEditorProps> = ({ value, onChange, height = 300, onImageUpload }) => {
   const id = useId().replace(/:/g, '-');
-  const editorRef = useRef<TinyMCEEditor | null>(null);
+  const editorRef = useRef<any>(null);
   const initialValue = useRef(typeof value === 'string' ? value : '');
   const onChangeRef = useRef(onChange);
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
