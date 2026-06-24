@@ -8,7 +8,7 @@ import { loadCmsData } from './cmsLoader';
 export const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_hksfuel',
   TEMPLATE_ID: 'template_ruioo1o',        // 聯絡我們
-  RESET_TEMPLATE_ID: 'YOUR_RESET_TEMPLATE_ID', // 密碼重設（需在 EmailJS 另建一個 template，見 docs/MEMBER_SQL.md）
+  RESET_TEMPLATE_ID: 'template_3flwqii',      // 密碼重設
   PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
 };
 
