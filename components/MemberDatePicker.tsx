@@ -72,7 +72,7 @@ const MemberDatePicker: React.FC<MemberDatePickerProps> = ({
     return `民國 ${y} 年 ${m} 月 ${d} 日`;
   };
 
-  const rocYears = Array.from({ length: CURRENT_ROC_YEAR - 39 }, (_, i) => CURRENT_ROC_YEAR - i);
+  const rocYears = Array.from({ length: CURRENT_ROC_YEAR - 29 }, (_, i) => CURRENT_ROC_YEAR - i);
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const days = Array.from({ length: getDaysInMonth(Number(year), Number(month)) }, (_, i) => i + 1);
 

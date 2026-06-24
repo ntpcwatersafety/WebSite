@@ -142,7 +142,7 @@ const MemberFormFields: React.FC<MemberFormFieldsProps> = ({
           {/* 地址 */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-gray-700">地址</label>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2">
               <select
                 value={data.addressCounty}
                 onChange={e => handleCountyChange(e.target.value)}
@@ -164,14 +164,14 @@ const MemberFormFields: React.FC<MemberFormFieldsProps> = ({
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
-              <input
-                type="text"
-                value={data.addressDetail}
-                onChange={e => onChange('addressDetail', e.target.value)}
-                className={`${inputCls} col-span-2 md:col-span-1`}
-                placeholder="詳細地址"
-              />
             </div>
+            <input
+              type="text"
+              value={data.addressDetail}
+              onChange={e => onChange('addressDetail', e.target.value)}
+              className={`${inputCls} mt-2`}
+              placeholder="詳細地址（路、街、巷、弄、號）"
+            />
           </div>
 
           {/* 身分證 + 生日 */}
