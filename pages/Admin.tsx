@@ -63,7 +63,7 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: subscription } = onAuthStateChange((authenticated) => {
+    const subscription = onAuthStateChange((authenticated) => {
       setIsAuthenticated(authenticated);
       setLoading(false);
     });

@@ -87,7 +87,7 @@ export const getHomeSections = async (): Promise<SectionContent[]> => {
   const cmsData = await loadCmsData();
   console.log('getHomeSections: CMS 資料:', cmsData);
 
-  const sections = [
+  const sections: SectionContent[] = [
     {
       id: 'intro',
       title: '協會簡介',

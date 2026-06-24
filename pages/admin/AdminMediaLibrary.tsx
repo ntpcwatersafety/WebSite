@@ -18,7 +18,7 @@ const AdminMediaLibrary: React.FC = () => {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set<string>());
   const [deleting, setDeleting] = useState(false);
   const [preview, setPreview] = useState<MediaFile | null>(null);
 
@@ -76,7 +76,7 @@ const AdminMediaLibrary: React.FC = () => {
 
   const toggleSelectAll = () => {
     if (selected.size === files.length) {
-      setSelected(new Set());
+      setSelected(new Set<string>());
     } else {
       setSelected(new Set(files.map((f) => f.name)));
     }
@@ -87,11 +87,11 @@ const AdminMediaLibrary: React.FC = () => {
     if (!window.confirm(`確定要刪除選取的 ${selected.size} 張圖片嗎？此操作無法復原。`)) return;
     setDeleting(true);
     try {
-      const names = Array.from(selected);
+      const names: string[] = [...selected];
       const { error } = await supabase.storage.from(BUCKET).remove(names);
       if (error) throw error;
       showToast(`已刪除 ${names.length} 張圖片`, 'success');
-      setSelected(new Set());
+      setSelected(new Set<string>());
       loadFiles();
     } catch {
       showToast('刪除失敗', 'error');
