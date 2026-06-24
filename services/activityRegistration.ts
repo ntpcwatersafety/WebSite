@@ -31,12 +31,31 @@ export const ACTIVITY_REGISTRATION_LABELS = {
 
 const normalizeBirthDate = (birthDate: string): string => birthDate.replace(/\D/g, '');
 
+const normalizeSelectedPeriods = (selectedPeriods: string[] = []): string[] => Array.from(new Set(
+  selectedPeriods
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+));
+
+const parseSelectedPeriods = (raw: unknown): string[] => {
+  if (Array.isArray(raw)) return normalizeSelectedPeriods(raw as string[]);
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? normalizeSelectedPeriods(parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const buildActivityRegistrationInitialForm = (
   activityId: string = '',
   activityTitle: string = ''
 ): ActivityRegistrationFormData => ({
   activityId,
   activityTitle,
+  selectedPeriods: [],
   name: '',
   email: '',
   gender: 'male',
@@ -53,6 +72,7 @@ export const buildActivityRegistrationInitialForm = (
 const toRegistrationPayload = (data: ActivityRegistrationFormData) => ({
   activity_id: data.activityId,
   activity_title: data.activityTitle,
+  selected_periods_json: JSON.stringify(normalizeSelectedPeriods(data.selectedPeriods || [])),
   name: data.name.trim(),
   email: data.email.trim(),
   gender: data.gender,
@@ -66,9 +86,24 @@ const toRegistrationPayload = (data: ActivityRegistrationFormData) => ({
   notes: data.notes?.trim() || null,
 });
 
-export const validateActivityRegistration = (data: ActivityRegistrationFormData): string | null => {
+export const validateActivityRegistration = (
+  data: ActivityRegistrationFormData,
+  availablePeriodOptions: string[] = []
+): string | null => {
   if (!data.activityId.trim()) return '請選擇活動';
   if (!data.activityTitle.trim()) return '活動名稱不可空白';
+
+  const normalizedAvailablePeriods = normalizeSelectedPeriods(availablePeriodOptions);
+  const selectedPeriods = normalizeSelectedPeriods(data.selectedPeriods || []);
+  if (normalizedAvailablePeriods.length > 0) {
+    if (selectedPeriods.length === 0) return '請至少勾選一個期數';
+
+    const periodSet = new Set(normalizedAvailablePeriods);
+    if (selectedPeriods.some((period) => !periodSet.has(period))) {
+      return '期數資料有誤，請重新勾選';
+    }
+  }
+
   if (!data.name.trim()) return '請填寫姓名';
   if (!data.email.trim()) return '請填寫 Email';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) return 'Email 格式不正確';
@@ -93,6 +128,9 @@ export const createActivityRegistration = async (data: ActivityRegistrationFormD
     .insert(toRegistrationPayload(data));
 
   if (error) {
+    if (error.message?.includes('selected_periods_json')) {
+      throw new Error('報名資料表缺少 selected_periods_json 欄位，請先套用 docs/ACTIVITY_REGISTRATIONS_SQL.md 的更新語法。');
+    }
     if (error.message?.includes('activity_registrations')) {
       throw new Error('報名資料表尚未建立，請先建立 activity_registrations 資料表。');
     }
@@ -127,6 +165,7 @@ const convertRegistrationRow = (row: any): ActivityRegistrationRecord => ({
   createdAt: row.created_at,
   activityId: row.activity_id,
   activityTitle: row.activity_title,
+  selectedPeriods: parseSelectedPeriods(row.selected_periods_json),
   name: row.name,
   email: row.email,
   gender: row.gender,
@@ -161,6 +200,7 @@ export const downloadActivityRegistrationsXlsx = (records: ActivityRegistrationR
   const header = [
     '報名時間',
     '活動名稱',
+    '期數',
     '姓名',
     'Email',
     '性別',
@@ -177,6 +217,7 @@ export const downloadActivityRegistrationsXlsx = (records: ActivityRegistrationR
   const rows = records.map((item) => [
     new Date(item.createdAt).toLocaleString('zh-TW'),
     item.activityTitle,
+    normalizeSelectedPeriods(item.selectedPeriods || []).join('、'),
     item.name,
     item.email,
     GENDER_LABEL[item.gender],
@@ -194,6 +235,7 @@ export const downloadActivityRegistrationsXlsx = (records: ActivityRegistrationR
   worksheet['!cols'] = [
     { wch: 22 },
     { wch: 24 },
+    { wch: 30 },
     { wch: 12 },
     { wch: 28 },
     { wch: 10 },

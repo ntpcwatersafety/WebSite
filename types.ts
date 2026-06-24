@@ -43,6 +43,7 @@ export interface GalleryItem {
   isActive?: boolean;
   date?: string;
   category?: string;
+  periodOptions?: string[];
   sortOrder?: number;
   coverPhotoId?: string;
   registerUrl?: string;
@@ -180,6 +181,7 @@ export type RegistrationReferralSource = 'member' | 'friend' | 'flyer' | 'offici
 export interface ActivityRegistrationFormData {
   activityId: string;
   activityTitle: string;
+  selectedPeriods: string[];
   name: string;
   email: string;
   gender: RegistrationGender;

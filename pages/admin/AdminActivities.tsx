@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check, ClipboardList } from 'lucide-react';
 import { GalleryItem } from '../../types';
-import { DEFAULT_ACTIVITY_CATEGORIES, getActivityCategories, getActivityGalleryItems } from '../../services/cmsLoader';
+import {
+  DEFAULT_ACTIVITY_CATEGORIES,
+  getActivityCategories,
+  getActivityGalleryItems,
+  getActivityPeriodOptionsMap,
+} from '../../services/cmsLoader';
 import { getActivityRegistrations } from '../../services/activityRegistration';
 import {
   createAlbum,
@@ -14,6 +19,7 @@ import {
   deleteAlbumPhoto,
   deleteAlbumPhotosBatch,
   setCoverPhoto,
+  updateActivityPeriodOptionsMap,
 } from '../../services/supabaseAdmin';
 import RichEditor from '../../components/RichEditor';
 import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
@@ -26,7 +32,14 @@ type EditorMode = 'add' | 'edit' | null;
 const cloneItem = (item: GalleryItem): GalleryItem => ({
   ...item,
   photos: [...(item.photos || [])],
+  periodOptions: [...(item.periodOptions || [])],
 });
+
+const normalizePeriodOptions = (options: string[]): string[] => Array.from(new Set(
+  (options || [])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+));
 
 const reorderCategoryList = (items: string[], dragValue: string, dropValue: string): string[] => {
   if (dragValue === dropValue) return items;
@@ -117,6 +130,7 @@ const AdminActivities: React.FC = () => {
       registerUrl: '',
       qrcodeUrl: '',
       category: '',
+      periodOptions: [],
       photos: [],
     });
   };
@@ -288,9 +302,11 @@ const AdminActivities: React.FC = () => {
       return;
     }
 
+    const normalizedPeriodOptions = normalizePeriodOptions(draft.periodOptions || []);
+
     try {
       if (editorMode === 'add') {
-        await createAlbum('activities', {
+        const createdId = await createAlbum('activities', {
           title: draft.title,
           description: draft.description,
           isActive: draft.isActive !== false,
@@ -300,6 +316,13 @@ const AdminActivities: React.FC = () => {
           registerUrl: draft.registerUrl,
           qrcodeUrl: draft.qrcodeUrl,
         });
+
+        const currentPeriodOptionsMap = await getActivityPeriodOptionsMap();
+        if (normalizedPeriodOptions.length > 0) {
+          currentPeriodOptionsMap[createdId] = normalizedPeriodOptions;
+        }
+        await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
+
         await loadItems();
         showToast('已新增', 'success');
       } else if (editorMode === 'edit' && editingId) {
@@ -311,9 +334,19 @@ const AdminActivities: React.FC = () => {
           category: draft.category,
           registerUrl: draft.registerUrl,
           qrcodeUrl: draft.qrcodeUrl,
+          periodOptions: normalizedPeriodOptions,
         };
 
         await updateAlbum('activities', editingId, updates);
+
+        const currentPeriodOptionsMap = await getActivityPeriodOptionsMap();
+        if (normalizedPeriodOptions.length > 0) {
+          currentPeriodOptionsMap[editingId] = normalizedPeriodOptions;
+        } else {
+          delete currentPeriodOptionsMap[editingId];
+        }
+        await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
+
         setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
         showToast('已保存', 'success');
       }
@@ -605,9 +638,22 @@ const AdminActivities: React.FC = () => {
           <div>
             <label className="block text-xs text-gray-500 mb-1">描述</label>
             <RichEditor
+              key={`activity-description-${editingId || 'new'}`}
               value={draft.description || ''}
               onChange={(content) => setDraft({ ...draft, description: content })}
             />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">期數設定（每行一個期數）</label>
+            <textarea
+              rows={4}
+              value={(draft.periodOptions || []).join('\n')}
+              onChange={(event) => setDraft({ ...draft, periodOptions: event.target.value.split(/\r?\n/) })}
+              placeholder={'例如：\n第一期 7/6~7/17 週一～週五\n第二期 8/3~8/14 週一～週五'}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500">前台站內報名會顯示為可複選期數；留空則不顯示期數欄位。</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">

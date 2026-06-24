@@ -10,6 +10,7 @@ interface ActivityRegistrationFormFieldsProps {
   formData: ActivityRegistrationFormData;
   onChange: <K extends keyof ActivityRegistrationFormData>(field: K, value: ActivityRegistrationFormData[K]) => void;
   activityOptions?: RegistrationActivityOption[];
+  periodOptions?: string[];
   showActivitySelect?: boolean;
   namePrefix?: string;
 }
@@ -18,6 +19,7 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
   formData,
   onChange,
   activityOptions = [],
+  periodOptions = [],
   showActivitySelect = false,
   namePrefix = 'registration',
 }) => {
@@ -29,6 +31,13 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
     const matched = activityOptions.find((item) => item.id === activityId);
     updateField('activityId', activityId);
     updateField('activityTitle', matched?.title || '');
+  };
+
+  const handleTogglePeriod = (period: string) => {
+    const current = formData.selectedPeriods || [];
+    const exists = current.includes(period);
+    const next = exists ? current.filter((item) => item !== period) : [...current, period];
+    updateField('selectedPeriods', next);
   };
 
   return (
@@ -47,6 +56,24 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
             ))}
           </select>
         </label>
+      ) : null}
+
+      {periodOptions.length > 0 ? (
+        <fieldset>
+          <legend className="mb-2 text-sm font-medium text-slate-700">報名期數（可複選）</legend>
+          <div className="grid gap-2 md:grid-cols-2">
+            {periodOptions.map((period) => (
+              <label key={period} className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={(formData.selectedPeriods || []).includes(period)}
+                  onChange={() => handleTogglePeriod(period)}
+                />
+                {period}
+              </label>
+            ))}
+          </div>
+        </fieldset>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">

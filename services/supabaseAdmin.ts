@@ -43,6 +43,31 @@ export const replaceActivityAlbumCategory = async (fromCategory: string, toCateg
   if (error) throw error;
 };
 
+export const updateActivityPeriodOptionsMap = async (periodOptionsMap: Record<string, string[]>) => {
+  const normalizedEntries = Object.entries(periodOptionsMap).reduce<Record<string, string[]>>((acc, [activityId, options]) => {
+    const id = String(activityId || '').trim();
+    if (!id) return acc;
+
+    const normalizedOptions = Array.from(new Set(
+      (Array.isArray(options) ? options : [])
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+    ));
+
+    if (normalizedOptions.length > 0) {
+      acc[id] = normalizedOptions;
+    }
+
+    return acc;
+  }, {});
+
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({ key: 'activityPeriodOptions', value: JSON.stringify(normalizedEntries) }, { onConflict: 'key' });
+
+  if (error) throw error;
+};
+
 // ==================== 最新消息 ====================
 
 export const createNewsItem = async (item: Omit<NewsItem, 'id'>) => {

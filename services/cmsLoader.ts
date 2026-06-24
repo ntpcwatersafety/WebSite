@@ -20,6 +20,39 @@ let cacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 分鐘快取
 export const DEFAULT_ACTIVITY_CATEGORIES = ['初級', '進階', '學童'];
 
+const normalizePeriodOptions = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+};
+
+export const getActivityPeriodOptionsMap = async (): Promise<Record<string, string[]>> => {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'activityPeriodOptions')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const raw = data?.value;
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+    const normalized: Record<string, string[]> = {};
+    Object.entries(parsed as Record<string, unknown>).forEach(([activityId, value]) => {
+      const options = normalizePeriodOptions(value);
+      if (options.length > 0) normalized[activityId] = options;
+    });
+    return normalized;
+  } catch (error) {
+    console.error('取得活動期數設定失敗:', error);
+    return {};
+  }
+};
+
 // ==================== 欄位轉換工具 ====================
 
 /**
@@ -152,10 +185,13 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
 
     if (albumError) throw albumError;
 
-    // 再查照片
-    const { data: photos, error: photoError } = await supabase
-      .from('activity_photos')
-      .select('id, album_id, image_url, title, description');
+    // 再查照片與期數設定
+    const [{ data: photos, error: photoError }, activityPeriodOptionsMap] = await Promise.all([
+      supabase
+        .from('activity_photos')
+        .select('id, album_id, image_url, title, description'),
+      getActivityPeriodOptionsMap(),
+    ]);
 
     if (photoError) throw photoError;
 
@@ -169,6 +205,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
         isActive: album.is_active,
         date: album.date,
         category: album.category,
+        periodOptions: activityPeriodOptionsMap[album.id] || [],
         sortOrder: album.sort_order,
         coverPhotoId: album.cover_photo_id,
         registerUrl: album.register_url || undefined,

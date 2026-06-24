@@ -8,6 +8,7 @@ create table if not exists public.activity_registrations (
   created_at timestamptz not null default now(),
   activity_id text not null,
   activity_title text not null,
+  selected_periods_json text not null default '[]',
   name text not null,
   email text not null,
   gender text not null check (gender in ('male', 'female')),
@@ -23,6 +24,10 @@ create table if not exists public.activity_registrations (
 
 create index if not exists idx_activity_registrations_created_at on public.activity_registrations (created_at desc);
 create index if not exists idx_activity_registrations_activity_id on public.activity_registrations (activity_id);
+
+-- 若為既有資料表升級，請補上欄位
+alter table public.activity_registrations
+add column if not exists selected_periods_json text not null default '[]';
 
 alter table public.activity_registrations enable row level security;
 

@@ -83,6 +83,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
       item.phone,
       item.emergencyContactName,
       item.emergencyContactPhone,
+      (item.selectedPeriods || []).join(' '),
       item.notes || '',
     ].join(' ').toLowerCase().includes(key));
   }, [items, keyword]);
@@ -109,6 +110,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
       emergencyContactPhone: item.emergencyContactPhone,
       referralSource: item.referralSource,
       referralSourceOther: item.referralSourceOther || '',
+      selectedPeriods: [...(item.selectedPeriods || [])],
       notes: item.notes || '',
     });
   };
@@ -130,7 +132,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
     event.preventDefault();
     if (!draft) return;
 
-    const validationError = validateActivityRegistration(draft);
+    const validationError = validateActivityRegistration(draft, activity.periodOptions || []);
     if (validationError) {
       showToast(validationError, 'error');
       return;
@@ -261,6 +263,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                 <ActivityRegistrationFormFields
                   formData={draft}
                   onChange={updateDraftField}
+                  periodOptions={activity.periodOptions || []}
                   showActivitySelect={false}
                   namePrefix={`admin-activity-${editorMode}-${editingId || 'new'}`}
                 />
@@ -317,6 +320,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                       <th className="px-3 py-2 text-left">Email</th>
                       <th className="px-3 py-2 text-left">性別</th>
                       <th className="px-3 py-2 text-left">出生日期</th>
+                      <th className="px-3 py-2 text-left">期數</th>
                       <th className="px-3 py-2 text-left">身分別</th>
                       <th className="px-3 py-2 text-left">手機</th>
                       <th className="px-3 py-2 text-left">緊急聯絡人</th>
@@ -334,6 +338,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                         <td className="px-3 py-2 whitespace-nowrap">{item.email}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{ACTIVITY_REGISTRATION_LABELS.gender[item.gender]}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{item.birthDate}</td>
+                        <td className="px-3 py-2">{item.selectedPeriods.length > 0 ? item.selectedPeriods.join('、') : '-'}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{ACTIVITY_REGISTRATION_LABELS.identity[item.identity]}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{item.phone}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{item.emergencyContactName}</td>
