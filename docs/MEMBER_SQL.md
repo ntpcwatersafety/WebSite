@@ -61,7 +61,12 @@ CREATE POLICY "allow_anon_all_members" ON water_members
 
 **To Email 設定：** `{{to_email}}`
 
-取得 Template ID 後，請在 `services/cms.ts` 中更新：
+取得 Template ID 後，請在 `services/cms.ts` 中更新 `EMAILJS_CONFIG` 的 `RESET_TEMPLATE_ID`：
 ```ts
-export const EMAILJS_RESET_TEMPLATE_ID = 'template_xxxxxxx'; // 改成你的 template ID
+export const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_hksfuel',
+  TEMPLATE_ID: 'template_ruioo1o',
+  RESET_TEMPLATE_ID: 'template_xxxxxxx', // ← 改成你的 reset template ID
+  PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
+};
 ```

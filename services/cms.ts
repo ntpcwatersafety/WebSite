@@ -7,12 +7,10 @@ import { loadCmsData } from './cmsLoader';
 // ===============================
 export const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_hksfuel',
-  TEMPLATE_ID: 'template_ruioo1o',
+  TEMPLATE_ID: 'template_ruioo1o',        // 聯絡我們
+  RESET_TEMPLATE_ID: 'YOUR_RESET_TEMPLATE_ID', // 密碼重設（需在 EmailJS 另建一個 template，見 docs/MEMBER_SQL.md）
   PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
 };
-
-// 密碼重設 Email Template（在 EmailJS 另建一個 template，見 docs/MEMBER_SQL.md）
-export const EMAILJS_RESET_TEMPLATE_ID = 'YOUR_RESET_TEMPLATE_ID';
 
 // ===============================
 // 2. 導覽列設定
@@ -173,3 +171,31 @@ export const sendContactEmail = async (data: { name: string; email: string; subj
   }
 };
 
+// ===============================
+// 8. 密碼重設 Email 發送
+// ===============================
+export const sendPasswordResetEmail = async (data: {
+  toName: string;
+  toEmail: string;
+  resetLink: string;
+}): Promise<void> => {
+  if (EMAILJS_CONFIG.RESET_TEMPLATE_ID === 'YOUR_RESET_TEMPLATE_ID') {
+    console.warn('[sendPasswordResetEmail] EmailJS RESET_TEMPLATE_ID 尚未設定，請至 services/cms.ts 更新後再使用');
+    return;
+  }
+  try {
+    await emailjs.send(
+      EMAILJS_CONFIG.SERVICE_ID,
+      EMAILJS_CONFIG.RESET_TEMPLATE_ID,
+      {
+        to_name: data.toName,
+        to_email: data.toEmail,
+        reset_link: data.resetLink,
+      },
+      EMAILJS_CONFIG.PUBLIC_KEY
+    );
+  } catch (error) {
+    console.error('[sendPasswordResetEmail] 寄送失敗:', error);
+    throw error;
+  }
+};

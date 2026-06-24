@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
-import emailjs from '@emailjs/browser';
 import { requestPasswordReset } from '../services/memberService';
-import { EMAILJS_CONFIG, EMAILJS_RESET_TEMPLATE_ID } from '../services/cms';
+import { sendPasswordResetEmail } from '../services/cms';
 
 const MemberForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -20,22 +19,11 @@ const MemberForgotPassword: React.FC = () => {
 
       const resetLink = `${window.location.origin}${window.location.pathname}#/member/reset-password?token=${token}`;
 
-      if (EMAILJS_RESET_TEMPLATE_ID === 'YOUR_RESET_TEMPLATE_ID') {
-        console.warn('[MemberForgotPassword] EmailJS reset template 尚未設定');
-        setStatus('success');
-        return;
-      }
-
-      await emailjs.send(
-        EMAILJS_CONFIG.SERVICE_ID,
-        EMAILJS_RESET_TEMPLATE_ID,
-        {
-          to_name: name,
-          to_email: email.trim().toLowerCase(),
-          reset_link: resetLink,
-        },
-        EMAILJS_CONFIG.PUBLIC_KEY
-      );
+      await sendPasswordResetEmail({
+        toName: name,
+        toEmail: email.trim().toLowerCase(),
+        resetLink,
+      });
 
       setStatus('success');
     } catch (err: any) {
