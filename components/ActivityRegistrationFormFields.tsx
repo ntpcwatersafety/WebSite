@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityRegistrationFormData } from '../types';
+import MemberDatePicker from './MemberDatePicker';
 
 export interface RegistrationActivityOption {
   id: string;
@@ -127,19 +128,14 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
       </fieldset>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-1 text-sm">
+        <div className="space-y-1 text-sm">
           <span className="font-medium text-slate-700">出生日期（民國）</span>
-          <input
-            required
-            type="text"
-            inputMode="numeric"
-            maxLength={7}
+          <MemberDatePicker
             value={formData.birthDate}
-            onChange={(event) => updateField('birthDate', event.target.value.replace(/\D/g, ''))}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
-            placeholder="例如：701123 或 1000102"
+            onChange={(v) => updateField('birthDate', v)}
+            placeholder="請選擇出生日期"
           />
-        </label>
+        </div>
 
         <label className="space-y-1 text-sm">
           <span className="font-medium text-slate-700">手機號碼</span>
