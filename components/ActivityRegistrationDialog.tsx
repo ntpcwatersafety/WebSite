@@ -6,6 +6,7 @@ import { GalleryItem, ActivityRegistrationFormData, MemberIdentity, Registration
 import {
   buildActivityRegistrationInitialForm,
   submitActivityRegistration,
+  updateActivityRegistration,
   validateActivityRegistration,
   getLatestRegistrationByActivityAndEmail,
 } from '../services/activityRegistration';
@@ -34,6 +35,7 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [autoFillSource, setAutoFillSource] = useState<AutoFillSource>('none');
+  const [previousRegistrationId, setPreviousRegistrationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,6 +43,7 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
     setStatus('idle');
     setErrorMessage('');
     setAutoFillSource('none');
+    setPreviousRegistrationId(null);
 
     const session = getMemberSession();
     if (!session) {
@@ -57,6 +60,7 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
           activityId: activity.id,
           activityTitle: activity.title,
         });
+        setPreviousRegistrationId(previous.id);
         setAutoFillSource('previous');
         return;
       }
@@ -101,7 +105,11 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
     setErrorMessage('');
 
     try {
-      await submitActivityRegistration(formData);
+      if (previousRegistrationId) {
+        await updateActivityRegistration(previousRegistrationId, formData);
+      } else {
+        await submitActivityRegistration(formData);
+      }
       setStatus('success');
     } catch (error) {
       console.error(error);
