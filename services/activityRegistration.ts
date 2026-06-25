@@ -179,6 +179,23 @@ const convertRegistrationRow = (row: any): ActivityRegistrationRecord => ({
   notes: row.notes || '',
 });
 
+export const getLatestRegistrationByActivityAndEmail = async (
+  activityId: string,
+  email: string
+): Promise<ActivityRegistrationRecord | null> => {
+  const { data, error } = await supabase
+    .from('activity_registrations')
+    .select('*')
+    .eq('activity_id', activityId)
+    .eq('email', email.trim().toLowerCase())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return convertRegistrationRow(data);
+};
+
 export const getActivityRegistrations = async (): Promise<ActivityRegistrationRecord[]> => {
   const { data, error } = await supabase
     .from('activity_registrations')

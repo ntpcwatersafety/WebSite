@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Save, LogOut, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 import {
   getMemberSession,
-  getMemberProfile,
+  getMemberProfileBySession,
   updateMemberProfile,
   changeMemberPassword,
   logoutMember,
@@ -38,7 +38,7 @@ const MemberProfile: React.FC = () => {
       navigate('/member/login');
       return;
     }
-    getMemberProfile(session.email).then(profile => {
+    getMemberProfileBySession().then(profile => {
       if (!profile) { navigate('/member/login'); return; }
       const data: MemberFormData = {
         email: profile.email,

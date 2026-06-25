@@ -233,6 +233,7 @@ export interface MemberProfile {
 }
 
 export interface MemberSession {
+  id?: string;   // UUID — 舊 session 無此欄，向下相容
   email: string;
   name: string;
   timestamp: number;

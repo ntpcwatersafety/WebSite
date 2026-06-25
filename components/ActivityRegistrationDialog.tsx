@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Send, LogIn, UserPlus, UserCheck } from 'lucide-react';
+import { X, Send, LogIn, UserPlus, UserCheck, RefreshCw } from 'lucide-react';
 import { GalleryItem, ActivityRegistrationFormData, MemberIdentity, RegistrationIdentity } from '../types';
 import {
   buildActivityRegistrationInitialForm,
   submitActivityRegistration,
   validateActivityRegistration,
+  getLatestRegistrationByActivityAndEmail,
 } from '../services/activityRegistration';
-import { getMemberSession, getMemberProfile } from '../services/memberService';
+import { getMemberSession, getMemberProfileBySession } from '../services/memberService';
 import ActivityRegistrationFormFields from './ActivityRegistrationFormFields';
 
 interface ActivityRegistrationDialogProps {
@@ -26,18 +27,20 @@ const buildInitialForm = (activity: GalleryItem): ActivityRegistrationFormData =
   ...buildActivityRegistrationInitialForm(activity.id, activity.title),
 });
 
+type AutoFillSource = 'none' | 'previous' | 'profile';
+
 const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({ activity, isOpen, onClose }) => {
   const [formData, setFormData] = useState<ActivityRegistrationFormData>(() => buildInitialForm(activity));
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [autoFilled, setAutoFilled] = useState(false);
+  const [autoFillSource, setAutoFillSource] = useState<AutoFillSource>('none');
 
   useEffect(() => {
     if (!isOpen) return;
 
     setStatus('idle');
     setErrorMessage('');
-    setAutoFilled(false);
+    setAutoFillSource('none');
 
     const session = getMemberSession();
     if (!session) {
@@ -45,24 +48,39 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
       return;
     }
 
-    getMemberProfile(session.email).then(profile => {
-      if (!profile) {
-        setFormData(buildInitialForm(activity));
+    (async () => {
+      // 優先：查本次活動的前次報名紀錄
+      const previous = await getLatestRegistrationByActivityAndEmail(activity.id, session.email);
+      if (previous) {
+        setFormData({
+          ...previous,
+          activityId: activity.id,
+          activityTitle: activity.title,
+        });
+        setAutoFillSource('previous');
         return;
       }
-      setFormData({
-        ...buildInitialForm(activity),
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-        birthDate: profile.birthDate,
-        emergencyContactName: profile.emergencyContactName,
-        emergencyContactPhone: profile.emergencyContactPhone,
-        identity: memberIdentityToRegistration(profile.identity),
-        referralSource: 'member',
-      });
-      setAutoFilled(true);
-    });
+
+      // 次選：會員基本資料
+      const profile = await getMemberProfileBySession();
+      if (profile) {
+        setFormData({
+          ...buildInitialForm(activity),
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone,
+          birthDate: profile.birthDate,
+          emergencyContactName: profile.emergencyContactName,
+          emergencyContactPhone: profile.emergencyContactPhone,
+          identity: memberIdentityToRegistration(profile.identity),
+          referralSource: 'member',
+        });
+        setAutoFillSource('profile');
+        return;
+      }
+
+      setFormData(buildInitialForm(activity));
+    })();
   }, [activity.id, isOpen]);
 
   const updateField = <K extends keyof ActivityRegistrationFormData>(field: K, value: ActivityRegistrationFormData[K]) => {
@@ -132,9 +150,14 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
         ) : (
           <form className="space-y-5 px-6 py-6" onSubmit={handleSubmit}>
 
-            {/* 登入提示橫幅 */}
+            {/* 登入狀態提示橫幅 */}
             {isLoggedIn ? (
-              autoFilled ? (
+              autoFillSource === 'previous' ? (
+                <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <RefreshCw size={18} className="shrink-0 text-amber-600" />
+                  <span>已帶入您上次報名本活動的資料，請確認或修改後再送出。</span>
+                </div>
+              ) : autoFillSource === 'profile' ? (
                 <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
                   <UserCheck size={18} className="shrink-0 text-green-600" />
                   <span>已自動帶入您的會員基本資料，請確認後送出。</span>

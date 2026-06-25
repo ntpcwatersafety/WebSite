@@ -33,8 +33,8 @@ export const getMemberSession = (): MemberSession | null => {
   }
 };
 
-const saveSession = (email: string, name: string) => {
-  const session: MemberSession = { email, name, timestamp: Date.now() };
+const saveSession = (email: string, name: string, id?: string) => {
+  const session: MemberSession = { id, email, name, timestamp: Date.now() };
   localStorage.setItem(MEMBER_SESSION_KEY, JSON.stringify(session));
 };
 
@@ -76,7 +76,7 @@ export const loginMember = async (email: string, password: string): Promise<Memb
   const hash = await hashPassword(password, data.password_salt);
   if (hash !== data.password_hash) throw new Error('帳號或密碼錯誤');
 
-  saveSession(data.email, data.name);
+  saveSession(data.email, data.name, data.id);
   return rowToProfile(data);
 };
 
@@ -98,7 +98,7 @@ export const registerMember = async (
   const salt = generateSalt();
   const hash = await hashPassword(password, salt);
 
-  const { error } = await supabase.from('water_members').insert({
+  const { data: inserted, error } = await supabase.from('water_members').insert({
     email: emailKey,
     password_hash: hash,
     password_salt: salt,
@@ -116,13 +116,13 @@ export const registerMember = async (
     emergency_contact_relation: profile.emergencyContactRelation.trim(),
     souvenir_received: profile.souvenirReceived,
     souvenir_receive_date: profile.souvenirReceiveDate,
-  });
+  }).select('id').single();
 
   if (error) throw error;
-  saveSession(emailKey, profile.name.trim());
+  saveSession(emailKey, profile.name.trim(), inserted?.id);
 };
 
-// ── 取得會員資料 ──────────────────────────────────────────────
+// ── 取得會員資料（by email）───────────────────────────────────
 export const getMemberProfile = async (email: string): Promise<MemberProfile | null> => {
   const { data, error } = await supabase
     .from('water_members')
@@ -132,6 +132,23 @@ export const getMemberProfile = async (email: string): Promise<MemberProfile | n
 
   if (error || !data) return null;
   return rowToProfile(data);
+};
+
+// ── 取得會員資料（by session — 優先用 UUID，向下相容 email）────
+export const getMemberProfileBySession = async (): Promise<MemberProfile | null> => {
+  const session = getMemberSession();
+  if (!session) return null;
+
+  if (session.id) {
+    const { data, error } = await supabase
+      .from('water_members')
+      .select('*')
+      .eq('id', session.id)
+      .single();
+    if (!error && data) return rowToProfile(data);
+  }
+
+  return getMemberProfile(session.email);
 };
 
 // ── 更新會員資料（Email 不可改）────────────────────────────────
