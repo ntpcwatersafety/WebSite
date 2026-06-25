@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check, ClipboardList } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Upload, X, Save, Pencil, Check, ClipboardList, Copy } from 'lucide-react';
 import { GalleryItem } from '../../types';
 import {
   DEFAULT_ACTIVITY_CATEGORIES,
@@ -463,6 +463,35 @@ const AdminActivities: React.FC = () => {
     }
   };
 
+  const handleCopyActivity = async (item: GalleryItem) => {
+    if (!window.confirm(`確定要複製「${item.title}」嗎？\n將複製報名資訊（不含照片、QRCode 及報名紀錄）。`)) return;
+
+    try {
+      const createdId = await createAlbum('activities', {
+        title: `複製 - ${item.title}`,
+        description: item.description,
+        isActive: item.isActive !== false,
+        date: item.date || undefined,
+        sortOrder: item.sortOrder,
+        category: item.category,
+        registerUrl: item.registerUrl,
+        qrcodeUrl: '',
+      });
+
+      const currentPeriodOptionsMap = await getActivityPeriodOptionsMap();
+      const sourcePeriodOptions = normalizePeriodOptions(item.periodOptions || []);
+      if (sourcePeriodOptions.length > 0) {
+        currentPeriodOptionsMap[createdId] = sourcePeriodOptions;
+        await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
+      }
+
+      await loadItems();
+      showToast('已複製報名資訊，請編輯後儲存', 'success');
+    } catch {
+      showToast('複製失敗', 'error');
+    }
+  };
+
   const openRegistrationDialog = (item: GalleryItem) => {
     const count = registrationCounts[item.id] || 0;
     setRegistrationDialogMode(count > 0 ? 'list' : 'add');
@@ -561,14 +590,24 @@ const AdminActivities: React.FC = () => {
           const hasRegistrations = registrationCount > 0;
 
           return (
-            <button
-              onClick={() => openRegistrationDialog(item)}
-              className={`flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded ${hasRegistrations ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
-              title={hasRegistrations ? '查詢報名紀錄' : '新增紀錄'}
-            >
-              <ClipboardList size={14} />
-              {hasRegistrations ? `查詢報名紀錄 (${registrationCount})` : '新增紀錄'}
-            </button>
+            <>
+              <button
+                onClick={() => handleCopyActivity(item)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded bg-amber-500 hover:bg-amber-600"
+                title="複製報名資訊（不含照片及報名紀錄）"
+              >
+                <Copy size={14} />
+                複製
+              </button>
+              <button
+                onClick={() => openRegistrationDialog(item)}
+                className={`flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded ${hasRegistrations ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+                title={hasRegistrations ? '查詢報名紀錄' : '新增紀錄'}
+              >
+                <ClipboardList size={14} />
+                {hasRegistrations ? `查詢報名紀錄 (${registrationCount})` : '新增紀錄'}
+              </button>
+            </>
           );
         }}
       />
