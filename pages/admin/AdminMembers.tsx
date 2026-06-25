@@ -23,6 +23,13 @@ const IDENTITY_LABEL: Record<MemberIdentity, string> = {
   new:    '新入會',
 };
 
+const IDENTITY_OPTIONS: { value: MemberIdentity; label: string }[] = [
+  { value: 'coach',  label: '教練' },
+  { value: 'team',   label: '隊員（具有本會救生員證）' },
+  { value: 'member', label: '會員（尚未具有本會救生員證）' },
+  { value: 'new',    label: '新入會（首次繳交入會費及會員費）' },
+];
+
 const IDENTITY_FROM_LABEL: Record<string, MemberIdentity> = {
   '教練': 'coach', '隊員': 'team', '會員': 'member', '新入會': 'new',
 };
@@ -338,7 +345,7 @@ const AdminMembers: React.FC = () => {
               <div className="space-y-1">
                 <label className="text-xs font-medium text-gray-600">身分</label>
                 <select value={draft.identity} onChange={e => setField('identity', e.target.value as MemberIdentity)} className={inputCls}>
-                  {Object.entries(IDENTITY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {IDENTITY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               </div>
               {/* 教練證年份 */}
