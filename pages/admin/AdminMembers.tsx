@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Plus, Pencil, Trash2, Save, X, Download, Upload,
-  RefreshCw, Search, FileSpreadsheet,
+  RefreshCw, Search, FileSpreadsheet, ChevronUp, ChevronDown, ChevronsUpDown,
 } from 'lucide-react';
 import { MemberIdentity, MemberProfile } from '../../types';
 import {
@@ -123,6 +123,17 @@ const AdminMembers: React.FC = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sortKey, setSortKey] = useState<keyof MemberProfile | ''>('');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (key: keyof MemberProfile) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +158,14 @@ const AdminMembers: React.FC = () => {
       m.idNumber.toLowerCase().includes(kw)
     );
   });
+
+  const sorted = sortKey
+    ? [...filtered].sort((a, b) => {
+        const av = String((a as any)[sortKey] ?? '');
+        const bv = String((b as any)[sortKey] ?? '');
+        return sortDir === 'asc' ? av.localeCompare(bv, 'zh-TW') : bv.localeCompare(av, 'zh-TW');
+      })
+    : filtered;
 
   const setField = <K extends keyof MemberProfile>(k: K, v: MemberProfile[K]) =>
     setDraft(prev => ({ ...prev, [k]: v }));
@@ -405,24 +424,46 @@ const AdminMembers: React.FC = () => {
       ) : (
         <>
           <p className="mb-2 text-sm text-gray-500">共 {filtered.length} 位會員</p>
+          {sortKey && (
+            <p className="mb-2 text-xs text-blue-500">
+              依「{{'name':'姓名','email':'Email','phone':'電話','identity':'身分','birthDate':'生日','emergencyContactName':'緊急聯絡人','souvenirReceived':'紀念品'}[sortKey]}」{sortDir === 'asc' ? '↑ 升冪' : '↓ 降冪'}排序
+              <button className="underline" onClick={() => setSortKey('')}>清除</button>
+            </p>
+          )}
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-600">
-                  <th className="px-3 py-2">姓名</th>
-                  <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">電話</th>
-                  <th className="px-3 py-2">身分</th>
-                  <th className="px-3 py-2">生日(民國)</th>
-                  <th className="px-3 py-2">緊急聯絡人</th>
-                  <th className="px-3 py-2">紀念品</th>
+                  {([
+                    { key: 'name',             label: '姓名' },
+                    { key: 'email',            label: 'Email' },
+                    { key: 'phone',            label: '電話' },
+                    { key: 'identity',         label: '身分' },
+                    { key: 'birthDate',        label: '生日(民國)' },
+                    { key: 'emergencyContactName', label: '緊急聯絡人' },
+                    { key: 'souvenirReceived', label: '紀念品' },
+                  ] as { key: keyof MemberProfile; label: string }[]).map(col => (
+                    <th key={col.key}
+                      className="cursor-pointer select-none whitespace-nowrap px-3 py-2 hover:text-gray-900"
+                      onClick={() => handleSort(col.key)}>
+                      <span className="inline-flex items-center gap-0.5">
+                        {col.label}
+                        {sortKey === col.key
+                          ? sortDir === 'asc'
+                            ? <ChevronUp size={12} className="text-blue-500" />
+                            : <ChevronDown size={12} className="text-blue-500" />
+                          : <ChevronsUpDown size={12} className="text-gray-300" />
+                        }
+                      </span>
+                    </th>
+                  ))}
                   <th className="px-3 py-2 text-center">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
+                {sorted.length === 0 ? (
                   <tr><td colSpan={8} className="py-8 text-center text-gray-400">尚無會員資料</td></tr>
-                ) : filtered.map(m => (
+                ) : sorted.map(m => (
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="px-3 py-2 font-medium">{m.name}</td>
                     <td className="px-3 py-2 text-gray-600">{m.email}</td>
