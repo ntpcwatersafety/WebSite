@@ -1,6 +1,10 @@
 # mail_templates / mail_logs 資料表
 
-用於「後台信件樣版」與「報名資料寄信」功能。請先在 Supabase SQL Editor 執行以下語法：
+用於「後台信件樣版」與「報名資料寄信」功能。
+
+✅ **設定狀態：已完成（2026-06-30）**。以下 SQL 僅供未來重建資料表或排查問題時參考，目前不需要重做。
+
+請先在 Supabase SQL Editor 執行以下語法：
 
 ```sql
 create table if not exists public.mail_templates (
@@ -58,6 +62,8 @@ create policy "mail logs insert" on public.mail_logs for insert with check (true
 注意：同其他後台資料表一樣，目前後台採前端登入(localStorage)機制，無 Supabase Auth，因此 policy 全部開放。
 
 ## EmailJS 樣版設定（重要：免費方案僅 2 個樣版額度）
+
+✅ **設定狀態：已完成（2026-06-30）**。以下步驟僅供未來重設或排查問題時參考，目前不需要重做。
 
 EmailJS 免費方案只能有 1 個 Email Service + 2 個樣版，本站已用滿（Contact Us、Password Reset），無法再新增第 3 個樣版。
 
