@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, CheckCircle, Save, Mail } from 'lucide-react';
+import { Plus, Save, Mail } from 'lucide-react';
 import { MailTemplate } from '../../types';
 import {
   MAIL_MERGE_FIELDS,
@@ -246,11 +246,6 @@ const AdminMailTemplates: React.FC = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700 flex items-start gap-3">
         <Mail size={18} className="mt-0.5 flex-shrink-0" />
         <p>樣版可在「報名資訊」的報名紀錄列表中，透過「寄信」功能選用，並可在寄送前自行調整收件者、主旨及內文。</p>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-700 flex items-start gap-3">
-        <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
-        <p>若尚未設定資料表或 EmailJS 樣版，請參考 docs/MAIL_TEMPLATES_SQL.md 完成設定。</p>
       </div>
     </div>
   );
