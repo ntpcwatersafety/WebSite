@@ -8,8 +8,9 @@ import { loadCmsData } from './cmsLoader';
 export const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_hksfuel',
   TEMPLATE_ID: 'template_ruioo1o',        // 聯絡我們
-  RESET_TEMPLATE_ID: 'template_3flwqii',      // 密碼重設
-  CUSTOM_TEMPLATE_ID: 'YOUR_CUSTOM_TEMPLATE_ID', // 後台信件樣版寄信（通用樣版，見 docs/MAIL_TEMPLATES_SQL.md）
+  // 通用樣版：密碼重設 + 後台信件樣版寄信共用（EmailJS 免費方案僅 2 個樣版額度，見 docs/MAIL_TEMPLATES_SQL.md）
+  // Subject 欄位設為 {{subject}}，Content 欄位設為 {{message}}
+  RESET_TEMPLATE_ID: 'template_3flwqii',
   PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
 };
 
@@ -180,10 +181,17 @@ export const sendPasswordResetEmail = async (data: {
   toEmail: string;
   resetLink: string;
 }): Promise<void> => {
-  if (EMAILJS_CONFIG.RESET_TEMPLATE_ID === 'YOUR_RESET_TEMPLATE_ID') {
-    console.warn('[sendPasswordResetEmail] EmailJS RESET_TEMPLATE_ID 尚未設定，請至 services/cms.ts 更新後再使用');
-    return;
-  }
+  const message = [
+    `親愛的 ${data.toName} 您好，`,
+    '',
+    '我們收到您的密碼重設請求，請點擊以下連結重設密碼（連結將在 1 小時後失效）：',
+    data.resetLink,
+    '',
+    '如果您沒有請求重設密碼，請忽略此郵件。',
+    '',
+    '新北市水上安全協會',
+  ].join('\n');
+
   try {
     await emailjs.send(
       EMAILJS_CONFIG.SERVICE_ID,
@@ -191,7 +199,8 @@ export const sendPasswordResetEmail = async (data: {
       {
         to_name: data.toName,
         to_email: data.toEmail,
-        reset_link: data.resetLink,
+        subject: '新北市水上安全協會 - 密碼重設通知',
+        message: message.replace(/\n/g, '<br>'),
       },
       EMAILJS_CONFIG.PUBLIC_KEY
     );
@@ -202,7 +211,7 @@ export const sendPasswordResetEmail = async (data: {
 };
 
 // ===============================
-// 9. 後台信件樣版寄信（通用樣版）
+// 9. 後台信件樣版寄信（與密碼重設共用同一個通用樣版）
 // ===============================
 export const sendCustomEmail = async (data: {
   toEmail: string;
@@ -210,17 +219,14 @@ export const sendCustomEmail = async (data: {
   subject: string;
   message: string;
 }): Promise<void> => {
-  if (EMAILJS_CONFIG.CUSTOM_TEMPLATE_ID === 'YOUR_CUSTOM_TEMPLATE_ID') {
-    throw new Error('尚未設定 EmailJS 自訂樣版，請先參考 docs/MAIL_TEMPLATES_SQL.md 設定 CUSTOM_TEMPLATE_ID');
-  }
   await emailjs.send(
     EMAILJS_CONFIG.SERVICE_ID,
-    EMAILJS_CONFIG.CUSTOM_TEMPLATE_ID,
+    EMAILJS_CONFIG.RESET_TEMPLATE_ID,
     {
       to_email: data.toEmail,
       to_name: data.toName || data.toEmail,
       subject: data.subject,
-      message: data.message,
+      message: data.message.replace(/\n/g, '<br>'),
     },
     EMAILJS_CONFIG.PUBLIC_KEY
   );

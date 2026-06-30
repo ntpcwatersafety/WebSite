@@ -57,38 +57,28 @@ create policy "mail logs insert" on public.mail_logs for insert with check (true
 
 注意：同其他後台資料表一樣，目前後台採前端登入(localStorage)機制，無 Supabase Auth，因此 policy 全部開放。
 
-## EmailJS 自訂樣版設定
+## EmailJS 樣版設定（重要：免費方案僅 2 個樣版額度）
 
-後台「信件樣版」的主旨/內文是由我們自己的資料表管理，寄送時透過同一個 EmailJS Template 轉發，因此需要在 [EmailJS Dashboard](https://dashboard.emailjs.com/) 另外建立一個「通用樣版」：
+EmailJS 免費方案只能有 1 個 Email Service + 2 個樣版，本站已用滿（Contact Us、Password Reset），無法再新增第 3 個樣版。
 
-**Template 變數：**
-- `{{to_email}}` — 收件者 Email（請設定在 Template 的 "To Email" 欄位）
-- `{{to_name}}` — 收件者姓名
-- `{{subject}}` — 信件主旨（請設定在 Template 的 "Subject" 欄位）
-- `{{message}}` — 信件內文（建議 Content 區塊只放這一個變數）
+因此後台「信件樣版」寄信功能改為**與「Password Reset」共用同一個 EmailJS Template**（`RESET_TEMPLATE_ID`），不需要新增樣版。請至 [EmailJS Dashboard](https://dashboard.emailjs.com/) → Email Templates → 編輯既有的「Password Reset」樣版，把內容改成通用格式：
 
-**建議 Template 內容：**
-
-Subject 欄位填：
+**Subject 欄位改為：**
 ```
 {{subject}}
 ```
 
-Content 區塊填：
+**Content 區塊改為（HTML 模式）：**
 ```
 {{message}}
 ```
 
-取得 Template ID 後，請在 `services/cms.ts` 中更新 `EMAILJS_CONFIG` 的 `CUSTOM_TEMPLATE_ID`：
+**To Email 欄位維持：** `{{to_email}}`
 
-```ts
-export const EMAILJS_CONFIG = {
-  SERVICE_ID: 'service_hksfuel',
-  TEMPLATE_ID: 'template_ruioo1o',
-  RESET_TEMPLATE_ID: 'template_xxxxxxx',
-  CUSTOM_TEMPLATE_ID: 'template_xxxxxxx', // ← 改成你的自訂樣版 template ID
-  PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
-};
-```
+改完之後：
+- 密碼重設信會由 `services/cms.ts` 的 `sendPasswordResetEmail()` 組好完整文字（含重設連結）放進 `message` 變數寄出，外觀與原本類似。
+- 後台信件樣版寄信也透過同一個樣版，把樣版管理頁設定的主旨/內文放進 `subject`／`message` 寄出。
 
-在設定好之前，後台寄信功能會顯示錯誤提示「尚未設定 EmailJS 自訂樣版」。
+`services/cms.ts` 不需要再額外設定 Template ID，兩個功能都使用既有的 `RESET_TEMPLATE_ID`。
+
+⚠️ **注意：** EmailJS 的 Email Service（`service_hksfuel`）目前連接的是 Gmail 帳號 `ntpcwatersafety@gmail.com`。若此帳號已被 Yahoo 等信箱判定為濫發來源並封鎖，透過 EmailJS 寄到 `@yahoo.com.tw`、`@yahoo.com` 等信箱仍可能被擋，這與樣版數量無關，需要另外處理寄件信箱的寄送信譽問題（例如改用有 SPF/DKIM 網域驗證的寄信服務）。
