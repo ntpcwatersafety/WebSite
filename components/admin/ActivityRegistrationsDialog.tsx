@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Filter, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from 'lucide-react';
+import { Download, Filter, Mail, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from 'lucide-react';
 import { ActivityRegistrationFormData, ActivityRegistrationRecord, GalleryItem } from '../../types';
 import {
   ACTIVITY_REGISTRATION_LABELS,
@@ -14,6 +14,7 @@ import {
 } from '../../services/activityRegistration';
 import { useToast } from '../../contexts/ToastContext';
 import ActivityRegistrationFormFields from '../ActivityRegistrationFormFields';
+import SendRegistrationMailDialog from './SendRegistrationMailDialog';
 
 interface ActivityRegistrationsDialogProps {
   activity: GalleryItem;
@@ -45,6 +46,8 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
   const [editorMode, setEditorMode] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ActivityRegistrationFormData | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mailDialogOpen, setMailDialogOpen] = useState(false);
 
   const loadItems = async () => {
     if (!isOpen) return;
@@ -53,6 +56,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
     try {
       const allRecords = await getActivityRegistrations();
       setItems(allRecords.filter((entry) => entry.activityId === activity.id));
+      setSelectedIds(new Set());
     } catch (error: any) {
       console.error(error);
       showToast(error?.message || '載入報名資料失敗', 'error');
@@ -87,6 +91,35 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
       item.notes || '',
     ].join(' ').toLowerCase().includes(key));
   }, [items, keyword]);
+
+  const allFilteredSelected = filteredItems.length > 0 && filteredItems.every((item) => selectedIds.has(item.id));
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      if (allFilteredSelected) {
+        const next = new Set(prev);
+        filteredItems.forEach((item) => next.delete(item.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredItems.forEach((item) => next.add(item.id));
+      return next;
+    });
+  };
+
+  const toggleSelectOne = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedRecords = useMemo(
+    () => filteredItems.filter((item) => selectedIds.has(item.id)),
+    [filteredItems, selectedIds]
+  );
 
   const startAdd = () => {
     setEditorMode('add');
@@ -242,6 +275,13 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                 <Download size={16} />
                 下載 Excel
               </button>
+              <button
+                onClick={() => setMailDialogOpen(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+              >
+                <Mail size={16} />
+                寄信{selectedRecords.length > 0 ? `（已選 ${selectedRecords.length} 人）` : ''}
+              </button>
             </div>
           </div>
 
@@ -315,6 +355,15 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                 <table className="min-w-[1200px] w-full text-sm">
                   <thead className="bg-gray-100 text-gray-700">
                     <tr>
+                      <th className="px-3 py-2 text-left">
+                        <input
+                          type="checkbox"
+                          checked={allFilteredSelected}
+                          onChange={toggleSelectAll}
+                          className="rounded"
+                          title="全選 / 取消全選"
+                        />
+                      </th>
                       <th className="px-3 py-2 text-left">報名時間</th>
                       <th className="px-3 py-2 text-left">姓名</th>
                       <th className="px-3 py-2 text-left">Email</th>
@@ -333,6 +382,14 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                   <tbody>
                     {filteredItems.map((item, index) => (
                       <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'}>
+                        <td className="px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(item.id)}
+                            onChange={() => toggleSelectOne(item.id)}
+                            className="rounded"
+                          />
+                        </td>
                         <td className="px-3 py-2 whitespace-nowrap">{formatDateTime(item.createdAt)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{item.name}</td>
                         <td className="px-3 py-2 whitespace-nowrap">{item.email}</td>
@@ -378,6 +435,13 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
           </div>
         </div>
       </div>
+
+      <SendRegistrationMailDialog
+        activity={{ id: activity.id, title: activity.title }}
+        isOpen={mailDialogOpen}
+        initialRecipients={selectedRecords}
+        onClose={() => setMailDialogOpen(false)}
+      />
     </div>,
     document.body
   );

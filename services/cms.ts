@@ -9,6 +9,7 @@ export const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_hksfuel',
   TEMPLATE_ID: 'template_ruioo1o',        // 聯絡我們
   RESET_TEMPLATE_ID: 'template_3flwqii',      // 密碼重設
+  CUSTOM_TEMPLATE_ID: 'YOUR_CUSTOM_TEMPLATE_ID', // 後台信件樣版寄信（通用樣版，見 docs/MAIL_TEMPLATES_SQL.md）
   PUBLIC_KEY: 'iHpUlqEoLptEllvz-'
 };
 
@@ -198,4 +199,29 @@ export const sendPasswordResetEmail = async (data: {
     console.error('[sendPasswordResetEmail] 寄送失敗:', error);
     throw error;
   }
+};
+
+// ===============================
+// 9. 後台信件樣版寄信（通用樣版）
+// ===============================
+export const sendCustomEmail = async (data: {
+  toEmail: string;
+  toName?: string;
+  subject: string;
+  message: string;
+}): Promise<void> => {
+  if (EMAILJS_CONFIG.CUSTOM_TEMPLATE_ID === 'YOUR_CUSTOM_TEMPLATE_ID') {
+    throw new Error('尚未設定 EmailJS 自訂樣版，請先參考 docs/MAIL_TEMPLATES_SQL.md 設定 CUSTOM_TEMPLATE_ID');
+  }
+  await emailjs.send(
+    EMAILJS_CONFIG.SERVICE_ID,
+    EMAILJS_CONFIG.CUSTOM_TEMPLATE_ID,
+    {
+      to_email: data.toEmail,
+      to_name: data.toName || data.toEmail,
+      subject: data.subject,
+      message: data.message,
+    },
+    EMAILJS_CONFIG.PUBLIC_KEY
+  );
 };

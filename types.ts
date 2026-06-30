@@ -238,3 +238,33 @@ export interface MemberSession {
   name: string;
   timestamp: number;
 }
+
+// ==============================
+// 信件樣版 / 寄信紀錄
+// ==============================
+
+export interface MailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MailLogStatus = 'success' | 'failed';
+
+export interface MailLogRecord {
+  id: string;
+  createdAt: string;
+  activityId?: string;
+  activityTitle?: string;
+  templateId?: string;
+  templateName?: string;
+  toEmail: string;
+  toName?: string;
+  subject: string;
+  content: string;
+  status: MailLogStatus;
+  errorMessage?: string;
+}

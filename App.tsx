@@ -17,6 +17,7 @@ import AdminMedia from './pages/admin/AdminMedia';
 import AdminAwards from './pages/admin/AdminAwards';
 import AdminThankYou from './pages/admin/AdminThankYou';
 import AdminMediaLibrary from './pages/admin/AdminMediaLibrary';
+import AdminMailTemplates from './pages/admin/AdminMailTemplates';
 import AdminMembers from './pages/admin/AdminMembers';
 import { PAGE_CONTENT, MEDIA_SECTIONS } from './services/cms';
 import ThankYou from './pages/ThankYou';
@@ -65,6 +66,7 @@ const AppContent: React.FC = () => {
               <Route path="awards" element={<AdminAwards />} />
               <Route path="thankyou" element={<AdminThankYou />} />
               <Route path="medialibrary" element={<AdminMediaLibrary />} />
+              <Route path="mailtemplates" element={<AdminMailTemplates />} />
               <Route path="members" element={<AdminMembers />} />
             </Route>
           </Route>
