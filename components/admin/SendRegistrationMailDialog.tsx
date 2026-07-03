@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { History, Mail, Plus, Send, X } from 'lucide-react';
+import { Eye, History, Mail, Plus, Send, X } from 'lucide-react';
 import { ActivityRegistrationRecord, MailLogRecord, MailTemplate } from '../../types';
 import {
   MAIL_MERGE_FIELDS,
@@ -49,6 +49,7 @@ const SendRegistrationMailDialog: React.FC<SendRegistrationMailDialogProps> = ({
   const [sending, setSending] = useState(false);
   const [logs, setLogs] = useState<MailLogRecord[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<MailLogRecord | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -59,6 +60,7 @@ const SendRegistrationMailDialog: React.FC<SendRegistrationMailDialogProps> = ({
     setNewRecipientEmail('');
     setSubject('');
     setContent('');
+    setSelectedLog(null);
     void loadTemplates();
   }, [isOpen, activity.id, initialRecipients]);
 
@@ -334,6 +336,7 @@ const SendRegistrationMailDialog: React.FC<SendRegistrationMailDialogProps> = ({
                         <th className="px-3 py-2 text-left">主旨</th>
                         <th className="px-3 py-2 text-left">樣版</th>
                         <th className="px-3 py-2 text-left">狀態</th>
+                        <th className="px-3 py-2 text-left">操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -350,6 +353,17 @@ const SendRegistrationMailDialog: React.FC<SendRegistrationMailDialogProps> = ({
                               <span className="text-red-600" title={log.errorMessage}>失敗</span>
                             )}
                           </td>
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLog(log)}
+                              className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-2 py-1 text-white hover:bg-blue-700"
+                              title="查看寄信內容"
+                            >
+                              <Eye size={12} />
+                              查看
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -357,6 +371,57 @@ const SendRegistrationMailDialog: React.FC<SendRegistrationMailDialogProps> = ({
                 </div>
               )}
             </div>
+
+            {selectedLog ? (
+              <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+                <div className="mb-3 flex items-center justify-between gap-3 border-b border-gray-100 pb-2">
+                  <h4 className="text-base font-semibold text-gray-900">寄信內容明細</h4>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLog(null)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <X size={14} />
+                    關閉
+                  </button>
+                </div>
+
+                <div className="grid gap-2 text-sm text-gray-700 md:grid-cols-2">
+                  <div>
+                    <span className="text-gray-500">寄送時間：</span>
+                    <span>{formatDateTime(selectedLog.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">收件者：</span>
+                    <span>{selectedLog.toName} &lt;{selectedLog.toEmail}&gt;</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">樣版：</span>
+                    <span>{selectedLog.templateName || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">狀態：</span>
+                    <span className={selectedLog.status === 'success' ? 'text-emerald-600' : 'text-red-600'}>
+                      {selectedLog.status === 'success' ? '成功' : '失敗'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="mb-1 text-xs text-gray-500">主旨</div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800">
+                    {selectedLog.subject}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <div className="mb-1 text-xs text-gray-500">內容</div>
+                  <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800">
+                    {selectedLog.content}
+                  </pre>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
