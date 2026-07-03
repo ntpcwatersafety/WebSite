@@ -2,6 +2,12 @@
 
 本文檔說明如何維護現有 Supabase 架構下的網站。
 
+## 最近更新（2026-07-03）
+
+- 後台「報名紀錄 > 寄信 > 寄信紀錄」每筆新增「查看」按鈕，可檢視實際寄出的主旨與完整內容。
+- GitHub Actions GitHub Pages 部署 workflow（`.github/workflows/deploy.yml`）之 `actions/setup-node` 已由 Node 20 調整為 Node 24。
+- 本次部署錯誤定位：`Deploy to GitHub Pages` 階段可能出現暫時性服務端失敗（`Deployment failed, try again later.`）；重新觸發部署通常可恢復。
+
 ## 最近更新（2026-06-10）
 
 - 後台「報名管理」整併進「報名資訊」列表列操作。

@@ -149,6 +149,11 @@ UI 表單 → supabaseAdmin → Supabase Auth 驗證 → DB 寫入 → RLS 檢�
 File Input → supabaseAdmin.uploadXxxImage() → Supabase Storage → 公開 URL → DB 引用
 ```
 
+### 後台操作更新（2026-07-03）
+
+- `components/admin/SendRegistrationMailDialog.tsx` 的「寄信紀錄」表格新增「查看」按鈕，可檢視單筆寄送的收件者、主旨與完整內文。
+- GitHub Pages 部署 workflow（`.github/workflows/deploy.yml`）使用的 Node 版本已由 20 升級為 24，以降低 Node 20 棄用告警與未來相容性風險。
+
 ### 後台操作更新（2026-06-10）
 
 - 報名資料管理從獨立頁改為整合至 `AdminActivities` 列表列操作。
