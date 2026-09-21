@@ -68,7 +68,7 @@ const ThankYou: React.FC = () => {
                     {group.entries.map((item) => (
                       <li key={item.id} className="grid gap-2 py-4 md:grid-cols-[minmax(220px,360px)_1fr] md:items-start md:gap-6">
                         <div className="text-lg font-semibold text-slate-900 [overflow-wrap:anywhere]">{item.name}</div>
-                        <div className="text-sm leading-7 text-slate-600 [overflow-wrap:anywhere]">{item.description || '感謝支持與協助。'}</div>
+                        <div className="text-sm leading-7 text-slate-600 whitespace-pre-line [overflow-wrap:anywhere]">{item.description || '感謝支持與協助。'}</div>
                       </li>
                     ))}
                   </ul>
