@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { GalleryItem } from '../types';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { sortGalleryItems } from '../services/sortUtils';
@@ -19,50 +20,60 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   enableRegistration = false,
 }) => {
   const activeItems = sortGalleryItems(items).filter((item) => item.isActive !== false && item.photos?.length);
-  const [itemIndex, setItemIndex] = useState(0);
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+
+  // 目前檢視的活動/照片由網址決定：#/gallery?item=<活動id>&photo=<第幾張>
+  const urlIndex = activeItems.findIndex((item) => item.id === searchParams.get('item'));
+  const isModalOpen = urlIndex >= 0;
+  const itemIndex = isModalOpen ? urlIndex : 0;
 
   const currentItem = activeItems[itemIndex] || activeItems[0];
   const currentPhotos = currentItem?.photos || [];
+  const rawPhoto = parseInt(searchParams.get('photo') || '1', 10) - 1;
+  const photoIndex = Number.isFinite(rawPhoto) ? Math.min(Math.max(rawPhoto, 0), Math.max(currentPhotos.length - 1, 0)) : 0;
   const currentPhoto = currentPhotos[photoIndex] || currentPhotos[0];
   const getCoverPhoto = (item: GalleryItem) => (
     item.photos.find((photo) => photo.id === item.coverPhotoId) || item.photos[0]
   );
 
-  const selectItem = (index: number) => {
-    setItemIndex(index);
-    setPhotoIndex(0);
-    setIsModalOpen(true);
+  const showAt = (index: number, photo: number, replace: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('item', activeItems[index].id);
+    if (photo > 0) next.set('photo', String(photo + 1));
+    else next.delete('photo');
+    setSearchParams(next, { replace });
   };
 
+  const selectItem = (index: number) => showAt(index, 0, false);
+
   const closeModal = () => {
-    setIsModalOpen(false);
     setIsRegistrationOpen(false);
+    const next = new URLSearchParams(searchParams);
+    next.delete('item');
+    next.delete('photo');
+    setSearchParams(next, { replace: true });
   };
 
   const goPrev = () => {
     if (photoIndex > 0) {
-      setPhotoIndex((prev) => prev - 1);
+      showAt(itemIndex, photoIndex - 1, true);
       return;
     }
 
     const nextItemIndex = itemIndex === 0 ? activeItems.length - 1 : itemIndex - 1;
     const nextPhotos = activeItems[nextItemIndex]?.photos || [];
-    setItemIndex(nextItemIndex);
-    setPhotoIndex(Math.max(nextPhotos.length - 1, 0));
+    showAt(nextItemIndex, Math.max(nextPhotos.length - 1, 0), true);
   };
 
   const goNext = () => {
     if (photoIndex < currentPhotos.length - 1) {
-      setPhotoIndex((prev) => prev + 1);
+      showAt(itemIndex, photoIndex + 1, true);
       return;
     }
 
     const nextItemIndex = itemIndex === activeItems.length - 1 ? 0 : itemIndex + 1;
-    setItemIndex(nextItemIndex);
-    setPhotoIndex(0);
+    showAt(nextItemIndex, 0, true);
   };
 
   useEffect(() => {
@@ -102,7 +113,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
               key={item.id}
               type="button"
               onClick={() => selectItem(index)}
-              className={`overflow-hidden rounded-2xl border text-left transition ${index === itemIndex ? 'border-primary bg-cyan-50/50 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'}`}
+              className={`overflow-hidden rounded-2xl border text-left transition ${isModalOpen && index === itemIndex ? 'border-primary bg-cyan-50/50 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'}`}
             >
               <div className="h-40 bg-slate-100">
                 {coverPhoto ? <img src={coverPhoto.imageUrl} alt={item.title} className="h-full w-full object-cover" /> : null}
@@ -176,7 +187,7 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
                       <button
                         key={photo.id}
                         type="button"
-                        onClick={() => setPhotoIndex(index)}
+                        onClick={() => showAt(itemIndex, index, true)}
                         className={`h-16 w-24 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${index === photoIndex ? 'border-cyan-300 shadow-sm' : 'border-transparent opacity-75 hover:opacity-100'}`}
                       >
                         <img src={photo.imageUrl} alt={currentItem.title || `${itemLabel}縮圖`} className="h-full w-full object-cover" />
