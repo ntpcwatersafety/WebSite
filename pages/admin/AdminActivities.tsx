@@ -684,7 +684,7 @@ const AdminActivities: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1">期數設定（每行一個期數）</label>
+            <label className="block text-xs text-gray-500 mb-1">活動項目設定（每行一個項目）</label>
             <textarea
               rows={4}
               value={(draft.periodOptions || []).join('\n')}
@@ -692,7 +692,7 @@ const AdminActivities: React.FC = () => {
               placeholder={'例如：\n第一期 7/6~7/17 週一～週五\n第二期 8/3~8/14 週一～週五'}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             />
-            <p className="mt-1 text-xs text-gray-500">前台站內報名會顯示為可複選期數；留空則不顯示期數欄位。</p>
+            <p className="mt-1 text-xs text-gray-500">前台站內報名會顯示為可複選活動項目；留空則不顯示活動項目欄位。</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
