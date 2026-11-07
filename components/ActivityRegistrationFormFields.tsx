@@ -61,7 +61,7 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
 
       {periodOptions.length > 0 ? (
         <fieldset>
-          <legend className="mb-2 text-sm font-medium text-slate-700">報名期數（可複選）</legend>
+          <legend className="mb-2 text-sm font-medium text-slate-700">活動項目（可複選）</legend>
           <div className="grid gap-2 md:grid-cols-2">
             {periodOptions.map((period) => (
               <label key={period} className="inline-flex items-center gap-2">
