@@ -96,7 +96,7 @@ export const validateActivityRegistration = (
   const normalizedAvailablePeriods = normalizeSelectedPeriods(availablePeriodOptions);
   const selectedPeriods = normalizeSelectedPeriods(data.selectedPeriods || []);
   if (normalizedAvailablePeriods.length > 0) {
-    if (selectedPeriods.length === 0) return '請至少勾選一個期數';
+    if (selectedPeriods.length === 0) return '請至少勾選一個項目';
 
     const periodSet = new Set(normalizedAvailablePeriods);
     if (selectedPeriods.some((period) => !periodSet.has(period))) {
