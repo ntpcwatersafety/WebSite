@@ -6,6 +6,8 @@ import {
   getActivityCategories,
   getActivityGalleryItems,
   getActivityPeriodOptionsMap,
+  getActivityHiddenFieldsMap,
+  REGISTRATION_OPTIONAL_FIELDS,
 } from '../../services/cmsLoader';
 import { getActivityRegistrations } from '../../services/activityRegistration';
 import {
@@ -20,6 +22,7 @@ import {
   deleteAlbumPhotosBatch,
   setCoverPhoto,
   updateActivityPeriodOptionsMap,
+  updateActivityHiddenFieldsMap,
 } from '../../services/supabaseAdmin';
 import RichEditor from '../../components/RichEditor';
 import AlbumPhotoGrid from '../../components/AlbumPhotoGrid';
@@ -33,6 +36,7 @@ const cloneItem = (item: GalleryItem): GalleryItem => ({
   ...item,
   photos: [...(item.photos || [])],
   periodOptions: [...(item.periodOptions || [])],
+  hiddenFormFields: [...(item.hiddenFormFields || [])],
 });
 
 const normalizePeriodOptions = (options: string[]): string[] => Array.from(new Set(
@@ -323,6 +327,10 @@ const AdminActivities: React.FC = () => {
         }
         await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
 
+        const hiddenMapAdd = await getActivityHiddenFieldsMap();
+        hiddenMapAdd[createdId] = draft.hiddenFormFields || [];
+        await updateActivityHiddenFieldsMap(hiddenMapAdd);
+
         await loadItems();
         showToast('已新增', 'success');
       } else if (editorMode === 'edit' && editingId) {
@@ -346,6 +354,11 @@ const AdminActivities: React.FC = () => {
           delete currentPeriodOptionsMap[editingId];
         }
         await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
+
+        const hiddenMapEdit = await getActivityHiddenFieldsMap();
+        hiddenMapEdit[editingId] = draft.hiddenFormFields || [];
+        await updateActivityHiddenFieldsMap(hiddenMapEdit);
+        updates.hiddenFormFields = draft.hiddenFormFields || [];
 
         setItems((prev) => prev.map((item) => (item.id === editingId ? { ...item, ...updates } : item)));
         showToast('已保存', 'success');
@@ -483,6 +496,12 @@ const AdminActivities: React.FC = () => {
       if (sourcePeriodOptions.length > 0) {
         currentPeriodOptionsMap[createdId] = sourcePeriodOptions;
         await updateActivityPeriodOptionsMap(currentPeriodOptionsMap);
+      }
+
+      if ((item.hiddenFormFields || []).length > 0) {
+        const hiddenMapCopy = await getActivityHiddenFieldsMap();
+        hiddenMapCopy[createdId] = [...(item.hiddenFormFields || [])];
+        await updateActivityHiddenFieldsMap(hiddenMapCopy);
       }
 
       await loadItems();
@@ -693,6 +712,28 @@ const AdminActivities: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
             />
             <p className="mt-1 text-xs text-gray-500">前台站內報名會顯示為可複選活動項目；留空則不顯示活動項目欄位。</p>
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">報名表單顯示欄位（取消勾選則前台不顯示，也不必填）</label>
+            <div className="flex flex-wrap gap-4 text-sm">
+              {REGISTRATION_OPTIONAL_FIELDS.map((field) => (
+                <label key={field.key} className="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={!(draft.hiddenFormFields || []).includes(field.key)}
+                    onChange={(event) => {
+                      const current = draft.hiddenFormFields || [];
+                      const next = event.target.checked
+                        ? current.filter((k) => k !== field.key)
+                        : [...current, field.key];
+                      setDraft({ ...draft, hiddenFormFields: next });
+                    }}
+                  />
+                  {field.label}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">

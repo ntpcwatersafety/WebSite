@@ -12,6 +12,7 @@ interface ActivityRegistrationFormFieldsProps {
   onChange: <K extends keyof ActivityRegistrationFormData>(field: K, value: ActivityRegistrationFormData[K]) => void;
   activityOptions?: RegistrationActivityOption[];
   periodOptions?: string[];
+  hiddenFields?: string[];
   showActivitySelect?: boolean;
   namePrefix?: string;
 }
@@ -21,6 +22,7 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
   onChange,
   activityOptions = [],
   periodOptions = [],
+  hiddenFields = [],
   showActivitySelect = false,
   namePrefix = 'registration',
 }) => {
@@ -152,6 +154,7 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
         </label>
       </div>
 
+      {!hiddenFields.includes('identity') ? (
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-slate-700">身分別</legend>
         <div className="grid gap-2 md:grid-cols-2">
@@ -169,7 +172,9 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
           </label>
         </div>
       </fieldset>
+      ) : null}
 
+      {!hiddenFields.includes('emergency') ? (
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1 text-sm">
           <span className="font-medium text-slate-700">緊急聯絡人姓名</span>
@@ -196,7 +201,9 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
           />
         </label>
       </div>
+      ) : null}
 
+      {!hiddenFields.includes('referral') ? (
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-slate-700">請問您如何得知本活動</legend>
         <div className="grid gap-2 md:grid-cols-2">
@@ -218,6 +225,7 @@ const ActivityRegistrationFormFields: React.FC<ActivityRegistrationFormFieldsPro
           />
         ) : null}
       </fieldset>
+      ) : null}
 
       <label className="block space-y-1 text-sm">
         <span className="font-medium text-slate-700">備註（選填）</span>

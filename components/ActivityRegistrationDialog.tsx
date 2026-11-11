@@ -94,7 +94,7 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const validationMessage = validateActivityRegistration(formData, activity.periodOptions || []);
+    const validationMessage = validateActivityRegistration(formData, activity.periodOptions || [], activity.hiddenFormFields || []);
     if (validationMessage) {
       setStatus('error');
       setErrorMessage(validationMessage);
@@ -201,6 +201,7 @@ const ActivityRegistrationDialog: React.FC<ActivityRegistrationDialogProps> = ({
               formData={formData}
               onChange={updateField}
               periodOptions={activity.periodOptions || []}
+              hiddenFields={activity.hiddenFormFields || []}
               namePrefix={`front-${activity.id}`}
             />
 

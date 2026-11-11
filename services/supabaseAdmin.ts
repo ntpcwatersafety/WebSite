@@ -68,6 +68,21 @@ export const updateActivityPeriodOptionsMap = async (periodOptionsMap: Record<st
   if (error) throw error;
 };
 
+export const updateActivityHiddenFieldsMap = async (hiddenMap: Record<string, string[]>) => {
+  const normalized = Object.entries(hiddenMap).reduce<Record<string, string[]>>((acc, [activityId, fields]) => {
+    const id = String(activityId || '').trim();
+    const list = Array.from(new Set((Array.isArray(fields) ? fields : []).map((f) => String(f || '').trim()).filter(Boolean)));
+    if (id && list.length > 0) acc[id] = list;
+    return acc;
+  }, {});
+
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({ key: 'activityHiddenFormFields', value: JSON.stringify(normalized) }, { onConflict: 'key' });
+
+  if (error) throw error;
+};
+
 // ==================== 最新消息 ====================
 
 export const createNewsItem = async (item: Omit<NewsItem, 'id'>) => {

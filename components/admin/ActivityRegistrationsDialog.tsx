@@ -165,7 +165,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
     event.preventDefault();
     if (!draft) return;
 
-    const validationError = validateActivityRegistration(draft, activity.periodOptions || []);
+    const validationError = validateActivityRegistration(draft, activity.periodOptions || [], activity.hiddenFormFields || []);
     if (validationError) {
       showToast(validationError, 'error');
       return;
@@ -304,6 +304,7 @@ const ActivityRegistrationsDialog: React.FC<ActivityRegistrationsDialogProps> = 
                   formData={draft}
                   onChange={updateDraftField}
                   periodOptions={activity.periodOptions || []}
+                  hiddenFields={activity.hiddenFormFields || []}
                   showActivitySelect={false}
                   namePrefix={`admin-activity-${editorMode}-${editingId || 'new'}`}
                 />

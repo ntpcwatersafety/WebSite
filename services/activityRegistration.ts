@@ -88,7 +88,8 @@ const toRegistrationPayload = (data: ActivityRegistrationFormData) => ({
 
 export const validateActivityRegistration = (
   data: ActivityRegistrationFormData,
-  availablePeriodOptions: string[] = []
+  availablePeriodOptions: string[] = [],
+  hiddenFields: string[] = []
 ): string | null => {
   if (!data.activityId.trim()) return '請選擇活動';
   if (!data.activityTitle.trim()) return '活動名稱不可空白';
@@ -112,10 +113,12 @@ export const validateActivityRegistration = (
   if (!/^\d{6,7}$/.test(birthDate)) return '出生日期請使用民國格式 701123 或 1000102';
 
   if (!/^09\d{8}$/.test(data.phone.trim())) return '手機號碼請使用 09 開頭的 10 碼格式';
-  if (!data.emergencyContactName.trim()) return '請填寫緊急聯絡人姓名';
-  if (!/^09\d{8}$/.test(data.emergencyContactPhone.trim())) return '緊急聯絡人手機號碼格式錯誤';
+  if (!hiddenFields.includes('emergency')) {
+    if (!data.emergencyContactName.trim()) return '請填寫緊急聯絡人姓名';
+    if (!/^09\d{8}$/.test(data.emergencyContactPhone.trim())) return '緊急聯絡人手機號碼格式錯誤';
+  }
 
-  if (data.referralSource === 'other' && !data.referralSourceOther?.trim()) {
+  if (!hiddenFields.includes('referral') && data.referralSource === 'other' && !data.referralSourceOther?.trim()) {
     return '請填寫「其他」來源內容';
   }
 

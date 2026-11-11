@@ -53,6 +53,38 @@ export const getActivityPeriodOptionsMap = async (): Promise<Record<string, stri
   }
 };
 
+export const REGISTRATION_OPTIONAL_FIELDS = [
+  { key: 'identity', label: '身分別' },
+  { key: 'emergency', label: '緊急聯絡人（姓名、手機）' },
+  { key: 'referral', label: '如何得知本活動' },
+] as const;
+
+export const getActivityHiddenFieldsMap = async (): Promise<Record<string, string[]>> => {
+  try {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'activityHiddenFormFields')
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const raw = data?.value;
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+
+    const result: Record<string, string[]> = {};
+    Object.entries(parsed as Record<string, unknown>).forEach(([activityId, value]) => {
+      const fields = normalizePeriodOptions(value);
+      if (fields.length > 0) result[activityId] = fields;
+    });
+    return result;
+  } catch (error) {
+    console.error('取得報名欄位顯示設定失敗:', error);
+    return {};
+  }
+};
+
 // ==================== 欄位轉換工具 ====================
 
 /**
@@ -186,11 +218,12 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
     if (albumError) throw albumError;
 
     // 再查照片與期數設定
-    const [{ data: photos, error: photoError }, activityPeriodOptionsMap] = await Promise.all([
+    const [{ data: photos, error: photoError }, activityPeriodOptionsMap, activityHiddenFieldsMap] = await Promise.all([
       supabase
         .from('activity_photos')
         .select('id, album_id, image_url, title, description'),
       getActivityPeriodOptionsMap(),
+      getActivityHiddenFieldsMap(),
     ]);
 
     if (photoError) throw photoError;
@@ -206,6 +239,7 @@ export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
         date: album.date,
         category: album.category,
         periodOptions: activityPeriodOptionsMap[album.id] || [],
+        hiddenFormFields: activityHiddenFieldsMap[album.id] || [],
         sortOrder: album.sort_order,
         coverPhotoId: album.cover_photo_id,
         registerUrl: album.register_url || undefined,

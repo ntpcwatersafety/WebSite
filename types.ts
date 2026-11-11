@@ -44,6 +44,8 @@ export interface GalleryItem {
   date?: string;
   category?: string;
   periodOptions?: string[];
+  /** 報名表單中要隱藏的區塊（identity / emergency / referral），未設定＝全部顯示 */
+  hiddenFormFields?: string[];
   sortOrder?: number;
   coverPhotoId?: string;
   registerUrl?: string;
