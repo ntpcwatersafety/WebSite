@@ -206,13 +206,14 @@ export const getHomeNews = async (): Promise<NewsItem[]> => {
 /**
  * 取得報名資訊相簿
  */
-export const getActivityGalleryItems = async (): Promise<GalleryItem[]> => {
+export const getActivityGalleryItems = async (includeInactive: boolean = false): Promise<GalleryItem[]> => {
   try {
-    // 先查相簿
-    const { data: albums, error: albumError } = await supabase
+    // 先查相簿（前台只顯示上架；後台 includeInactive=true 顯示全部）
+    let albumQuery = supabase
       .from('activity_albums')
-      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url')
-      .eq('is_active', true)
+      .select('id, title, description, is_active, date, category, sort_order, cover_photo_id, register_url, qrcode_url');
+    if (!includeInactive) albumQuery = albumQuery.eq('is_active', true);
+    const { data: albums, error: albumError } = await albumQuery
       .order('date', { ascending: false });
 
     if (albumError) throw albumError;

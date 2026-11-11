@@ -36,7 +36,7 @@ const AdminRegistrations: React.FC = () => {
 
   const loadActivityChoices = async () => {
     try {
-      const activityItems = await getActivityGalleryItems();
+      const activityItems = await getActivityGalleryItems(true);
       const options = activityItems
         .map((item) => ({ id: item.id, title: item.title.trim() }))
         .filter((item) => item.id && item.title);

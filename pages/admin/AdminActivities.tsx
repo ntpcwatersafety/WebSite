@@ -102,7 +102,7 @@ const AdminActivities: React.FC = () => {
     setLoading(true);
     try {
       const [data, categoryList] = await Promise.all([
-        getActivityGalleryItems(),
+        getActivityGalleryItems(true),
         getActivityCategories(),
       ]);
       setItems(data);
@@ -337,6 +337,7 @@ const AdminActivities: React.FC = () => {
         const updates: Partial<GalleryItem> = {
           title: draft.title,
           description: draft.description,
+          isActive: draft.isActive !== false,
           date: draft.date,
           sortOrder: draft.sortOrder,
           category: draft.category,
@@ -635,6 +636,14 @@ const AdminActivities: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">{editorMode === 'add' ? '新增報名資訊' : '編輯報名資訊'}</h3>
+            <label className="inline-flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={draft.isActive !== false}
+                onChange={(event) => setDraft({ ...draft, isActive: event.target.checked })}
+              />
+              上架（取消勾選＝下架，前台不顯示）
+            </label>
             {editorMode === 'edit' && editingId && (
               <button
                 onClick={() => handleDeleteAlbum(editingId)}

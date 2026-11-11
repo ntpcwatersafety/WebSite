@@ -92,7 +92,7 @@ const SortableGalleryList: React.FC<SortableGalleryListProps> = ({
                 <div className="flex items-start gap-3 min-w-0">
                   <GripVertical size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{item.title || '(未命名)'}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{item.title || '(未命名)'}{item.isActive === false ? <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-600">已下架</span> : null}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
                       {item.date && (
                         <span className="inline-flex items-center gap-1">
